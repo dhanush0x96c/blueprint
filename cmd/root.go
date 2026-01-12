@@ -16,8 +16,6 @@ var rootCmd = &cobra.Command{
 	Long: `Blueprint is a powerful command-line tool written in Go that streamlines 
 project initialization through an intelligent template system with interactive 
 prompts and feature injection capabilities.`,
-
-	Run: func(cmd *cobra.Command, args []string) {},
 }
 
 func Execute() {
