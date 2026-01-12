@@ -11,14 +11,11 @@ import (
 var cfgFile string
 
 var rootCmd = &cobra.Command{
-	Use:   "blueprint",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:   "bp",
+	Short: "Universal project scaffolding — because copy-pasting is not a strategy",
+	Long: `Blueprint is a powerful command-line tool written in Go that streamlines 
+project initialization through an intelligent template system with interactive 
+prompts and feature injection capabilities.`,
 
 	Run: func(cmd *cobra.Command, args []string) {},
 }
