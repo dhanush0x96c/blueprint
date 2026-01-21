@@ -20,11 +20,15 @@ type Loader struct {
 }
 
 // NewLoader creates a new template loader with the given base directory
-func NewLoader(baseDir string) *Loader {
-	return &Loader{
-		baseDir:  baseDir,
-		validate: validator.New(),
+func NewLoader(baseDir string) (*Loader, error) {
+	abs, err := filepath.Abs(baseDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve absolute path of %s: %w", baseDir, err)
 	}
+	return &Loader{
+		baseDir:  abs,
+		validate: validator.New(),
+	}, nil
 }
 
 // Load loads a template from the given path

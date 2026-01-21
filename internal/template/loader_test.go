@@ -40,7 +40,8 @@ type: project
 
 func TestLoader_Load(t *testing.T) {
 	base := t.TempDir()
-	loader := NewLoader(base)
+	loader, err := NewLoader(base)
+	require.NoError(t, err)
 
 	t.Run("load from relative directory", func(t *testing.T) {
 		dir := filepath.Join(base, "projects", "go-cli")
@@ -81,7 +82,8 @@ func TestLoader_Load(t *testing.T) {
 
 func TestLoader_Exists(t *testing.T) {
 	base := t.TempDir()
-	loader := NewLoader(base)
+	loader, err := NewLoader(base)
+	require.NoError(t, err)
 
 	dir := filepath.Join(base, "exists")
 	writeTemplate(t, dir, validProjectTemplate)
@@ -92,7 +94,8 @@ func TestLoader_Exists(t *testing.T) {
 
 func TestLoader_Discover(t *testing.T) {
 	base := t.TempDir()
-	loader := NewLoader(base)
+	loader, err := NewLoader(base)
+	require.NoError(t, err)
 
 	writeTemplate(t, filepath.Join(base, "projects", "go-cli"), validProjectTemplate)
 	writeTemplate(t, filepath.Join(base, "features", "testing"), validFeatureTemplate)
@@ -108,7 +111,8 @@ func TestLoader_Discover(t *testing.T) {
 
 func TestLoader_DiscoverByType(t *testing.T) {
 	base := t.TempDir()
-	loader := NewLoader(base)
+	loader, err := NewLoader(base)
+	require.NoError(t, err)
 
 	writeTemplate(t, filepath.Join(base, "projects", "go-cli"), validProjectTemplate)
 	writeTemplate(t, filepath.Join(base, "features", "testing"), validFeatureTemplate)
@@ -126,7 +130,8 @@ func TestLoader_DiscoverByType(t *testing.T) {
 
 func TestLoader_GetBaseDir(t *testing.T) {
 	base := t.TempDir()
-	loader := NewLoader(base)
+	loader, err := NewLoader(base)
+	require.NoError(t, err)
 
 	require.Equal(t, base, loader.GetBaseDir())
 }
