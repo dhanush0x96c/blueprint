@@ -22,41 +22,41 @@ const (
 
 // Template represents a complete template definition
 type Template struct {
-	Name         string     `yaml:"name"`
-	Type         Type       `yaml:"type"`
-	Version      string     `yaml:"version"`
+	Name         string     `yaml:"name" validate:"required"`
+	Type         Type       `yaml:"type" validate:"required,oneof=project feature component"`
+	Version      string     `yaml:"version" validate:"required"`
 	Description  string     `yaml:"description"`
-	Variables    []Variable `yaml:"variables,omitempty"`
-	Includes     []Include  `yaml:"includes,omitempty"`
+	Variables    []Variable `yaml:"variables,omitempty" validate:"dive"`
+	Includes     []Include  `yaml:"includes,omitempty" validate:"dive"`
 	Dependencies []string   `yaml:"dependencies,omitempty"`
-	Files        []File     `yaml:"files,omitempty"`
-	PostInit     []PostInit `yaml:"post_init,omitempty"`
+	Files        []File     `yaml:"files,omitempty" validate:"dive"`
+	PostInit     []PostInit `yaml:"post_init,omitempty" validate:"dive"`
 }
 
 // Variable represents a user-configurable variable with an interactive prompt
 type Variable struct {
-	Name    string       `yaml:"name"`
+	Name    string       `yaml:"name" validate:"required"`
 	Prompt  string       `yaml:"prompt"`
-	Type    VariableType `yaml:"type"`
+	Type    VariableType `yaml:"type" validate:"required,oneof=string int bool select multiselect"`
 	Default any          `yaml:"default,omitempty"`
-	Options []string     `yaml:"options,omitempty"`
+	Options []string     `yaml:"options,omitempty" validate:"required_if=Type select,required_if=Type multiselect"`
 }
 
 // Include represents another template to compose into this one
 type Include struct {
-	Template         string `yaml:"template"`
+	Template         string `yaml:"template" validate:"required"`
 	EnabledByDefault bool   `yaml:"enabled_by_default"`
 }
 
 // File represents a template file to be rendered and written
 type File struct {
-	Src  string `yaml:"src"`
-	Dest string `yaml:"dest"`
+	Src  string `yaml:"src" validate:"required"`
+	Dest string `yaml:"dest" validate:"required"`
 }
 
 // PostInit represents a command to run after scaffolding
 type PostInit struct {
-	Command string `yaml:"command"`
+	Command string `yaml:"command" validate:"required"`
 	WorkDir string `yaml:"workdir,omitempty"`
 }
 
