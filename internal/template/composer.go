@@ -5,13 +5,17 @@ import (
 	"slices"
 )
 
+type Loader interface {
+	Load(name string) (*Template, error)
+}
+
 // Composer handles resolving and merging template includes
 type Composer struct {
-	loader *Loader
+	loader Loader
 }
 
 // NewComposer creates a new template composer with the given loader
-func NewComposer(loader *Loader) *Composer {
+func NewComposer(loader Loader) *Composer {
 	return &Composer{
 		loader: loader,
 	}

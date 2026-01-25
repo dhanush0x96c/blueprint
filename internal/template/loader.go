@@ -13,19 +13,19 @@ const (
 	FileName = "template.yaml"
 )
 
-// Loader handles loading templates from the filesystem
-type Loader struct {
+// FileLoader handles loading templates from the filesystem
+type FileLoader struct {
 	baseDir  string
 	validate *validator.Validate
 }
 
 // NewLoader creates a new template loader with the given base directory
-func NewLoader(baseDir string) (*Loader, error) {
+func NewLoader(baseDir string) (*FileLoader, error) {
 	abs, err := filepath.Abs(baseDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve absolute path of %s: %w", baseDir, err)
 	}
-	return &Loader{
+	return &FileLoader{
 		baseDir:  abs,
 		validate: validator.New(),
 	}, nil
@@ -35,7 +35,7 @@ func NewLoader(baseDir string) (*Loader, error) {
 // The path can be either:
 // - An absolute path to a template.yaml file
 // - A relative path from the base directory (e.g., "projects/go-cli")
-func (l *Loader) Load(path string) (*Template, error) {
+func (l *FileLoader) Load(path string) (*Template, error) {
 	templatePath := l.resolveTemplatePath(path)
 
 	data, err := os.ReadFile(templatePath)
@@ -56,14 +56,14 @@ func (l *Loader) Load(path string) (*Template, error) {
 }
 
 // LoadFromDir loads a template from a directory containing template.yaml
-func (l *Loader) LoadFromDir(dir string) (*Template, error) {
+func (l *FileLoader) LoadFromDir(dir string) (*Template, error) {
 	templatePath := filepath.Join(dir, FileName)
 	return l.Load(templatePath)
 }
 
 // Discover finds all available templates in the base directory
 // Returns a map of template path -> template name
-func (l *Loader) Discover() (map[string]string, error) {
+func (l *FileLoader) Discover() (map[string]string, error) {
 	templates := make(map[string]string)
 
 	err := filepath.Walk(l.baseDir, func(path string, info os.FileInfo, err error) error {
@@ -96,7 +96,7 @@ func (l *Loader) Discover() (map[string]string, error) {
 }
 
 // DiscoverByType finds all templates of a specific type
-func (l *Loader) DiscoverByType(templateType Type) (map[string]string, error) {
+func (l *FileLoader) DiscoverByType(templateType Type) (map[string]string, error) {
 	allTemplates, err := l.Discover()
 	if err != nil {
 		return nil, err
@@ -118,19 +118,19 @@ func (l *Loader) DiscoverByType(templateType Type) (map[string]string, error) {
 }
 
 // Exists checks if a template exists at the given path
-func (l *Loader) Exists(path string) bool {
+func (l *FileLoader) Exists(path string) bool {
 	templatePath := l.resolveTemplatePath(path)
 	_, err := os.Stat(templatePath)
 	return err == nil
 }
 
 // GetBaseDir returns the base directory of the loader
-func (l *Loader) GetBaseDir() string {
+func (l *FileLoader) GetBaseDir() string {
 	return l.baseDir
 }
 
 // resolveTemplatePath resolves a template path to an absolute path
-func (l *Loader) resolveTemplatePath(path string) string {
+func (l *FileLoader) resolveTemplatePath(path string) string {
 	if filepath.IsAbs(path) && filepath.Base(path) == FileName {
 		return path
 	}
