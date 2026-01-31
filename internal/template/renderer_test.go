@@ -14,7 +14,7 @@ func newTestRenderer(t *testing.T) (*Renderer, string) {
 	t.Helper()
 
 	dir := t.TempDir()
-	r := NewRenderer(dir)
+	r := NewRenderer(os.DirFS(dir))
 
 	return r, dir
 }

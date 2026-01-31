@@ -3,7 +3,7 @@ package template
 import (
 	"bytes"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -11,15 +11,13 @@ import (
 
 // Renderer handles rendering template files with variables
 type Renderer struct {
-	baseDir string
+	fs      fs.FS
 	funcMap template.FuncMap
 }
 
 // NewRenderer creates a new template renderer with the given base directory
-func NewRenderer(baseDir string) *Renderer {
-	r := &Renderer{
-		baseDir: baseDir,
-	}
+func NewRenderer(fs fs.FS) *Renderer {
+	r := &Renderer{fs: fs}
 	r.funcMap = r.defaultFuncMap()
 	return r
 }
@@ -27,9 +25,7 @@ func NewRenderer(baseDir string) *Renderer {
 // Render renders a template file with the given context
 // The templatePath is relative to the renderer's base directory
 func (r *Renderer) Render(templatePath string, ctx *Context) (string, error) {
-	fullPath := filepath.Join(r.baseDir, templatePath)
-
-	content, err := os.ReadFile(fullPath)
+	content, err := fs.ReadFile(r.fs, templatePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read template file %s: %w", templatePath, err)
 	}

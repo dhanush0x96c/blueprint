@@ -40,8 +40,7 @@ type: project
 
 func TestLoader_Load(t *testing.T) {
 	base := t.TempDir()
-	loader, err := NewLoader(base)
-	require.NoError(t, err)
+	loader := NewLoader(os.DirFS(base))
 
 	t.Run("load from relative directory", func(t *testing.T) {
 		dir := filepath.Join(base, "projects", "go-cli")
@@ -52,50 +51,41 @@ func TestLoader_Load(t *testing.T) {
 		require.Equal(t, "go-cli", tmpl.Name)
 	})
 
-	t.Run("load from absolute directory", func(t *testing.T) {
-		dir := filepath.Join(base, "abs")
-		writeTemplate(t, dir, validProjectTemplate)
-
-		tmpl, err := loader.Load(dir)
-		require.NoError(t, err)
-		require.Equal(t, "go-cli", tmpl.Name)
-	})
-
-	t.Run("load from absolute template.yaml path", func(t *testing.T) {
+	t.Run("load from template.yaml path", func(t *testing.T) {
 		dir := filepath.Join(base, "direct")
 		writeTemplate(t, dir, validProjectTemplate)
 
-		path := filepath.Join(dir, FileName)
+		path := filepath.Join("direct", FileName)
 		tmpl, err := loader.Load(path)
 		require.NoError(t, err)
 		require.Equal(t, "go-cli", tmpl.Name)
 	})
 
 	t.Run("invalid template fails validation", func(t *testing.T) {
-		dir := filepath.Join(base, "invalid")
+		templateName := "invalid"
+		dir := filepath.Join(base, templateName)
 		writeTemplate(t, dir, invalidTemplate)
 
-		_, err := loader.Load(dir)
+		_, err := loader.Load(templateName)
 		require.Error(t, err)
 	})
 }
 
 func TestLoader_Exists(t *testing.T) {
 	base := t.TempDir()
-	loader, err := NewLoader(base)
-	require.NoError(t, err)
+	loader := NewLoader(os.DirFS(base))
 
-	dir := filepath.Join(base, "exists")
+	templateName := "exists"
+	dir := filepath.Join(base, templateName)
 	writeTemplate(t, dir, validProjectTemplate)
 
-	require.True(t, loader.Exists("exists"))
+	require.True(t, loader.Exists(templateName))
 	require.False(t, loader.Exists("missing"))
 }
 
 func TestLoader_Discover(t *testing.T) {
 	base := t.TempDir()
-	loader, err := NewLoader(base)
-	require.NoError(t, err)
+	loader := NewLoader(os.DirFS(base))
 
 	writeTemplate(t, filepath.Join(base, "projects", "go-cli"), validProjectTemplate)
 	writeTemplate(t, filepath.Join(base, "features", "testing"), validFeatureTemplate)
@@ -111,8 +101,7 @@ func TestLoader_Discover(t *testing.T) {
 
 func TestLoader_DiscoverByType(t *testing.T) {
 	base := t.TempDir()
-	loader, err := NewLoader(base)
-	require.NoError(t, err)
+	loader := NewLoader(os.DirFS(base))
 
 	writeTemplate(t, filepath.Join(base, "projects", "go-cli"), validProjectTemplate)
 	writeTemplate(t, filepath.Join(base, "features", "testing"), validFeatureTemplate)
@@ -126,12 +115,4 @@ func TestLoader_DiscoverByType(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, features, 1)
 	require.Equal(t, "testing", features["features/testing"])
-}
-
-func TestLoader_GetBaseDir(t *testing.T) {
-	base := t.TempDir()
-	loader, err := NewLoader(base)
-	require.NoError(t, err)
-
-	require.Equal(t, base, loader.GetBaseDir())
 }

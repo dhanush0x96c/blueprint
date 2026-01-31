@@ -50,6 +50,7 @@ type Include struct {
 
 // File represents a template file to be rendered and written
 type File struct {
+	// Src is resolved relative to the directory containing template.yaml when loaded.
 	Src  string `yaml:"src" validate:"required"`
 	Dest string `yaml:"dest" validate:"required"`
 }
