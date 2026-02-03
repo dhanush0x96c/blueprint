@@ -1,7 +1,13 @@
 package main
 
-import "github.com/dhanush0x96c/blueprint/cmd"
+import (
+	"log"
+
+	"github.com/dhanush0x96c/blueprint/cmd"
+)
 
 func main() {
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
 }
