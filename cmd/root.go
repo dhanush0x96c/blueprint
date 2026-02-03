@@ -11,11 +11,10 @@ import (
 func NewRootCmd() *cobra.Command {
 	var cfgFile string
 	cmd := &cobra.Command{
-		Use:   "bp",
-		Short: "Universal project scaffolding — because copy-pasting is not a strategy",
-		Long: `Blueprint is a powerful command-line tool written in Go that streamlines 
-project initialization through an intelligent template system with interactive 
-prompts and feature injection capabilities.`,
+		Use:     "blueprint",
+		Aliases: []string{"bp"},
+		Short:   "Universal project scaffolding",
+		Long:    "Blueprint scaffolds projects from composable templates.",
 	}
 	cobra.OnInitialize(func() {
 		initConfig(cfgFile)
