@@ -5,6 +5,7 @@ import (
 
 	"github.com/dhanush0x96c/blueprint/internal/app"
 	"github.com/dhanush0x96c/blueprint/internal/config"
+	"github.com/dhanush0x96c/blueprint/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -16,10 +17,12 @@ func NewRootCmd() *cobra.Command {
 	appCtx := &app.Context{}
 
 	cmd := &cobra.Command{
-		Use:     "blueprint",
-		Aliases: []string{"bp"},
-		Short:   "Universal project scaffolding",
-		Long:    "Blueprint scaffolds projects from composable templates.",
+		Use:           "blueprint",
+		Aliases:       []string{"bp"},
+		Short:         "Universal project scaffolding",
+		Long:          "Blueprint scaffolds projects from composable templates.",
+		SilenceErrors: true,
+		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := cfgLoader.Load()
 			if err != nil {
@@ -41,9 +44,10 @@ func NewRootCmd() *cobra.Command {
 	return cmd
 }
 
-func Execute() error {
+func Execute() int {
 	if err := NewRootCmd().Execute(); err != nil {
-		return fmt.Errorf("execute: %w", err)
+		ui.RenderError(err)
+		return ui.ExitCode(err)
 	}
-	return nil
+	return 0
 }
