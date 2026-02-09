@@ -8,3 +8,9 @@ import (
 type Context struct {
 	Config *config.Config
 }
+
+func NewContext(cfg *config.Config) *Context {
+	return &Context{
+		Config: cfg,
+	}
+}

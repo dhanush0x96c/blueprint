@@ -14,7 +14,7 @@ func NewRootCmd() *cobra.Command {
 		EnvPrefix: "BLUEPRINT",
 		CLIArgs:   map[string]string{},
 	}
-	appCtx := &app.Context{}
+	var appCtx = new(app.Context)
 
 	cmd := &cobra.Command{
 		Use:           "blueprint",
@@ -28,7 +28,8 @@ func NewRootCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("load config: %w", err)
 			}
-			appCtx.Config = cfg
+			ctx := app.NewContext(cfg)
+			*appCtx = *ctx
 
 			return nil
 		},
