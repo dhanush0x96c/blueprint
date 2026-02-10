@@ -9,6 +9,19 @@ const (
 	TypeComponent Type = "component"
 )
 
+func (t Type) Folder() string {
+	switch t {
+	case TypeProject:
+		return "projects"
+	case TypeFeature:
+		return "features"
+	case TypeComponent:
+		return "components"
+	default:
+		panic("invalid template type: " + string(t))
+	}
+}
+
 // VariableType represents the type of input expected for a variable
 type VariableType string
 

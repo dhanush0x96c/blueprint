@@ -3,12 +3,20 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
 
 func (l *Loader) applyDefaults(cfg *Config) error {
-	// TODO: Apply Defaults
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		return fmt.Errorf("resolve user config directory: %w", err)
+	}
+	templatesDir := filepath.Join(configDir, "blueprint", "templates")
+
+	cfg.TemplatesDir = templatesDir
+
 	return nil
 }
 
