@@ -42,6 +42,8 @@ func NewRootCmd() *cobra.Command {
 		fmt.Sprintf("config file (default is %s)", config.DefaultPathHint()),
 	)
 
+	cmd.AddCommand(NewInitCommand(appCtx))
+
 	return cmd
 }
 
