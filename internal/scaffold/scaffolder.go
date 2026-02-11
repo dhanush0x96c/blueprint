@@ -110,6 +110,13 @@ func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
+	if opts.OutputDir == "" {
+		opts.OutputDir, err = composedTmpl.ProjectName(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to determine output directory: %w", err)
+		}
+	}
+
 	// Render all files
 	renderedFiles, err := s.engine.RenderTemplate(composedTmpl, ctx)
 	if err != nil {

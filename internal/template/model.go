@@ -1,5 +1,7 @@
 package template
 
+import "fmt"
+
 // Type represents the semantic type of a template
 type Type string
 
@@ -33,6 +35,12 @@ const (
 	VariableTypeMultiSelect VariableType = "multiselect"
 )
 
+type VariableRole string
+
+const (
+	RoleProjectName VariableRole = "project_name"
+)
+
 // Template represents a complete template definition
 type Template struct {
 	Name         string     `yaml:"name" validate:"required"`
@@ -46,11 +54,40 @@ type Template struct {
 	PostInit     []PostInit `yaml:"post_init,omitempty" validate:"dive"`
 }
 
+func (t *Template) VariableByRole(role VariableRole) (*Variable, error) {
+	for i, v := range t.Variables {
+		if v.Role == role {
+			return &t.Variables[i], nil
+		}
+	}
+	return nil, fmt.Errorf("template does not have a variable with role %s", role)
+}
+
+func (t *Template) ProjectName(ctx *Context) (string, error) {
+	v, err := t.VariableByRole(RoleProjectName)
+	if err != nil {
+		return "", err
+	}
+
+	raw, ok := ctx.Get(v.Name)
+	if !ok {
+		return "", fmt.Errorf("project name variable '%s' not found in context", v.Name)
+	}
+
+	name, ok := raw.(string)
+	if !ok {
+		return "", fmt.Errorf("project name variable '%s' must be a string", v.Name)
+	}
+
+	return name, nil
+}
+
 // Variable represents a user-configurable variable with an interactive prompt
 type Variable struct {
 	Name    string       `yaml:"name" validate:"required"`
 	Prompt  string       `yaml:"prompt"`
 	Type    VariableType `yaml:"type" validate:"required,oneof=string int bool select multiselect"`
+	Role    VariableRole `yaml:"role,omitempty"`
 	Default any          `yaml:"default,omitempty"`
 	Options []string     `yaml:"options,omitempty" validate:"required_if=Type select,required_if=Type multiselect"`
 }
