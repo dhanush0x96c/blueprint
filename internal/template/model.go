@@ -11,6 +11,7 @@ const (
 	TypeComponent Type = "component"
 )
 
+// Folder returns the folder name for the template type.
 func (t Type) Folder() string {
 	switch t {
 	case TypeProject:
@@ -35,9 +36,11 @@ const (
 	VariableTypeMultiSelect VariableType = "multiselect"
 )
 
+// VariableRole represents the semantic role of a variable.
 type VariableRole string
 
 const (
+	// RoleProjectName is the role for the project name variable.
 	RoleProjectName VariableRole = "project_name"
 )
 
@@ -54,6 +57,7 @@ type Template struct {
 	PostInit     []PostInit `yaml:"post_init,omitempty" validate:"dive"`
 }
 
+// VariableByRole returns the variable with the given role.
 func (t *Template) VariableByRole(role VariableRole) (*Variable, error) {
 	for i, v := range t.Variables {
 		if v.Role == role {
@@ -63,6 +67,7 @@ func (t *Template) VariableByRole(role VariableRole) (*Variable, error) {
 	return nil, fmt.Errorf("template does not have a variable with role %s", role)
 }
 
+// ProjectName returns the project name from the context.
 func (t *Template) ProjectName(ctx *Context) (string, error) {
 	v, err := t.VariableByRole(RoleProjectName)
 	if err != nil {
