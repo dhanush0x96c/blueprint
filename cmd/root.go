@@ -39,7 +39,7 @@ func NewRootCmd() *cobra.Command {
 		&cfgLoader.ConfigFile,
 		"config",
 		"",
-		fmt.Sprintf("config file (default is %s)", config.DefaultPathHint()),
+		fmt.Sprintf("config file (default is %s)", config.DefaultPathUsage()),
 	)
 
 	cmd.AddCommand(NewInitCommand(appCtx))
