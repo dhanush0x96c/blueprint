@@ -16,19 +16,44 @@ Blueprint is a powerful command-line tool written in Go that streamlines project
 
 Unlike traditional scaffolding tools, Blueprint's feature injection system allows you to add capabilities to your projects on-the-fly during initialization, giving you the perfect starting point without bloating your codebase with unused dependencies.
 
+## Installation
+
+```bash
+go install github.com/dhanush0x96c/blueprint@latest
+```
+
+Make sure `$GOPATH/bin` (or `$GOBIN`) is in your `PATH`.
+
 ## Project Status
 
-⚠️ **Blueprint is in early development and not production-ready.**
+🚧 **Blueprint is in active development.**
 
+
+Core scaffolding functionality is implemented and working. The template system, interactive prompts, and basic project initialization are functional. Additional commands and built-in templates are in progress.
 If the idea interests you, consider starring or watching the repository to follow progress and upcoming releases.
 
 ## Roadmap
 
-- [ ] Core CLI command structure
-- [ ] Template definition format
-- [ ] Interactive prompt engine
-- [ ] Feature injection system
+- [x] Core CLI command structure
+- [x] Template definition format
+- [x] Interactive prompt engine
+- [x] Template composition system
+- [ ] Feature injection system (`blueprint add` command)
 - [ ] Initial built-in templates
+- [ ] Template search and discovery
+- [ ] Documentation and examples
+
+## Quick Start
+
+```bash
+# Initialize a new project from a template
+blueprint init <template-name>
+
+# Example
+blueprint init go-cli
+```
+
+For detailed information on creating and using templates, see the [Template Specification](docs/template-spec.md) and [Template Naming Conventions](docs/template-naming.md).
 
 ## License
 
