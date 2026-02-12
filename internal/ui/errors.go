@@ -7,6 +7,7 @@ import (
 	"github.com/dhanush0x96c/blueprint/internal/app"
 )
 
+// RenderError dispatches the given error to the appropriate renderer based on its type.
 func RenderError(err error) {
 	switch {
 	case errors.Is(err, app.ErrTemplateNotFound):
