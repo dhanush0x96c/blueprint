@@ -16,6 +16,7 @@ type Context struct {
 	Resolver  Resolver
 }
 
+// NewContext creates a new application context.
 func NewContext(cfg *config.Config) *Context {
 	return &Context{
 		Config:    cfg,
