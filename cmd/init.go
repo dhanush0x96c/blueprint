@@ -6,6 +6,7 @@ import (
 	"github.com/dhanush0x96c/blueprint/internal/app"
 	"github.com/dhanush0x96c/blueprint/internal/scaffold"
 	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -45,8 +46,7 @@ func NewInitCommand(appCtx *app.Context) *cobra.Command {
 				return fmt.Errorf("init template %q: %w", templateName, err)
 			}
 
-			// TODO: Render the result
-			_ = result
+			ui.RenderResult(result)
 
 			return nil
 		},
