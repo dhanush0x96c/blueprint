@@ -1,0 +1,19 @@
+package cmd
+
+import "github.com/spf13/cobra"
+
+func NewRootCmd() *cobra.Command {
+	rootCmd := &cobra.Command{
+		Use:   "{{ .app_name }}",
+		Short: "{{ .description }}",
+	}
+
+	// Add subcommands here:
+	// rootCmd.AddCommand(newSubCmd())
+
+	return rootCmd
+}
+
+func Execute() error {
+	return NewRootCmd().Execute()
+}
