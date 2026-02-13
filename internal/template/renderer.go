@@ -54,26 +54,101 @@ func (r *Renderer) RenderPath(pathTemplate string, ctx *Context) (string, error)
 	return r.RenderString(pathTemplate, ctx, "path")
 }
 
+// Copy reads a file and returns its content without template processing
+func (r *Renderer) Copy(filePath string) (string, error) {
+	content, err := fs.ReadFile(r.fs, filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file %s: %w", filePath, err)
+	}
+	return string(content), nil
+}
+
 // RenderAll renders all files from a template with the given context
 // Returns a map of destination path -> rendered content
+// Files with .tmpl extension are rendered and the extension is stripped
+// Other files are copied as-is
 func (r *Renderer) RenderAll(tmpl *Template, ctx *Context) (map[string]string, error) {
 	results := make(map[string]string)
 
 	for _, file := range tmpl.Files {
-		destPath, err := r.RenderPath(file.Dest, ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to render destination path for %s: %w", file.Src, err)
+		if err := r.processPath(file.Src, file.Dest, ctx, results); err != nil {
+			return nil, err
 		}
-
-		content, err := r.Render(file.Src, ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to render template %s: %w", file.Src, err)
-		}
-
-		results[destPath] = content
 	}
 
 	return results, nil
+}
+
+// processPath processes a file or directory path recursively
+func (r *Renderer) processPath(srcPath, destPath string, ctx *Context, results map[string]string) error {
+	info, err := fs.Stat(r.fs, srcPath)
+	if err != nil {
+		return fmt.Errorf("failed to stat %s: %w", srcPath, err)
+	}
+
+	if info.IsDir() {
+		return r.processDirectory(srcPath, destPath, ctx, results)
+	}
+
+	return r.processFile(srcPath, destPath, ctx, results)
+}
+
+// processDirectory recursively processes all files in a directory
+func (r *Renderer) processDirectory(srcDir, destDir string, ctx *Context, results map[string]string) error {
+	entries, err := fs.ReadDir(r.fs, srcDir)
+	if err != nil {
+		return fmt.Errorf("failed to read directory %s: %w", srcDir, err)
+	}
+
+	for _, entry := range entries {
+		srcPath := filepath.Join(srcDir, entry.Name())
+		destPath := filepath.Join(destDir, entry.Name())
+
+		if err := r.processPath(srcPath, destPath, ctx, results); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// isTemplateFile checks if the path has a .tmpl extension
+func isTemplateFile(path string) bool {
+	return strings.HasSuffix(path, ".tmpl")
+}
+
+// stripTemplateExt removes the .tmpl extension from a path
+func stripTemplateExt(path string) string {
+	return strings.TrimSuffix(path, ".tmpl")
+}
+
+// processFile processes a single file - renders .tmpl files, copies others
+func (r *Renderer) processFile(srcPath, destPath string, ctx *Context, results map[string]string) error {
+	// Render destination path template
+	renderedDestPath, err := r.RenderPath(destPath, ctx)
+	if err != nil {
+		return fmt.Errorf("failed to render destination path for %s: %w", srcPath, err)
+	}
+
+	var content string
+
+	if isTemplateFile(srcPath) {
+		renderedDestPath = stripTemplateExt(renderedDestPath)
+
+		content, err = r.Render(srcPath, ctx)
+		if err != nil {
+			return err
+		}
+	} else {
+		content, err = r.Copy(srcPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	results[renderedDestPath] = content
+
+	return nil
 }
 
 // AddFunc adds a custom function to the template function map
