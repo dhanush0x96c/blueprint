@@ -1,0 +1,41 @@
+# {{ .app_name }}
+
+{{ .description }}
+
+## Running
+
+```bash
+go run ./cmd/api
+```
+
+The server will start on port {{ .port }}.
+
+## Endpoints
+
+- `GET /` - Hello endpoint
+- `GET /health` - Health check endpoint
+
+## Building
+
+```bash
+go build -o {{ .app_name }} ./cmd/api
+./{{ .app_name }}
+```
+
+## Project Structure
+
+```
+.
+├── cmd/
+│   └── api/
+│       └── main.go        # Application entrypoint
+├── internal/
+│   ├── handlers/
+│   │   └── handler.go     # HTTP handlers
+│   ├── middleware/
+│   │   └── middleware.go  # Middleware (Logger, Recoverer, CORS)
+│   └── routes/
+│       └── routes.go      # Route definitions
+├── go.mod
+└── README.md
+```

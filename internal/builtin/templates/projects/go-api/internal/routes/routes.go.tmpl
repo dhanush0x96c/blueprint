@@ -1,0 +1,24 @@
+package routes
+
+import (
+	"net/http"
+
+	"{{ .module_path }}/internal/handlers"
+	"{{ .module_path }}/internal/middleware"
+)
+
+func Setup() http.Handler {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /health", handlers.Health)
+	mux.HandleFunc("GET /", handlers.Hello)
+
+	// Apply middleware chain
+	chain := middleware.Chain(
+		middleware.Recoverer,
+		middleware.Logger,
+		middleware.CORS,
+	)
+
+	return chain(mux)
+}

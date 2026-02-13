@@ -1,0 +1,17 @@
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"{{ .module_path }}/internal/routes"
+)
+
+func main() {
+	handler := routes.Setup()
+
+	log.Printf("Starting server on :{{ .port }}")
+	if err := http.ListenAndServe(":{{ .port }}", handler); err != nil {
+		log.Fatal(err)
+	}
+}

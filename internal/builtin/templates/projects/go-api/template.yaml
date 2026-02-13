@@ -1,0 +1,41 @@
+name: go-api
+type: project
+version: 0.0.0
+description: "Go HTTP API using net/http"
+
+variables:
+  - name: app_name
+    prompt: "What is your application name?"
+    type: string
+    role: "project_name"
+
+  - name: module_path
+    prompt: "What is your module path? (e.g., github.com/username/app)"
+    type: string
+
+  - name: description
+    prompt: "Brief description of your API"
+    type: string
+    default: "A HTTP API written in Go"
+
+  - name: port
+    prompt: "What port should the server listen on?"
+    type: string
+    default: "8080"
+
+files:
+  - src: cmd/
+    dest: cmd/
+
+  - src: internal/
+    dest: internal/
+
+  - src: go.mod.tmpl
+    dest: go.mod
+
+  - src: README.md.tmpl
+    dest: README.md
+
+post_init:
+  - command: "go mod tidy"
+  - command: "go fmt ./..."
