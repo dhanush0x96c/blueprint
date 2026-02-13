@@ -198,10 +198,10 @@ files:
 
 ### 6.1 Fields
 
-| Field  | Required | Description                                       |
-| ------ | -------- | ------------------------------------------------- |
+| Field  | Required | Description                                        |
+| ------ | -------- | -------------------------------------------------- |
 | `src`  | Yes      | Source file or directory relative to template root |
-| `dest` | Yes      | Output path relative to project root              |
+| `dest` | Yes      | Output path relative to project root               |
 
 ### 6.2 File Processing
 
@@ -222,6 +222,7 @@ When `src` is a directory, Blueprint recursively processes all files within:
 - The directory structure is preserved in the destination.
 
 Example directory structure:
+
 ```
 src/
   config.go.tmpl  → rendered and written as config.go

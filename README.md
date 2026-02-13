@@ -28,7 +28,6 @@ Make sure `$GOPATH/bin` (or `$GOBIN`) is in your `PATH`.
 
 🚧 **Blueprint is in active development.**
 
-
 Core scaffolding functionality is implemented and working. The template system, interactive prompts, and basic project initialization are functional. Additional commands and built-in templates are in progress.
 If the idea interests you, consider starring or watching the repository to follow progress and upcoming releases.
 
