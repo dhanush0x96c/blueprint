@@ -186,22 +186,50 @@ Dependency resolution must be deterministic.
 
 ## 6. Files
 
-Templates define renderable files.
+Templates define files to be rendered or copied.
 
 ```yaml
 files:
   - src: "main.go.tmpl"
     dest: "main.go"
+  - src: "static/"
+    dest: "static/"
 ```
 
 ### 6.1 Fields
 
-| Field  | Required | Description                                  |
-| ------ | -------- | -------------------------------------------- |
-| `src`  | Yes      | Template file path relative to template root |
-| `dest` | Yes      | Output path relative to project root         |
+| Field  | Required | Description                                       |
+| ------ | -------- | ------------------------------------------------- |
+| `src`  | Yes      | Source file or directory relative to template root |
+| `dest` | Yes      | Output path relative to project root              |
 
-### 6.2 Rendering
+### 6.2 File Processing
+
+Files are processed based on their extension:
+
+- **Template files (`.tmpl`)**: Rendered using Go `text/template` with all collected variables.
+- **Non-template files**: Copied as-is without any processing.
+
+Although the `.tmpl` extension is stripped during rendering,
+explicitly listed files should specify the destination path directly (without `.tmpl`).
+
+### 6.3 Directory Processing
+
+When `src` is a directory, Blueprint recursively processes all files within:
+
+- Each file with `.tmpl` extension is rendered and the `.tmpl` extension is automatically stripped from the output filename.
+- All other files are copied without modification.
+- The directory structure is preserved in the destination.
+
+Example directory structure:
+```
+src/
+  config.go.tmpl  → rendered and written as config.go
+  utils.go.tmpl   → rendered and written as utils.go
+  data.json       → copied as-is to data.json
+```
+
+### 6.4 Rendering Context
 
 - Uses Go `text/template`.
 - All collected variables available in root context.
