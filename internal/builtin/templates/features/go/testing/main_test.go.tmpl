@@ -1,0 +1,19 @@
+package main
+
+import (
+	"testing"
+{{- if .use_testify }}
+
+	"github.com/stretchr/testify/assert"
+{{- end }}
+)
+
+func TestMain(t *testing.T) {
+{{- if .use_testify }}
+	assert.True(t, true, "should be true")
+{{- else }}
+	if true != true {
+		t.Error("expected true")
+	}
+{{- end }}
+}

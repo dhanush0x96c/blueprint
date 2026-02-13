@@ -18,6 +18,10 @@ variables:
     type: string
     default: "A CLI application written in Go"
 
+includes:
+  - template: features/go/testing
+    enabled_by_default: false
+
 dependencies:
   - "github.com/spf13/cobra@v1.10.2"
 

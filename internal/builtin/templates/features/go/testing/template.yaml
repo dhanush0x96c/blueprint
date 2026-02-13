@@ -1,0 +1,17 @@
+name: go-testing
+type: feature
+version: 0.0.0
+description: "Go testing setup with optional testify"
+
+variables:
+  - name: use_testify
+    prompt: "Would you like to use testify for assertions?"
+    type: bool
+    default: false
+
+dependencies:
+  - "github.com/stretchr/testify@v1.9.0"
+
+files:
+  - src: main_test.go.tmpl
+    dest: main_test.go
