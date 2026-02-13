@@ -12,4 +12,3 @@ func write(w io.Writer, format string, args ...any) {
 func writeln(w io.Writer, s string) {
 	_, _ = fmt.Fprintln(w, s)
 }
-

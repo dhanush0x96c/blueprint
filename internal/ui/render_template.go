@@ -6,7 +6,7 @@ import (
 
 func renderTemplateNotFound(err error) {
 	w := os.Stderr
-	
+
 	writeln(w, "✗ Template not found")
 	writeln(w, "")
 	writeln(w, "The requested template does not exist.")
