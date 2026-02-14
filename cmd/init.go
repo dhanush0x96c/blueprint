@@ -12,18 +12,22 @@ import (
 
 func NewInitCommand(appCtx *app.Context) *cobra.Command {
 	var (
-		outputDir string
-		force     bool
-		yes       bool
+		force bool
+		yes   bool
 	)
 
 	cmd := &cobra.Command{
-		Use:   "init <template>",
+		Use:   "init <template> [output-dir]",
 		Short: "Initialize a new project",
 		Long:  `Initialize a new project from a template.`,
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			templateName := args[0]
+
+			var outputDir string
+			if len(args) > 1 {
+				outputDir = args[1]
+			}
 
 			resolved, err := appCtx.Resolver.Resolve(appCtx, app.TemplateRef{
 				Name: templateName,
@@ -51,14 +55,6 @@ func NewInitCommand(appCtx *app.Context) *cobra.Command {
 			return nil
 		},
 	}
-
-	cmd.Flags().StringVarP(
-		&outputDir,
-		"output",
-		"o",
-		"",
-		"Output directory",
-	)
 
 	cmd.Flags().BoolVarP(
 		&force,
