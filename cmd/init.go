@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/dhanush0x96c/blueprint/internal/app"
 	"github.com/dhanush0x96c/blueprint/internal/scaffold"
@@ -12,8 +13,9 @@ import (
 
 func NewInitCommand(appCtx *app.Context) *cobra.Command {
 	var (
-		force bool
-		yes   bool
+		force    bool
+		yes      bool
+		varFlags []string
 	)
 
 	cmd := &cobra.Command{
@@ -29,6 +31,11 @@ func NewInitCommand(appCtx *app.Context) *cobra.Command {
 				outputDir = args[1]
 			}
 
+			vars, err := parseVarFlags(varFlags)
+			if err != nil {
+				return err
+			}
+
 			resolved, err := appCtx.Resolver.Resolve(appCtx, app.TemplateRef{
 				Name: templateName,
 				Type: template.TypeProject,
@@ -42,6 +49,7 @@ func NewInitCommand(appCtx *app.Context) *cobra.Command {
 			result, err := scaffolder.Scaffold(scaffold.Options{
 				TemplatePath: resolved.Path,
 				OutputDir:    outputDir,
+				Variables:    vars,
 				Interactive:  !yes,
 				Overwrite:    force,
 			})
@@ -72,5 +80,28 @@ func NewInitCommand(appCtx *app.Context) *cobra.Command {
 		"Accept defaults and disable prompts",
 	)
 
+	cmd.Flags().StringArrayVar(
+		&varFlags,
+		"var",
+		nil,
+		`Set a template variable (format: key=value)`,
+	)
+
 	return cmd
+}
+
+func parseVarFlags(flags []string) (map[string]any, error) {
+	if len(flags) == 0 {
+		return nil, nil
+	}
+
+	vars := make(map[string]any, len(flags))
+	for _, f := range flags {
+		key, value, ok := strings.Cut(f, "=")
+		if !ok {
+			return nil, fmt.Errorf("invalid variable format %q: expected key=value", f)
+		}
+		vars[key] = value
+	}
+	return vars, nil
 }
