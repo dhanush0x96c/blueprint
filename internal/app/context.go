@@ -14,14 +14,21 @@ type Context struct {
 	BuiltinFS fs.FS
 	LocalFS   fs.FS
 	Resolver  Resolver
+	Options   Options
+}
+
+// Options holds CLI flags and runtime options.
+type Options struct {
+	Verbose bool
 }
 
 // NewContext creates a new application context.
-func NewContext(cfg *config.Config) *Context {
+func NewContext(cfg *config.Config, opts Options) *Context {
 	return &Context{
 		Config:    cfg,
 		LocalFS:   os.DirFS(cfg.TemplatesDir),
 		BuiltinFS: templates.Templates,
+		Options:   opts,
 		Resolver: NewChainResolver(
 			&ResolverLocal{},
 			&ResolverBuiltin{},

@@ -15,6 +15,7 @@ func NewRootCmd() *cobra.Command {
 		CLIArgs:   map[string]string{},
 	}
 	var appCtx = new(app.Context)
+	var options = app.Options{}
 
 	cmd := &cobra.Command{
 		Use:           "blueprint",
@@ -28,7 +29,7 @@ func NewRootCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("load config: %w", err)
 			}
-			ctx := app.NewContext(cfg)
+			ctx := app.NewContext(cfg, options)
 			*appCtx = *ctx
 
 			return nil
@@ -42,7 +43,10 @@ func NewRootCmd() *cobra.Command {
 		fmt.Sprintf("config file (default is %s)", config.DefaultPathUsage()),
 	)
 
+	cmd.PersistentFlags().BoolVarP(&options.Verbose, "verbose", "v", false, "Enable verbose output")
+
 	cmd.AddCommand(NewInitCommand(appCtx))
+	cmd.AddCommand(NewVersionCommand(appCtx))
 
 	return cmd
 }
