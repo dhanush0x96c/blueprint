@@ -1,0 +1,35 @@
+name: python-api-fastapi
+type: project
+version: 1.0.0
+description: "A minimal FastAPI application"
+
+variables:
+  - name: app_name
+    prompt: "What is your application name?"
+    type: string
+    default: "FastAPI Application"
+    role: project_name
+
+  - name: description
+    prompt: "Describe your application:"
+    type: string
+    default: "A minimal FastAPI application"
+
+dependencies:
+  - "fastapi>=0.100.0"
+  - "uvicorn[standard]>=0.23.0"
+  - "pydantic>=2.0.0"
+  - "pydantic-settings>=2.0.0"
+
+files:
+  - src: "app/"
+    dest: "app/"
+  - src: "pyproject.toml.tmpl"
+    dest: "pyproject.toml"
+  - src: ".gitignore"
+    dest: ".gitignore"
+  - src: "README.md.tmpl"
+    dest: "README.md"
+
+post_init:
+  - command: "uv sync"

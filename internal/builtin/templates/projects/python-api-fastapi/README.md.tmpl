@@ -1,0 +1,17 @@
+# {{ .app_name }}
+
+{{ .description }}
+
+## Setup
+
+```bash
+uv sync
+```
+
+## Run
+
+```bash
+uv run uvicorn app.main:app --reload
+```
+
+API available at `http://localhost:8000` • Docs at `/docs`
