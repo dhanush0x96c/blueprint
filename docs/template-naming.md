@@ -3,6 +3,22 @@
 This document defines the official naming convention for all Blueprint templates. The goal is to ensure consistency,
 predictability, discoverability, and long‑term scalability across builtin and community templates.
 
+## Table of Contents
+
+- [Core Principles](#core-principles)
+- [General Format](#general-format)
+- [Archetypes](#archetypes)
+  - [Supported Archetypes](#supported-archetypes)
+- [Variants](#variants)
+  - [Subvariants](#subvariants)
+- [Language Positioning](#language-positioning)
+- [When to Omit Variants](#when-to-omit-variants)
+- [Components and Features](#components-and-features)
+- [Reserved Patterns](#reserved-patterns)
+- [Stability Rules](#stability-rules)
+- [Examples (Canonical v1 Set)](#examples-canonical-v1-set)
+- [Design Philosophy](#design-philosophy)
+
 ---
 
 ## Core Principles

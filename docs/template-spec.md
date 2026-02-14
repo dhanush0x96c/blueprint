@@ -9,6 +9,31 @@ Blueprint is built around a single core principle:
 
 Projects, features, and components share the exact same structure and are processed by the same engine.
 
+## Table of Contents
+
+- [1. Template File Location](#1-template-file-location)
+- [2. Top-Level Fields](#2-top-level-fields)
+  - [2.1 `name`](#21-name)
+  - [2.2 `type`](#22-type)
+  - [2.3 `version`](#23-version)
+  - [2.4 `description`](#24-description)
+- [3. Variables](#3-variables)
+  - [3.1 Variable Fields](#31-variable-fields)
+  - [3.2 Roles](#32-roles)
+- [4. Includes (Template Composition)](#4-includes-template-composition)
+  - [4.1 Fields](#41-fields)
+  - [4.2 Resolution Rules](#42-resolution-rules)
+- [5. Dependencies](#5-dependencies)
+- [6. Files](#6-files)
+  - [6.1 Fields](#61-fields)
+  - [6.2 File Processing](#62-file-processing)
+  - [6.3 Directory Processing](#63-directory-processing)
+  - [6.4 Rendering Context](#64-rendering-context)
+- [7. Post-Init Commands](#7-post-init-commands)
+- [8. Validation Rules](#8-validation-rules)
+- [9. Execution Pipeline](#9-execution-pipeline)
+- [10. Design Principles](#10-design-principles)
+
 ---
 
 ## 1. Template File Location
