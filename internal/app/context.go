@@ -20,6 +20,7 @@ type Context struct {
 // Options holds CLI flags and runtime options.
 type Options struct {
 	Verbose bool
+	DryRun  bool
 }
 
 // NewContext creates a new application context.

@@ -43,7 +43,20 @@ func NewRootCmd() *cobra.Command {
 		fmt.Sprintf("config file (default is %s)", config.DefaultPathUsage()),
 	)
 
-	cmd.PersistentFlags().BoolVarP(&options.Verbose, "verbose", "v", false, "Enable verbose output")
+	cmd.PersistentFlags().BoolVarP(
+		&options.Verbose,
+		"verbose",
+		"v",
+		false,
+		"Enable verbose output",
+	)
+
+	cmd.PersistentFlags().BoolVar(
+		&options.DryRun,
+		"dry-run",
+		false,
+		"Preview actions without writing files",
+	)
 
 	cmd.AddCommand(NewInitCommand(appCtx))
 	cmd.AddCommand(NewVersionCommand(appCtx))

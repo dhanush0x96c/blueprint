@@ -51,6 +51,7 @@ func NewInitCommand(appCtx *app.Context) *cobra.Command {
 				OutputDir:    outputDir,
 				Variables:    vars,
 				Interactive:  !yes,
+				DryRun:       appCtx.Options.DryRun,
 				Overwrite:    force,
 			})
 
