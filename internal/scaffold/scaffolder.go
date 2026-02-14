@@ -75,6 +75,13 @@ func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 			return nil, fmt.Errorf("failed to collect input: %w", err)
 		}
 
+		// Merge with pre-provided includes (pre-provided takes precedence)
+		if opts.EnabledIncludes != nil {
+			for name, enabled := range opts.EnabledIncludes {
+				enabledIncludes[name] = enabled
+			}
+		}
+
 		// Merge with pre-provided variables (pre-provided takes precedence)
 		if opts.Variables != nil {
 			providedCtx := template.NewTemplateContext(opts.Variables)

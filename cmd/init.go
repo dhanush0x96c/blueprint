@@ -13,9 +13,11 @@ import (
 
 func NewInitCommand(appCtx *app.Context) *cobra.Command {
 	var (
-		force    bool
-		yes      bool
-		varFlags []string
+		force        bool
+		yes          bool
+		varFlags     []string
+		includeFlags []string
+		excludeFlags []string
 	)
 
 	cmd := &cobra.Command{
@@ -36,6 +38,11 @@ func NewInitCommand(appCtx *app.Context) *cobra.Command {
 				return err
 			}
 
+			enabledIncludes, err := parseIncludeFlags(includeFlags, excludeFlags)
+			if err != nil {
+				return err
+			}
+
 			resolved, err := appCtx.Resolver.Resolve(appCtx, app.TemplateRef{
 				Name: templateName,
 				Type: template.TypeProject,
@@ -47,12 +54,13 @@ func NewInitCommand(appCtx *app.Context) *cobra.Command {
 
 			scaffolder := scaffold.NewScaffolder(resolved.FS)
 			result, err := scaffolder.Scaffold(scaffold.Options{
-				TemplatePath: resolved.Path,
-				OutputDir:    outputDir,
-				Variables:    vars,
-				Interactive:  !yes,
-				DryRun:       appCtx.Options.DryRun,
-				Overwrite:    force,
+				TemplatePath:    resolved.Path,
+				OutputDir:       outputDir,
+				Variables:       vars,
+				EnabledIncludes: enabledIncludes,
+				Interactive:     !yes,
+				DryRun:          appCtx.Options.DryRun,
+				Overwrite:       force,
 			})
 
 			if err != nil {
@@ -88,6 +96,20 @@ func NewInitCommand(appCtx *app.Context) *cobra.Command {
 		`Set a template variable (format: key=value)`,
 	)
 
+	cmd.Flags().StringArrayVar(
+		&includeFlags,
+		"include",
+		nil,
+		`Include a template feature (format: template-name)`,
+	)
+
+	cmd.Flags().StringArrayVar(
+		&excludeFlags,
+		"exclude",
+		nil,
+		`Exclude a template feature (format: template-name)`,
+	)
+
 	return cmd
 }
 
@@ -105,4 +127,33 @@ func parseVarFlags(flags []string) (map[string]any, error) {
 		vars[key] = value
 	}
 	return vars, nil
+}
+
+func parseIncludeFlags(includeFlags, excludeFlags []string) (map[string]bool, error) {
+	if len(includeFlags) == 0 && len(excludeFlags) == 0 {
+		return nil, nil
+	}
+
+	includes := make(map[string]bool)
+
+	// Process include flags
+	for _, name := range includeFlags {
+		if name == "" {
+			return nil, fmt.Errorf("invalid include flag: empty template name")
+		}
+		includes[name] = true
+	}
+
+	// Process exclude flags
+	for _, name := range excludeFlags {
+		if name == "" {
+			return nil, fmt.Errorf("invalid exclude flag: empty template name")
+		}
+		if _, exists := includes[name]; exists {
+			return nil, fmt.Errorf("template %q cannot be both included and excluded", name)
+		}
+		includes[name] = false
+	}
+
+	return includes, nil
 }
