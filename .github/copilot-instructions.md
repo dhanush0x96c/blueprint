@@ -487,4 +487,14 @@ files:
 
 ---
 
+## Development Workflow Preferences
+
+### Testing and Building
+- **Do NOT automatically run tests or builds after making changes** unless explicitly requested
+- Only run tests/builds when the user specifically asks (e.g., "run tests", "test this", "build the project")
+- When you need to verify syntax, use `go build` with minimal output or rely on the language server
+- Trust that changes are correct based on code review rather than always verifying with test runs
+
+---
+
 This file is intended to help Copilot and other AI tools understand the structure, architecture, and conventions of this repository for more effective assistance.
