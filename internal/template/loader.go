@@ -125,6 +125,40 @@ func (l *FileLoader) DiscoverByType(templateType Type) (map[string]string, error
 	return filtered, nil
 }
 
+// DiscoverAll finds all templates and returns the full Template structs.
+// If filterType is non-empty, only templates of that type are returned.
+func (l *FileLoader) DiscoverAll(filterType Type) ([]*Template, error) {
+	var templates []*Template
+
+	err := fs.WalkDir(l.fs, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() || d.Name() != FileName {
+			return nil
+		}
+
+		tmpl, err := l.Load(path)
+		if err != nil {
+			return nil
+		}
+
+		if filterType != "" && tmpl.Type != filterType {
+			return nil
+		}
+
+		templates = append(templates, tmpl)
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to discover templates: %w", err)
+	}
+
+	return templates, nil
+}
+
 // Exists checks if a template exists at the given path
 func (l *FileLoader) Exists(path string) bool {
 	templatePath := l.resolveTemplatePath(path)
