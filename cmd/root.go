@@ -58,8 +58,8 @@ func NewRootCmd() *cobra.Command {
 		"Preview actions without writing files",
 	)
 
-	cmd.AddCommand(NewInitCommand(appCtx))
-	cmd.AddCommand(NewVersionCommand(appCtx))
+	cmd.AddCommand(NewInitCmd(appCtx))
+	cmd.AddCommand(NewVersionCmd(appCtx))
 
 	return cmd
 }

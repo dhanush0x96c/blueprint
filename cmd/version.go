@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewVersionCommand(appCtx *app.Context) *cobra.Command {
+func NewVersionCmd(appCtx *app.Context) *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",

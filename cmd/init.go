@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewInitCommand(appCtx *app.Context) *cobra.Command {
+func NewInitCmd(appCtx *app.Context) *cobra.Command {
 	var (
 		force        bool
 		yes          bool
