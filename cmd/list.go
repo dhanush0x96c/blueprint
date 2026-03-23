@@ -23,7 +23,8 @@ func NewListCmd(appCtx *app.Context) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var filterType template.Type
-			if len(args) > 0 {
+			showType := len(args) == 0
+			if !showType {
 				t, err := ui.ValidTemplateTypeArg(args[0])
 				if err != nil {
 					return err
@@ -36,7 +37,7 @@ func NewListCmd(appCtx *app.Context) *cobra.Command {
 				return err
 			}
 
-			ui.RenderTemplateList(groups, short)
+			ui.RenderTemplateList(groups, short, showType)
 			return nil
 		},
 	}
@@ -98,6 +99,7 @@ func discoverFromFS(fsys fs.FS, filterType template.Type) ([]ui.TemplateListEntr
 	for _, tmpl := range templates {
 		entries = append(entries, ui.TemplateListEntry{
 			Name:        tmpl.Name,
+			Type:        tmpl.Type,
 			Description: tmpl.Description,
 		})
 	}

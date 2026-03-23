@@ -206,36 +206,24 @@ blueprint list components --source builtin
 Templates are grouped by source:
 
 ```
-BUILTIN TEMPLATES
-─────────────────────────────────────────────────────────────────────
-NAME                     DESCRIPTION
-─────────────────────────────────────────────────────────────────────
-go-cli                   Command-line application
-go-api                   HTTP API service
-node-api-express         Express.js REST API
+BUILTIN
+  go-cli                   Command-line application
+  go-api                   HTTP API service
+  node-api-express         Express.js REST API
 
-USER TEMPLATES
-─────────────────────────────────────────────────────────────────────
-NAME                     DESCRIPTION
-─────────────────────────────────────────────────────────────────────
-company-api              Company API template
+USER
+  company-api              Company API template
 ```
 
 For features:
 ```
-BUILTIN TEMPLATES
-─────────────────────────────────────────────────────────────────────
-NAME                     DESCRIPTION
-─────────────────────────────────────────────────────────────────────
-features/go/testing      Testing framework setup
-features/go/logging      Structured logging setup
-features/go/config       Configuration management
+BUILTIN
+  features/go/testing      Testing framework setup
+  features/go/logging      Structured logging setup
+  features/go/config       Configuration management
 
-USER TEMPLATES
-─────────────────────────────────────────────────────────────────────
-NAME                     DESCRIPTION
-─────────────────────────────────────────────────────────────────────
-features/auth            Authentication module
+USER
+  features/auth            Authentication module
 ```
 
 **Short Output:**

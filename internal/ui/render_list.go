@@ -7,11 +7,13 @@ import (
 	"strings"
 
 	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/fatih/color"
 )
 
 // TemplateListEntry represents a single template in the list output.
 type TemplateListEntry struct {
 	Name        string
+	Type        template.Type
 	Description string
 }
 
@@ -23,11 +25,19 @@ type TemplateListGroup struct {
 
 const (
 	listNameWidth = 25
-	listSeparator = "─────────────────────────────────────────────────────────────────────"
+	listTypeWidth = 12
+)
+
+var (
+	sourceColor = color.New(color.FgHiWhite, color.Bold)
+	nameColor   = color.New(color.FgBlue, color.Bold)
+	typeColor   = color.New(color.FgCyan)
+	descColor   = color.New(color.Faint)
 )
 
 // RenderTemplateList renders grouped template listings to stdout.
-func RenderTemplateList(groups []TemplateListGroup, short bool) {
+// When showType is true, the TYPE column is displayed in table output.
+func RenderTemplateList(groups []TemplateListGroup, short, showType bool) {
 	w := os.Stdout
 
 	if short {
@@ -35,7 +45,7 @@ func RenderTemplateList(groups []TemplateListGroup, short bool) {
 		return
 	}
 
-	renderTable(w, groups)
+	renderTable(w, groups, showType)
 }
 
 func renderShort(w io.Writer, groups []TemplateListGroup) {
@@ -46,7 +56,7 @@ func renderShort(w io.Writer, groups []TemplateListGroup) {
 	}
 }
 
-func renderTable(w io.Writer, groups []TemplateListGroup) {
+func renderTable(w io.Writer, groups []TemplateListGroup, showType bool) {
 	for i, g := range groups {
 		if len(g.Entries) == 0 {
 			continue
@@ -56,13 +66,15 @@ func renderTable(w io.Writer, groups []TemplateListGroup) {
 			writeln(w, "")
 		}
 
-		write(w, "%s TEMPLATES\n", g.Source)
-		writeln(w, listSeparator)
-		write(w, "%-*s %s\n", listNameWidth, "NAME", "DESCRIPTION")
-		writeln(w, listSeparator)
+		sourceColor.Fprintln(w, g.Source)
 
 		for _, e := range g.Entries {
-			write(w, "%-*s %s\n", listNameWidth, e.Name, e.Description)
+			fmt.Fprint(w, "  ")
+			nameColor.Fprintf(w, "%-*s ", listNameWidth, e.Name)
+			if showType {
+				typeColor.Fprintf(w, "%-*s ", listTypeWidth, e.Type)
+			}
+			descColor.Fprintln(w, e.Description)
 		}
 	}
 }
