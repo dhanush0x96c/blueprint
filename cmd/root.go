@@ -70,5 +70,5 @@ func Execute() int {
 		ui.RenderError(err)
 		return ui.ExitCode(err)
 	}
-	return 0
+	return ui.ExitSuccess
 }
