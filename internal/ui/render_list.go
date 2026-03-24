@@ -24,8 +24,7 @@ type TemplateListGroup struct {
 }
 
 const (
-	listNameWidth = 25
-	listTypeWidth = 12
+	columnPadding = 2
 )
 
 var (
@@ -57,6 +56,8 @@ func renderShort(w io.Writer, groups []TemplateListGroup) {
 }
 
 func renderTable(w io.Writer, groups []TemplateListGroup, showType bool) {
+	nameWidth, typeWidth := calculateColumnWidths(groups)
+
 	for i, g := range groups {
 		if len(g.Entries) == 0 {
 			continue
@@ -70,13 +71,29 @@ func renderTable(w io.Writer, groups []TemplateListGroup, showType bool) {
 
 		for _, e := range g.Entries {
 			fmt.Fprint(w, "  ")
-			nameColor.Fprintf(w, "%-*s ", listNameWidth, e.Name)
+			nameColor.Fprintf(w, "%-*s ", nameWidth, e.Name)
 			if showType {
-				typeColor.Fprintf(w, "%-*s ", listTypeWidth, e.Type)
+				typeColor.Fprintf(w, "%-*s ", typeWidth, e.Type)
 			}
 			descColor.Fprintln(w, e.Description)
 		}
 	}
+}
+
+func calculateColumnWidths(groups []TemplateListGroup) (nameWidth, typeWidth int) {
+	for _, g := range groups {
+		for _, e := range g.Entries {
+			if len(e.Name) > nameWidth {
+				nameWidth = len(e.Name)
+			}
+			if len(e.Type) > typeWidth {
+				typeWidth = len(e.Type)
+			}
+		}
+	}
+	nameWidth += columnPadding
+	typeWidth += columnPadding
+	return
 }
 
 // ValidTemplateTypeArg checks if the given argument is a valid template type filter.
