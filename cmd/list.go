@@ -104,7 +104,16 @@ func discoverFromFS(fsys fs.FS, filterType template.Type) ([]ui.TemplateListEntr
 		})
 	}
 
+	typeOrder := map[template.Type]int{
+		template.TypeProject:   0,
+		template.TypeFeature:   1,
+		template.TypeComponent: 2,
+	}
+
 	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].Type != entries[j].Type {
+			return typeOrder[entries[i].Type] < typeOrder[entries[j].Type]
+		}
 		return entries[i].Name < entries[j].Name
 	})
 

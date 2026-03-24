@@ -29,10 +29,15 @@ const (
 )
 
 var (
-	sourceColor = color.New(color.FgHiWhite, color.Bold)
+	sourceColor = color.New(color.FgHiWhite, color.Bold, color.Underline)
 	nameColor   = color.New(color.FgBlue, color.Bold)
-	typeColor   = color.New(color.FgCyan)
 	descColor   = color.New(color.Faint)
+
+	typeColors = map[template.Type]*color.Color{
+		template.TypeProject:   color.New(color.FgYellow),
+		template.TypeFeature:   color.New(color.FgCyan),
+		template.TypeComponent: color.New(color.FgMagenta),
+	}
 )
 
 // RenderTemplateList renders grouped template listings to stdout.
@@ -74,7 +79,7 @@ func renderTable(w io.Writer, groups []TemplateListGroup, showType bool) {
 			fmt.Fprint(w, "  ")
 			nameColor.Fprintf(w, "%-*s ", nameWidth, e.Name)
 			if showType {
-				typeColor.Fprintf(w, "%-*s ", typeWidth, e.Type)
+				colorForType(e.Type).Fprintf(w, "%-*s ", typeWidth, e.Type)
 			}
 			descColor.Fprintln(w, e.Description)
 		}
@@ -95,6 +100,13 @@ func calculateColumnWidths(groups []TemplateListGroup) (nameWidth, typeWidth int
 	nameWidth += columnPadding
 	typeWidth += columnPadding
 	return
+}
+
+func colorForType(t template.Type) *color.Color {
+	if c, ok := typeColors[t]; ok {
+		return c
+	}
+	return color.New(color.FgWhite)
 }
 
 // ValidTemplateTypeArg checks if the given argument is a valid template type filter.
