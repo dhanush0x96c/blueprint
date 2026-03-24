@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/dhanush0x96c/blueprint/internal/app"
 	"github.com/dhanush0x96c/blueprint/internal/template"
 	"github.com/fatih/color"
 )
@@ -106,6 +107,6 @@ func ValidTemplateTypeArg(arg string) (template.Type, error) {
 	case "components":
 		return template.TypeComponent, nil
 	default:
-		return "", fmt.Errorf("invalid template type %q: expected projects, features, or components", arg)
+		return "", app.ErrInvalidTemplateType
 	}
 }

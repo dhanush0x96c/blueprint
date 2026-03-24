@@ -14,3 +14,12 @@ func renderTemplateNotFound(err error) {
 	writeln(w, "Hint:")
 	writeln(w, "  Run `blueprint list` to see available templates.")
 }
+
+func renderInvalidTemplateType(err error) {
+	w := os.Stderr
+
+	writeln(w, "✗ Invalid template type")
+	writeln(w, "")
+	writeln(w, "Hint:")
+	writeln(w, "  Valid types are: projects, features, components")
+}

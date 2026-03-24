@@ -12,6 +12,8 @@ func RenderError(err error) {
 	switch {
 	case errors.Is(err, app.ErrTemplateNotFound):
 		renderTemplateNotFound(err)
+	case errors.Is(err, app.ErrInvalidTemplateType):
+		renderInvalidTemplateType(err)
 	default:
 		renderDefault(err)
 	}
