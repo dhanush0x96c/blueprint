@@ -1,9 +1,21 @@
 package app
 
-import "errors"
+import "fmt"
 
-// ErrTemplateNotFound is returned when a template is not found.
-var ErrTemplateNotFound = errors.New("template not found")
+// TemplateNotFoundError is returned when a template is not found.
+type TemplateNotFoundError struct {
+	Name string
+}
 
-// ErrInvalidTemplateType is returned when an invalid template type is provided.
-var ErrInvalidTemplateType = errors.New("invalid template type")
+func (e *TemplateNotFoundError) Error() string {
+	return fmt.Sprintf("template not found: %s", e.Name)
+}
+
+// InvalidTemplateTypeError is returned when an invalid template type is provided.
+type InvalidTemplateTypeError struct {
+	Type string
+}
+
+func (e *InvalidTemplateTypeError) Error() string {
+	return fmt.Sprintf("invalid template type: %s", e.Type)
+}

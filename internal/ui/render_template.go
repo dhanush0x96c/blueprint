@@ -2,23 +2,23 @@ package ui
 
 import (
 	"os"
+
+	"github.com/dhanush0x96c/blueprint/internal/app"
 )
 
-func renderTemplateNotFound(err error) {
+func renderTemplateNotFound(err *app.TemplateNotFoundError) {
 	w := os.Stderr
 
-	writeln(w, "✗ Template not found")
-	writeln(w, "")
-	writeln(w, "The requested template does not exist.")
+	write(w, "✗ Template not found: %s\n", err.Name)
 	writeln(w, "")
 	writeln(w, "Hint:")
 	writeln(w, "  Run `blueprint list` to see available templates.")
 }
 
-func renderInvalidTemplateType(err error) {
+func renderInvalidTemplateType(err *app.InvalidTemplateTypeError) {
 	w := os.Stderr
 
-	writeln(w, "✗ Invalid template type")
+	write(w, "✗ Invalid template type: %s\n", err.Type)
 	writeln(w, "")
 	writeln(w, "Hint:")
 	writeln(w, "  Valid types are: projects, features, components")

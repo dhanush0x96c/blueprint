@@ -107,6 +107,6 @@ func ValidTemplateTypeArg(arg string) (template.Type, error) {
 	case "components":
 		return template.TypeComponent, nil
 	default:
-		return "", app.ErrInvalidTemplateType
+		return "", &app.InvalidTemplateTypeError{Type: arg}
 	}
 }

@@ -26,5 +26,5 @@ func (c *ChainResolver) Resolve(ctx *Context, ref TemplateRef) (*ResolvedTemplat
 		return nil, lastErr
 	}
 
-	return nil, ErrTemplateNotFound
+	return nil, &TemplateNotFoundError{Name: ref.Name}
 }

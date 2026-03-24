@@ -8,8 +8,10 @@ import (
 
 // ExitCode returns an exit code for a given error.
 func ExitCode(err error) int {
+	var templateNotFoundErr *app.TemplateNotFoundError
+
 	switch {
-	case errors.Is(err, app.ErrTemplateNotFound):
+	case errors.As(err, &templateNotFoundErr):
 		return 2
 	default:
 		return 1

@@ -11,7 +11,7 @@ func ResolveFromFS(rootFS fs.FS, ref TemplateRef) (*ResolvedTemplate, error) {
 
 	_, err := fs.Stat(rootFS, templatePath)
 	if err != nil {
-		return nil, ErrTemplateNotFound
+		return nil, &TemplateNotFoundError{Name: ref.Name}
 	}
 
 	return &ResolvedTemplate{

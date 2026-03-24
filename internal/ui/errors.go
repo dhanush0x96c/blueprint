@@ -9,11 +9,14 @@ import (
 
 // RenderError dispatches the given error to the appropriate renderer based on its type.
 func RenderError(err error) {
+	var templateNotFoundErr *app.TemplateNotFoundError
+	var invalidTemplateTypeErr *app.InvalidTemplateTypeError
+
 	switch {
-	case errors.Is(err, app.ErrTemplateNotFound):
-		renderTemplateNotFound(err)
-	case errors.Is(err, app.ErrInvalidTemplateType):
-		renderInvalidTemplateType(err)
+	case errors.As(err, &templateNotFoundErr):
+		renderTemplateNotFound(templateNotFoundErr)
+	case errors.As(err, &invalidTemplateTypeErr):
+		renderInvalidTemplateType(invalidTemplateTypeErr)
 	default:
 		renderDefault(err)
 	}
