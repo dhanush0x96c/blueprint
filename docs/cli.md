@@ -178,8 +178,9 @@ blueprint list [projects|features|components] [flags]
 **Flags:**
 
 ```
---source string          Filter by source: builtin, user (default: all)
---short                  Show compact output (name only)
+--source, -s string      Filter by source: builtin, user (default: all)
+--quiet, -q              Show compact output (name only)
+--tags, -t stringArray   Filter by tags (comma-separated). Matches templates that contain ANY of the specified tags.
 ```
 
 **Examples:**
@@ -194,11 +195,14 @@ blueprint list components --source builtin
 # List user-defined features
 blueprint list features --source user
 
-# Short output for scripting
-blueprint list projects --short
+# Quiet output for scripting
+blueprint list projects --quiet
 
-# Combine subcommand and filters
-blueprint list components --source builtin
+# Filter by tags
+blueprint list features --tags testing,database
+
+# Combine filters
+blueprint list components --source builtin --tags docker,ci-cd
 ```
 
 **Output Format:**
@@ -226,10 +230,10 @@ USER
   features/auth            Authentication module
 ```
 
-**Short Output:**
+**Quiet Output:**
 
 ```bash
-$ blueprint list projects --short
+$ blueprint list projects --quiet
 go-cli
 go-api
 node-api-express
