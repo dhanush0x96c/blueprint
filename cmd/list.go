@@ -14,7 +14,7 @@ import (
 func NewListCmd(appCtx *app.Context) *cobra.Command {
 	var (
 		source string
-		short  bool
+		quiet  bool
 		tags   []string
 	)
 
@@ -39,28 +39,31 @@ func NewListCmd(appCtx *app.Context) *cobra.Command {
 				return err
 			}
 
-			ui.RenderTemplateList(groups, short, showType)
+			ui.RenderTemplateList(groups, quiet, showType)
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(
+	cmd.Flags().StringVarP(
 		&source,
 		"source",
+		"s",
 		"",
 		"Filter by source: builtin, user (default: all)",
 	)
 
-	cmd.Flags().BoolVar(
-		&short,
-		"short",
+	cmd.Flags().BoolVarP(
+		&quiet,
+		"quiet",
+		"q",
 		false,
 		"Show compact output (name only)",
 	)
 
-	cmd.Flags().StringSliceVar(
+	cmd.Flags().StringSliceVarP(
 		&tags,
 		"tags",
+		"t",
 		nil,
 		"Filter by tags (comma-separated). Matches templates that contain ANY of the specified tags.",
 	)
