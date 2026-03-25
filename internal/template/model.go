@@ -50,6 +50,7 @@ type Template struct {
 	Type         Type       `yaml:"type" validate:"required,oneof=project feature component"`
 	Version      string     `yaml:"version" validate:"required"`
 	Description  string     `yaml:"description"`
+	Tags         []string   `yaml:"tags,omitempty"`
 	Variables    []Variable `yaml:"variables,omitempty" validate:"dive"`
 	Includes     []Include  `yaml:"includes,omitempty" validate:"dive"`
 	Dependencies []string   `yaml:"dependencies,omitempty"`

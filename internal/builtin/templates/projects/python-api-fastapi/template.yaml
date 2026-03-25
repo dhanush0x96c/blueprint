@@ -2,6 +2,7 @@ name: python-api-fastapi
 type: project
 version: 1.0.0
 description: "A minimal FastAPI application"
+tags: ["python", "api", "fastapi", "web"]
 
 variables:
   - name: app_name

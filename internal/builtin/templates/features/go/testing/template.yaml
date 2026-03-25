@@ -2,6 +2,7 @@ name: go-testing
 type: feature
 version: 0.0.0
 description: "Go testing setup with optional testify"
+tags: ["go", "testing", "testify"]
 
 variables:
   - name: use_testify

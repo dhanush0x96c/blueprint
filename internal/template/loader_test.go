@@ -116,3 +116,45 @@ func TestLoader_DiscoverByType(t *testing.T) {
 	require.Len(t, features, 1)
 	require.Equal(t, "testing", features["features/testing"])
 }
+
+func TestLoader_LoadTags(t *testing.T) {
+	base := t.TempDir()
+	loader := NewLoader(os.DirFS(base))
+
+	const templateWithTags = `
+name: tagged-template
+type: project
+version: "1.0.0"
+description: "Template with tags"
+tags: ["go", "cli", "testing"]
+`
+
+	const templateWithoutTags = `
+name: no-tags
+type: feature
+version: "1.0.0"
+description: "Template without tags"
+`
+
+	t.Run("loads tags when present", func(t *testing.T) {
+		dir := filepath.Join(base, "with-tags")
+		writeTemplate(t, dir, templateWithTags)
+
+		tmpl, err := loader.Load("with-tags")
+		require.NoError(t, err)
+		require.Equal(t, "tagged-template", tmpl.Name)
+		require.Len(t, tmpl.Tags, 3)
+		require.Equal(t, []string{"go", "cli", "testing"}, tmpl.Tags)
+	})
+
+	t.Run("handles missing tags", func(t *testing.T) {
+		dir := filepath.Join(base, "without-tags")
+		writeTemplate(t, dir, templateWithoutTags)
+
+		tmpl, err := loader.Load("without-tags")
+		require.NoError(t, err)
+		require.Equal(t, "no-tags", tmpl.Name)
+		require.Nil(t, tmpl.Tags)
+	})
+}
+

@@ -2,6 +2,7 @@ name: go-cli
 type: project
 version: 0.0.0
 description: "Go CLI application with Cobra"
+tags: ["go", "cli", "cobra"]
 
 variables:
   - name: app_name

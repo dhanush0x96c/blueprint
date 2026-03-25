@@ -17,6 +17,7 @@ Projects, features, and components share the exact same structure and are proces
   - [2.2 `type`](#22-type)
   - [2.3 `version`](#23-version)
   - [2.4 `description`](#24-description)
+  - [2.5 `tags`](#25-tags)
 - [3. Variables](#3-variables)
   - [3.1 Variable Fields](#31-variable-fields)
   - [3.2 Roles](#32-roles)
@@ -64,6 +65,7 @@ name: go-cli
 type: project|feature|component
 version: 1.0.0
 description: "Short human-readable description"
+tags: ["web", "api", "cli"]  # optional
 ```
 
 ### 2.1 `name`
@@ -92,6 +94,13 @@ All types are processed identically by the engine.
 ### 2.4 `description`
 
 - Short explanation displayed in `blueprint list` and `blueprint search`.
+
+### 2.5 `tags`
+
+- **Optional** list of tags for categorization and filtering.
+- Lowercase, kebab-case recommended.
+- Used for discovery and search.
+- Examples: `["web", "api", "cli", "microservice", "testing"]`
 
 ---
 

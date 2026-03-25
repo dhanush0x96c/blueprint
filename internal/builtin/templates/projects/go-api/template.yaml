@@ -2,6 +2,7 @@ name: go-api
 type: project
 version: 0.0.0
 description: "Go HTTP API using net/http"
+tags: ["go", "api", "net/http", "web"]
 
 variables:
   - name: app_name
