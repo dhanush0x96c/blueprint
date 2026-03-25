@@ -3,6 +3,7 @@ package cmd
 import (
 	"io/fs"
 	"sort"
+	"strings"
 
 	"github.com/dhanush0x96c/blueprint/internal/app"
 	"github.com/dhanush0x96c/blueprint/internal/template"
@@ -14,12 +15,13 @@ func NewListCmd(appCtx *app.Context) *cobra.Command {
 	var (
 		source string
 		short  bool
+		tags   []string
 	)
 
 	cmd := &cobra.Command{
 		Use:   "list [projects|features|components]",
 		Short: "List available templates",
-		Long:  "List available templates, optionally filtered by type and source.",
+		Long:  "List available templates, optionally filtered by type, source, and tags.",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var filterType template.Type
@@ -32,7 +34,7 @@ func NewListCmd(appCtx *app.Context) *cobra.Command {
 				filterType = t
 			}
 
-			groups, err := discoverTemplates(appCtx, filterType, source)
+			groups, err := discoverTemplates(appCtx, filterType, source, tags)
 			if err != nil {
 				return err
 			}
@@ -56,14 +58,26 @@ func NewListCmd(appCtx *app.Context) *cobra.Command {
 		"Show compact output (name only)",
 	)
 
+	cmd.Flags().StringSliceVar(
+		&tags,
+		"tags",
+		nil,
+		"Filter by tags (comma-separated). Matches templates that contain ANY of the specified tags.",
+	)
+
 	return cmd
 }
 
-func discoverTemplates(appCtx *app.Context, filterType template.Type, source string) ([]ui.TemplateListGroup, error) {
+func discoverTemplates(
+	appCtx *app.Context,
+	filterType template.Type,
+	source string,
+	tags []string,
+) ([]ui.TemplateListGroup, error) {
 	var groups []ui.TemplateListGroup
 
 	if source == "" || source == "builtin" {
-		entries, err := discoverFromFS(appCtx.BuiltinFS, filterType)
+		entries, err := discoverFromFS(appCtx.BuiltinFS, filterType, tags)
 		if err != nil {
 			return nil, err
 		}
@@ -74,7 +88,7 @@ func discoverTemplates(appCtx *app.Context, filterType template.Type, source str
 	}
 
 	if source == "" || source == "user" {
-		entries, err := discoverFromFS(appCtx.LocalFS, filterType)
+		entries, err := discoverFromFS(appCtx.LocalFS, filterType, tags)
 		if err != nil {
 			// User template dir may not exist; treat as empty
 			entries = nil
@@ -88,7 +102,7 @@ func discoverTemplates(appCtx *app.Context, filterType template.Type, source str
 	return groups, nil
 }
 
-func discoverFromFS(fsys fs.FS, filterType template.Type) ([]ui.TemplateListEntry, error) {
+func discoverFromFS(fsys fs.FS, filterType template.Type, filterTags []string) ([]ui.TemplateListEntry, error) {
 	loader := template.NewLoader(fsys)
 	templates, err := loader.DiscoverAll(filterType)
 	if err != nil {
@@ -97,6 +111,10 @@ func discoverFromFS(fsys fs.FS, filterType template.Type) ([]ui.TemplateListEntr
 
 	entries := make([]ui.TemplateListEntry, 0, len(templates))
 	for _, tmpl := range templates {
+		if len(filterTags) > 0 && !matchesAnyTag(tmpl, filterTags) {
+			continue
+		}
+
 		entries = append(entries, ui.TemplateListEntry{
 			Name:        tmpl.Name,
 			Type:        tmpl.Type,
@@ -118,4 +136,24 @@ func discoverFromFS(fsys fs.FS, filterType template.Type) ([]ui.TemplateListEntr
 	})
 
 	return entries, nil
+}
+
+// matchesAnyTag returns true if the template has at least one of the filter tags
+func matchesAnyTag(tmpl *template.Template, filterTags []string) bool {
+	if len(tmpl.Tags) == 0 {
+		return false
+	}
+
+	tagSet := make(map[string]struct{}, len(tmpl.Tags))
+	for _, t := range tmpl.Tags {
+		tagSet[strings.ToLower(t)] = struct{}{}
+	}
+
+	for _, ft := range filterTags {
+		if _, ok := tagSet[strings.ToLower(ft)]; ok {
+			return true
+		}
+	}
+
+	return false
 }
