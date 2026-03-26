@@ -91,7 +91,7 @@ func (t *Template) ProjectName(ctx *Context) (string, error) {
 // Variable represents a user-configurable variable with an interactive prompt
 type Variable struct {
 	Name    string       `yaml:"name" validate:"required"`
-	Prompt  string       `yaml:"prompt"`
+	Prompt  string       `yaml:"prompt" validate:"required"`
 	Type    VariableType `yaml:"type" validate:"required,oneof=string int bool select multiselect"`
 	Role    VariableRole `yaml:"role,omitempty"`
 	Default any          `yaml:"default,omitempty"`

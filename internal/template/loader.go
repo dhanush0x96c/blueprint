@@ -5,7 +5,6 @@ import (
 	"io/fs"
 	"path"
 
-	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v3"
 )
 
@@ -16,14 +15,14 @@ const (
 // FileLoader handles loading templates from the filesystem
 type FileLoader struct {
 	fs       fs.FS
-	validate *validator.Validate
+	validate *Validator
 }
 
 // NewLoader creates a new template loader with the given base directory
 func NewLoader(fs fs.FS) *FileLoader {
 	return &FileLoader{
 		fs:       fs,
-		validate: validator.New(),
+		validate: NewValidator(),
 	}
 }
 
@@ -49,7 +48,7 @@ func (l *FileLoader) Load(pth string) (*Template, error) {
 
 	tmplDir := path.Dir(templatePath)
 
-	if err := l.validate.Struct(&tmpl); err != nil {
+	if err := l.validate.Validate(&tmpl); err != nil {
 		return nil, fmt.Errorf("template validation failed: %w", err)
 	}
 
