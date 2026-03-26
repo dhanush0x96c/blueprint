@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/fs"
-	"path/filepath"
+	"path"
 	"strings"
 	"text/template"
 )
@@ -101,8 +101,8 @@ func (r *Renderer) processDirectory(srcDir, destDir string, ctx *Context, result
 	}
 
 	for _, entry := range entries {
-		srcPath := filepath.Join(srcDir, entry.Name())
-		destPath := filepath.Join(destDir, entry.Name())
+		srcPath := path.Join(srcDir, entry.Name())
+		destPath := path.Join(destDir, entry.Name())
 
 		if err := r.processPath(srcPath, destPath, ctx, results); err != nil {
 			return err
@@ -174,10 +174,10 @@ func (r *Renderer) defaultFuncMap() template.FuncMap {
 		"join":      strings.Join,
 
 		// Path manipulation
-		"base":     filepath.Base,
-		"dir":      filepath.Dir,
-		"ext":      filepath.Ext,
-		"joinPath": filepath.Join,
+		"base":     path.Base,
+		"dir":      path.Dir,
+		"ext":      path.Ext,
+		"joinPath": path.Join,
 
 		// Type conversions
 		"toString": toString,

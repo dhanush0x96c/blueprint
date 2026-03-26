@@ -3,7 +3,7 @@ package template
 import (
 	"fmt"
 	"io/fs"
-	"path/filepath"
+	"path"
 
 	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v3"
@@ -34,8 +34,8 @@ func NewLoader(fs fs.FS) *FileLoader {
 //
 // The loaded template is validated, and all file source paths
 // (Template.Files[].Src) are resolved relative to the template directory.
-func (l *FileLoader) Load(path string) (*Template, error) {
-	templatePath := l.resolveTemplatePath(path)
+func (l *FileLoader) Load(pth string) (*Template, error) {
+	templatePath := l.resolveTemplatePath(pth)
 
 	data, err := fs.ReadFile(l.fs, templatePath)
 	if err != nil {
@@ -47,14 +47,14 @@ func (l *FileLoader) Load(path string) (*Template, error) {
 		return nil, fmt.Errorf("failed to parse template YAML: %w", err)
 	}
 
-	tmplDir := filepath.Dir(templatePath)
+	tmplDir := path.Dir(templatePath)
 
 	if err := l.validate.Struct(&tmpl); err != nil {
 		return nil, fmt.Errorf("template validation failed: %w", err)
 	}
 
 	for i := range tmpl.Files {
-		tmpl.Files[i].Src = filepath.Join(
+		tmpl.Files[i].Src = path.Join(
 			tmplDir, tmpl.Files[i].Src)
 	}
 
@@ -63,7 +63,7 @@ func (l *FileLoader) Load(path string) (*Template, error) {
 
 // LoadFromDir loads a template from a directory containing template.yaml
 func (l *FileLoader) LoadFromDir(dir string) (*Template, error) {
-	templatePath := filepath.Join(dir, FileName)
+	templatePath := path.Join(dir, FileName)
 	return l.Load(templatePath)
 }
 
@@ -72,7 +72,7 @@ func (l *FileLoader) LoadFromDir(dir string) (*Template, error) {
 func (l *FileLoader) Discover() (map[string]string, error) {
 	templates := make(map[string]string)
 
-	err := fs.WalkDir(l.fs, ".", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(l.fs, ".", func(pth string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -85,12 +85,12 @@ func (l *FileLoader) Discover() (map[string]string, error) {
 			return nil
 		}
 
-		tmpl, err := l.Load(path)
+		tmpl, err := l.Load(pth)
 		if err != nil {
 			return nil
 		}
 
-		relDir := filepath.Dir(path)
+		relDir := path.Dir(pth)
 
 		templates[relDir] = tmpl.Name
 		return nil
@@ -111,14 +111,14 @@ func (l *FileLoader) DiscoverByType(templateType Type) (map[string]string, error
 	}
 
 	filtered := make(map[string]string)
-	for path, name := range allTemplates {
-		tmpl, err := l.LoadFromDir(path)
+	for pth, name := range allTemplates {
+		tmpl, err := l.LoadFromDir(pth)
 		if err != nil {
 			continue
 		}
 
 		if tmpl.Type == templateType {
-			filtered[path] = name
+			filtered[pth] = name
 		}
 	}
 
@@ -130,7 +130,7 @@ func (l *FileLoader) DiscoverByType(templateType Type) (map[string]string, error
 func (l *FileLoader) DiscoverAll(filterType Type) ([]*Template, error) {
 	var templates []*Template
 
-	err := fs.WalkDir(l.fs, ".", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(l.fs, ".", func(pth string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -139,7 +139,7 @@ func (l *FileLoader) DiscoverAll(filterType Type) ([]*Template, error) {
 			return nil
 		}
 
-		tmpl, err := l.Load(path)
+		tmpl, err := l.Load(pth)
 		if err != nil {
 			return nil
 		}
@@ -160,17 +160,17 @@ func (l *FileLoader) DiscoverAll(filterType Type) ([]*Template, error) {
 }
 
 // Exists checks if a template exists at the given path
-func (l *FileLoader) Exists(path string) bool {
-	templatePath := l.resolveTemplatePath(path)
+func (l *FileLoader) Exists(p string) bool {
+	templatePath := l.resolveTemplatePath(p)
 	_, err := fs.Stat(l.fs, templatePath)
 	return err == nil
 }
 
 // resolveTemplatePath resolves a template path to an absolute path
-func (l *FileLoader) resolveTemplatePath(path string) string {
-	if filepath.Base(path) == FileName {
-		return path
+func (l *FileLoader) resolveTemplatePath(pth string) string {
+	if path.Base(pth) == FileName {
+		return pth
 	}
 
-	return filepath.Join(path, FileName)
+	return path.Join(pth, FileName)
 }
