@@ -1,5 +1,9 @@
 package template
 
+import (
+	"errors"
+)
+
 // ChainResolver is a resolver that chains multiple resolvers together.
 type ChainResolver struct {
 	resolvers []Resolver
@@ -12,19 +16,18 @@ func NewChainResolver(resolvers ...Resolver) *ChainResolver {
 
 // Resolve resolves a template reference using the chain of resolvers.
 func (c *ChainResolver) Resolve(ref TemplateRef) (*ResolvedTemplate, error) {
-	var lastErr error
+	if len(c.resolvers) == 0 {
+		return nil, &TemplateNotFoundError{Name: ref.Name}
+	}
 
+	var errs []error
 	for _, r := range c.resolvers {
-		path, err := r.Resolve(ref)
+		resolved, err := r.Resolve(ref)
 		if err == nil {
-			return path, nil
+			return resolved, nil
 		}
-		lastErr = err
+		errs = append(errs, err)
 	}
 
-	if lastErr != nil {
-		return nil, lastErr
-	}
-
-	return nil, &TemplateNotFoundError{Name: ref.Name}
+	return nil, errors.Join(errs...)
 }
