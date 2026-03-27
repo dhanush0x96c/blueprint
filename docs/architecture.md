@@ -77,16 +77,17 @@ blueprint/
 ├── internal/
 │   ├── app/                         # Runtime context & dependency injection
 │   │   ├── context.go               # App context (config, FS, resolver, options)
-│   │   ├── resolver.go              # Resolver interface definition
-│   │   ├── resolver_chain.go        # Chain-of-responsibility resolver
-│   │   ├── resolver_fs.go           # Filesystem resolvers (local + builtin)
-│   │   └── errors.go               # App-level error types
+│   │   └── errors.go                # App-level error types
 │   ├── template/                    # Template processing engine
 │   │   ├── engine.go                # Orchestrator (load + compose + render)
 │   │   ├── model.go                 # Data structures (Template, Variable, File, etc.)
 │   │   ├── loader.go                # YAML parsing, validation, discovery
 │   │   ├── composer.go              # Include resolution, merging, cycle detection
-│   │   └── renderer.go              # Variable substitution via text/template
+│   │   ├── renderer.go              # Variable substitution via text/template
+│   │   ├── resolver.go              # Resolver interface and resolved template types
+│   │   ├── resolver_chain.go        # Chain-of-responsibility resolver
+│   │   ├── resolver_fs.go           # Filesystem-backed resolvers
+│   │   └── errors.go                # Template resolution errors
 │   ├── prompt/                      # Interactive input collection
 │   │   ├── engine.go                # TUI prompt rendering (charmbracelet/huh)
 │   │   └── collector.go             # Variable/include collection & validation
@@ -137,21 +138,21 @@ resolution.
 | Type               | Purpose                                                           |
 | ------------------ | ----------------------------------------------------------------- |
 | `Context`          | Holds Config, BuiltinFS, LocalFS, Resolver, and Options           |
-| `Resolver`         | Interface: `Resolve(ctx, ref) → (ResolvedTemplate, error)`        |
-| `ChainResolver`    | Tries resolvers in sequence until one succeeds                    |
-| `ResolverLocal`    | Resolves from user template directory (`~/.config/blueprint/templates`) |
-| `ResolverBuiltin`  | Resolves from embedded filesystem (`go:embed`)                    |
-| `ResolvedTemplate` | Result tuple: filesystem handle + path within that filesystem     |
-| `TemplateRef`      | Template reference: name + type                                   |
+| `Options`          | Runtime flags such as verbose and dry-run                         |
 
 ### 3.3 `internal/template`
 
-The core template processing engine. Handles loading, composition, and rendering.
+The core template processing engine. Handles resolution, loading, composition, and rendering.
 
 **Key types:**
 
 | Type         | Purpose                                                              |
 | ------------ | -------------------------------------------------------------------- |
+| `Resolver`   | Interface: `Resolve(ref) → (ResolvedTemplate, error)`                 |
+| `ChainResolver` | Tries resolvers in sequence until one succeeds                    |
+| `FSResolver` | Resolves from a provided filesystem                                  |
+| `ResolvedTemplate` | Result tuple: filesystem handle + path within that filesystem |
+| `TemplateRef` | Template reference: name + type                                     |
 | `Template`   | Full template definition (name, type, version, variables, includes, dependencies, files, post_init) |
 | `Variable`   | User-input variable (name, prompt, type, role, default, options)      |
 | `Include`    | Reference to another template with enabled_by_default flag           |
@@ -226,10 +227,10 @@ Build-time version information injected via `ldflags`: version string, git commi
          │
 2. Load config (defaults → file → env → CLI)
          │
-3. Build app.Context (config, BuiltinFS, LocalFS, ChainResolver)
+3. Build app.Context (config, BuiltinFS, LocalFS, template resolver)
          │
 4. Resolve template reference
-   ChainResolver: ResolverLocal → ResolverBuiltin
+   template.ChainResolver: local FS → builtin FS
    Returns: ResolvedTemplate{FS, Path}
          │
 5. Scaffolder.Scaffold(options)
@@ -291,7 +292,7 @@ Build-time version information injected via `ldflags`: version string, git commi
 
 ```go
 type Resolver interface {
-    Resolve(ctx *Context, ref TemplateRef) (*ResolvedTemplate, error)
+    Resolve(ref TemplateRef) (*ResolvedTemplate, error)
 }
 ```
 
@@ -307,23 +308,23 @@ returned.
 Default chain order:
 
 ```
-ResolverLocal → ResolverBuiltin
+local FSResolver → builtin FSResolver
 ```
 
 This allows user templates to override builtin templates by name.
 
 ### 5.3 FS Resolvers
 
-Both `ResolverLocal` and `ResolverBuiltin` share the same resolution logic (`ResolveFromFS`):
+Each `FSResolver` uses the same resolution logic (`ResolveFromFS`):
 
 1. Construct path based on template type directories (`projects/`, `features/`)
 2. Look for `template.yaml` at that path in the given `fs.FS`
 3. Return the filesystem handle + resolved path
 
-The difference is the underlying filesystem:
+The difference is the underlying filesystem instance passed in:
 
-- **ResolverLocal** — Uses `os.DirFS` pointing to the user's template directory
-- **ResolverBuiltin** — Uses the `embed.FS` compiled into the binary
+- **Local FSResolver** — Uses `os.DirFS` pointing to the user's template directory
+- **Builtin FSResolver** — Uses the `embed.FS` compiled into the binary
 
 ---
 

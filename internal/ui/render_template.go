@@ -4,9 +4,10 @@ import (
 	"os"
 
 	"github.com/dhanush0x96c/blueprint/internal/app"
+	"github.com/dhanush0x96c/blueprint/internal/template"
 )
 
-func renderTemplateNotFound(err *app.TemplateNotFoundError) {
+func renderTemplateNotFound(err *template.TemplateNotFoundError) {
 	w := os.Stderr
 
 	write(w, "✗ Template not found: %s\n", err.Name)

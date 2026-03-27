@@ -43,7 +43,7 @@ func NewInitCmd(appCtx *app.Context) *cobra.Command {
 				return err
 			}
 
-			resolved, err := appCtx.Resolver.Resolve(appCtx, app.TemplateRef{
+			resolved, err := appCtx.Resolver.Resolve(template.TemplateRef{
 				Name: templateName,
 				Type: template.TypeProject,
 			})

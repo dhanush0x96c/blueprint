@@ -1,4 +1,4 @@
-package app
+package template
 
 // ChainResolver is a resolver that chains multiple resolvers together.
 type ChainResolver struct {
@@ -11,11 +11,11 @@ func NewChainResolver(resolvers ...Resolver) *ChainResolver {
 }
 
 // Resolve resolves a template reference using the chain of resolvers.
-func (c *ChainResolver) Resolve(ctx *Context, ref TemplateRef) (*ResolvedTemplate, error) {
+func (c *ChainResolver) Resolve(ref TemplateRef) (*ResolvedTemplate, error) {
 	var lastErr error
 
 	for _, r := range c.resolvers {
-		path, err := r.Resolve(ctx, ref)
+		path, err := r.Resolve(ref)
 		if err == nil {
 			return path, nil
 		}

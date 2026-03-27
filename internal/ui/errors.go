@@ -5,11 +5,12 @@ import (
 	"os"
 
 	"github.com/dhanush0x96c/blueprint/internal/app"
+	"github.com/dhanush0x96c/blueprint/internal/template"
 )
 
 // RenderError dispatches the given error to the appropriate renderer based on its type.
 func RenderError(err error) {
-	var templateNotFoundErr *app.TemplateNotFoundError
+	var templateNotFoundErr *template.TemplateNotFoundError
 	var invalidTemplateTypeErr *app.InvalidTemplateTypeError
 
 	switch {

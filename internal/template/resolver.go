@@ -1,15 +1,11 @@
-package app
+package template
 
-import (
-	"io/fs"
-
-	"github.com/dhanush0x96c/blueprint/internal/template"
-)
+import "io/fs"
 
 // TemplateRef represents a reference to a template.
 type TemplateRef struct {
 	Name string
-	Type template.Type
+	Type Type
 }
 
 // ResolvedTemplate represents a resolved template.
@@ -18,7 +14,7 @@ type ResolvedTemplate struct {
 	Path string
 }
 
-// Resolver is the interface for resolving templates.
+// Resolver resolves a template reference.
 type Resolver interface {
-	Resolve(ctx *Context, ref TemplateRef) (*ResolvedTemplate, error)
+	Resolve(ref TemplateRef) (*ResolvedTemplate, error)
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/dhanush0x96c/blueprint/internal/app"
+	"github.com/dhanush0x96c/blueprint/internal/template"
 )
 
 // Exit codes as documented in docs/cli.md
@@ -19,7 +20,7 @@ const (
 
 // ExitCode returns an exit code for a given error.
 func ExitCode(err error) int {
-	var templateNotFoundErr *app.TemplateNotFoundError
+	var templateNotFoundErr *template.TemplateNotFoundError
 	var invalidTemplateTypeErr *app.InvalidTemplateTypeError
 
 	switch {
