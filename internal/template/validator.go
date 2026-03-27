@@ -32,6 +32,10 @@ func (v *Validator) Validate(tmpl *Template) error {
 	// Semantic validation
 	errs = append(errs, v.validateVariables(tmpl.Variables)...)
 
+	if err := v.validateProjectNameRole(tmpl); err != nil {
+		errs = append(errs, err)
+	}
+
 	if len(errs) == 0 {
 		return nil
 	}
@@ -60,4 +64,29 @@ func (v *Validator) validateVariables(vars []Variable) []error {
 	}
 
 	return errs
+}
+
+// validateProjectNameRole validates that project templates have exactly one
+// variable with role: project_name.
+func (v *Validator) validateProjectNameRole(tmpl *Template) error {
+	// Only project templates require a project_name role
+	if tmpl.Type != TypeProject {
+		return nil
+	}
+
+	count := 0
+	for _, variable := range tmpl.Variables {
+		if variable.Role == RoleProjectName {
+			count++
+		}
+	}
+
+	switch count {
+	case 0:
+		return fmt.Errorf("project template %q must have exactly one variable with role %q", tmpl.Name, RoleProjectName)
+	case 1:
+		return nil
+	default:
+		return fmt.Errorf("project template %q has %d variables with role %q, but must have exactly one", tmpl.Name, count, RoleProjectName)
+	}
 }

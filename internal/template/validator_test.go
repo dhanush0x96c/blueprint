@@ -16,7 +16,7 @@ func TestValidator_Validate(t *testing.T) {
 			Type:    TypeProject,
 			Version: "1.0.0",
 			Variables: []Variable{
-				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString},
+				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
 			},
 		}
 
@@ -59,7 +59,7 @@ func TestValidator_ValidateVariables(t *testing.T) {
 			Type:    TypeProject,
 			Version: "1.0.0",
 			Variables: []Variable{
-				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString},
+				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
 				{Name: "app_name", Prompt: "Another?", Type: VariableTypeString},
 			},
 		}
@@ -121,6 +121,7 @@ func TestValidator_ValidateVariables(t *testing.T) {
 			Type:    TypeProject,
 			Version: "1.0.0",
 			Variables: []Variable{
+				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
 				{Name: "choice", Prompt: "Choose?", Type: VariableTypeSelect, Options: []string{"a", "b"}},
 			},
 		}
@@ -135,7 +136,7 @@ func TestValidator_ValidateVariables(t *testing.T) {
 			Type:    TypeProject,
 			Version: "1.0.0",
 			Variables: []Variable{
-				{Name: "var1", Prompt: "", Type: VariableTypeString},       // missing prompt
+				{Name: "var1", Prompt: "", Type: VariableTypeString, Role: RoleProjectName},
 				{Name: "var2", Prompt: "Pick?", Type: VariableTypeSelect},  // missing options
 				{Name: "var2", Prompt: "Again?", Type: VariableTypeString}, // duplicate
 			},
@@ -147,5 +148,100 @@ func TestValidator_ValidateVariables(t *testing.T) {
 		assert.Contains(t, err.Error(), "Prompt")
 		assert.Contains(t, err.Error(), "options required")
 		assert.Contains(t, err.Error(), "duplicate variable name")
+	})
+}
+
+func TestValidator_ValidateProjectNameRole(t *testing.T) {
+	v := NewValidator()
+
+	t.Run("project template with valid project_name role passes", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "my-project",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
+				{Name: "description", Prompt: "Description?", Type: VariableTypeString},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.NoError(t, err)
+	})
+
+	t.Run("project template with zero project_name roles fails", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "my-project",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString},
+				{Name: "description", Prompt: "Description?", Type: VariableTypeString},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "must have exactly one variable with role")
+		assert.Contains(t, err.Error(), "project_name")
+	})
+
+	t.Run("project template with no variables fails", func(t *testing.T) {
+		tmpl := &Template{
+			Name:      "my-project",
+			Type:      TypeProject,
+			Version:   "1.0.0",
+			Variables: []Variable{},
+		}
+
+		err := v.Validate(tmpl)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "must have exactly one variable with role")
+		assert.Contains(t, err.Error(), "project_name")
+	})
+
+	t.Run("project template with multiple project_name roles fails", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "my-project",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
+				{Name: "project", Prompt: "Project?", Type: VariableTypeString, Role: RoleProjectName},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "has 2 variables with role")
+		assert.Contains(t, err.Error(), "must have exactly one")
+	})
+
+	t.Run("feature template without project_name role passes", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "testing-feature",
+			Type:    TypeFeature,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "use_testify", Prompt: "Use testify?", Type: VariableTypeBool},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.NoError(t, err)
+	})
+
+	t.Run("component template without project_name role passes", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "auth-component",
+			Type:    TypeComponent,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "provider", Prompt: "Auth provider?", Type: VariableTypeString},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.NoError(t, err)
 	})
 }

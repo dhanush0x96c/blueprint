@@ -24,6 +24,11 @@ name: go-cli
 type: project
 version: "1.0.0"
 description: "Go CLI project"
+variables:
+  - name: app_name
+    prompt: "App name?"
+    type: string
+    role: project_name
 `
 
 const validFeatureTemplate = `
@@ -127,6 +132,11 @@ type: project
 version: "1.0.0"
 description: "Template with tags"
 tags: ["go", "cli", "testing"]
+variables:
+  - name: app_name
+    prompt: "App name?"
+    type: string
+    role: project_name
 `
 
 	const templateWithoutTags = `
