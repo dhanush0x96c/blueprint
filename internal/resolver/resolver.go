@@ -1,11 +1,15 @@
-package template
+package resolver
 
-import "io/fs"
+import (
+	"io/fs"
+
+	"github.com/dhanush0x96c/blueprint/internal/template"
+)
 
 // TemplateRef represents a reference to a template.
 type TemplateRef struct {
 	Name string
-	Type Type
+	Type template.Type
 }
 
 // ResolvedTemplate represents a resolved template.
@@ -21,6 +25,6 @@ type Resolver interface {
 
 // Discoverer discovers templates available from a source.
 type Discoverer interface {
-	Discover() (map[string]*Template, error)
+	Discover() (map[string]*template.Template, error)
 	Exists(path string) bool
 }

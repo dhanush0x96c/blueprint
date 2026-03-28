@@ -1,26 +1,27 @@
-package template
+package resolver
 
 import (
 	"fmt"
 	"io/fs"
 	"path"
+
+	"github.com/dhanush0x96c/blueprint/internal/template"
 )
 
 // FSResolver resolves templates from a file system.
 type FSResolver struct {
 	rootFS fs.FS
-	loader *FileLoader
+	loader *template.FileLoader
 }
 
 // NewFSResolver creates a resolver backed by the provided file system.
 func NewFSResolver(rootFS fs.FS) *FSResolver {
-	return &FSResolver{rootFS: rootFS, loader: NewLoader(rootFS)}
+	return &FSResolver{rootFS: rootFS, loader: template.NewLoader(rootFS)}
 }
 
 // Resolve resolves templates from the configured file system.
 func (r *FSResolver) Resolve(ref TemplateRef) (*ResolvedTemplate, error) {
 	templates, err := r.Discover()
-
 	if err != nil {
 		return nil, err
 	}
@@ -34,19 +35,19 @@ func (r *FSResolver) Resolve(ref TemplateRef) (*ResolvedTemplate, error) {
 		}
 	}
 
-	return nil, &TemplateNotFoundError{Name: ref.Name}
+	return nil, &template.TemplateNotFoundError{Name: ref.Name}
 }
 
 // Discover finds all templates and returns them keyed by template directory path.
-func (r *FSResolver) Discover() (map[string]*Template, error) {
-	templates := make(map[string]*Template)
+func (r *FSResolver) Discover() (map[string]*template.Template, error) {
+	templates := make(map[string]*template.Template)
 
 	err := fs.WalkDir(r.rootFS, ".", func(pth string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if d.IsDir() || d.Name() != FileName {
+		if d.IsDir() || d.Name() != template.FileName {
 			return nil
 		}
 
@@ -69,4 +70,12 @@ func (r *FSResolver) Discover() (map[string]*Template, error) {
 func (r *FSResolver) Exists(templatePath string) bool {
 	_, err := fs.Stat(r.rootFS, resolveTemplatePath(templatePath))
 	return err == nil
+}
+
+func resolveTemplatePath(pth string) string {
+	if path.Base(pth) == template.FileName {
+		return pth
+	}
+
+	return path.Join(pth, template.FileName)
 }

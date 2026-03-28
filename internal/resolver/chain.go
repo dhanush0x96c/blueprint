@@ -1,7 +1,9 @@
-package template
+package resolver
 
 import (
 	"errors"
+
+	"github.com/dhanush0x96c/blueprint/internal/template"
 )
 
 // ChainResolver is a resolver that chains multiple resolvers together.
@@ -17,7 +19,7 @@ func NewChainResolver(resolvers ...Resolver) *ChainResolver {
 // Resolve resolves a template reference using the chain of resolvers.
 func (c *ChainResolver) Resolve(ref TemplateRef) (*ResolvedTemplate, error) {
 	if len(c.resolvers) == 0 {
-		return nil, &TemplateNotFoundError{Name: ref.Name}
+		return nil, &template.TemplateNotFoundError{Name: ref.Name}
 	}
 
 	var errs []error

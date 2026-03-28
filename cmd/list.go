@@ -7,6 +7,7 @@ import (
 
 	"github.com/dhanush0x96c/blueprint/internal/app"
 	"github.com/dhanush0x96c/blueprint/internal/cli"
+	"github.com/dhanush0x96c/blueprint/internal/resolver"
 	"github.com/dhanush0x96c/blueprint/internal/template"
 	"github.com/dhanush0x96c/blueprint/internal/ui"
 	"github.com/spf13/cobra"
@@ -107,7 +108,7 @@ func discoverTemplates(
 }
 
 func discoverFromFS(fsys fs.FS, filterType template.Type, filterTags []string) ([]ui.TemplateListEntry, error) {
-	resolver := template.NewFSResolver(fsys)
+	resolver := resolver.NewFSResolver(fsys)
 	templates, err := resolver.Discover()
 	if err != nil {
 		return nil, err

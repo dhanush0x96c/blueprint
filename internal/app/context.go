@@ -6,7 +6,7 @@ import (
 
 	"github.com/dhanush0x96c/blueprint/internal/builtin/templates"
 	"github.com/dhanush0x96c/blueprint/internal/config"
-	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/resolver"
 )
 
 // Context holds runtime dependencies for the application.
@@ -14,7 +14,7 @@ type Context struct {
 	Config    *config.Config
 	BuiltinFS fs.FS
 	LocalFS   fs.FS
-	Resolver  template.Resolver
+	Resolver  resolver.Resolver
 	Options   Options
 }
 
@@ -34,9 +34,9 @@ func NewContext(cfg *config.Config, opts Options) *Context {
 		LocalFS:   localFS,
 		BuiltinFS: builtinFS,
 		Options:   opts,
-		Resolver: template.NewChainResolver(
-			template.NewFSResolver(localFS),
-			template.NewFSResolver(builtinFS),
+		Resolver: resolver.NewChainResolver(
+			resolver.NewFSResolver(localFS),
+			resolver.NewFSResolver(builtinFS),
 		),
 	}
 }

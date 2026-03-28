@@ -7,25 +7,21 @@ import (
 
 // Engine is the unified template engine that orchestrates loading, composing, and rendering
 type Engine struct {
-	discoverer Discoverer
-	loader     *FileLoader
-	composer   *Composer
-	renderer   *Renderer
+	loader   *FileLoader
+	composer *Composer
+	renderer *Renderer
 }
 
 // NewEngine creates a new template engine with the given template base directory
 func NewEngine(templatesFS fs.FS) *Engine {
 	loader := NewLoader(templatesFS)
-	discoverer := NewFSResolver(templatesFS)
-
 	composer := NewComposer(loader)
 	renderer := NewRenderer(templatesFS)
 
 	return &Engine{
-		discoverer: discoverer,
-		loader:     loader,
-		composer:   composer,
-		renderer:   renderer,
+		loader:   loader,
+		composer: composer,
+		renderer: renderer,
 	}
 }
 
@@ -100,11 +96,6 @@ func (e *Engine) ProcessTemplateWithIncludes(templatePath string, ctx *Context, 
 	}
 
 	return rendered, nil
-}
-
-// TemplateExists checks if a template exists at the given path
-func (e *Engine) TemplateExists(path string) bool {
-	return e.discoverer.Exists(path)
 }
 
 // GetComposedTemplate returns the fully composed template without rendering

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/dhanush0x96c/blueprint/internal/app"
+	"github.com/dhanush0x96c/blueprint/internal/resolver"
 	"github.com/dhanush0x96c/blueprint/internal/scaffold"
 	"github.com/dhanush0x96c/blueprint/internal/template"
 	"github.com/dhanush0x96c/blueprint/internal/ui"
@@ -43,7 +44,7 @@ func NewInitCmd(appCtx *app.Context) *cobra.Command {
 				return err
 			}
 
-			resolved, err := appCtx.Resolver.Resolve(template.TemplateRef{
+			resolved, err := appCtx.Resolver.Resolve(resolver.TemplateRef{
 				Name: templateName,
 				Type: template.TypeProject,
 			})
