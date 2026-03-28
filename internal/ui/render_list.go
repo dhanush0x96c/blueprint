@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
-	"github.com/dhanush0x96c/blueprint/internal/app"
 	"github.com/dhanush0x96c/blueprint/internal/template"
 	"github.com/fatih/color"
 )
@@ -107,18 +105,4 @@ func colorForType(t template.Type) *color.Color {
 		return c
 	}
 	return color.New(color.FgWhite)
-}
-
-// ValidTemplateTypeArg checks if the given argument is a valid template type filter.
-func ValidTemplateTypeArg(arg string) (template.Type, error) {
-	switch strings.ToLower(arg) {
-	case "projects":
-		return template.TypeProject, nil
-	case "features":
-		return template.TypeFeature, nil
-	case "components":
-		return template.TypeComponent, nil
-	default:
-		return "", &app.InvalidTemplateTypeError{Type: arg}
-	}
 }

@@ -3,7 +3,7 @@ package ui
 import (
 	"os"
 
-	"github.com/dhanush0x96c/blueprint/internal/app"
+	"github.com/dhanush0x96c/blueprint/internal/cli"
 	"github.com/dhanush0x96c/blueprint/internal/template"
 )
 
@@ -16,7 +16,7 @@ func renderTemplateNotFound(err *template.TemplateNotFoundError) {
 	writeln(w, "  Run `blueprint list` to see available templates.")
 }
 
-func renderInvalidTemplateType(err *app.InvalidTemplateTypeError) {
+func renderInvalidTemplateType(err *cli.InvalidTemplateTypeError) {
 	w := os.Stderr
 
 	write(w, "✗ Invalid template type: %s\n", err.Type)

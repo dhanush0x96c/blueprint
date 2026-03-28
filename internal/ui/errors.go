@@ -4,14 +4,14 @@ import (
 	"errors"
 	"os"
 
-	"github.com/dhanush0x96c/blueprint/internal/app"
+	"github.com/dhanush0x96c/blueprint/internal/cli"
 	"github.com/dhanush0x96c/blueprint/internal/template"
 )
 
 // RenderError dispatches the given error to the appropriate renderer based on its type.
 func RenderError(err error) {
 	var templateNotFoundErr *template.TemplateNotFoundError
-	var invalidTemplateTypeErr *app.InvalidTemplateTypeError
+	var invalidTemplateTypeErr *cli.InvalidTemplateTypeError
 
 	switch {
 	case errors.As(err, &templateNotFoundErr):

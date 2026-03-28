@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/dhanush0x96c/blueprint/internal/app"
+	"github.com/dhanush0x96c/blueprint/internal/cli"
 	"github.com/dhanush0x96c/blueprint/internal/template"
 	"github.com/dhanush0x96c/blueprint/internal/ui"
 	"github.com/spf13/cobra"
@@ -27,7 +28,7 @@ func NewListCmd(appCtx *app.Context) *cobra.Command {
 			var filterType template.Type
 			showType := len(args) == 0
 			if !showType {
-				t, err := ui.ValidTemplateTypeArg(args[0])
+				t, err := cli.ValidateTemplateTypeArg(args[0])
 				if err != nil {
 					return err
 				}

@@ -3,7 +3,7 @@ package ui
 import (
 	"errors"
 
-	"github.com/dhanush0x96c/blueprint/internal/app"
+	"github.com/dhanush0x96c/blueprint/internal/cli"
 	"github.com/dhanush0x96c/blueprint/internal/template"
 )
 
@@ -21,7 +21,7 @@ const (
 // ExitCode returns an exit code for a given error.
 func ExitCode(err error) int {
 	var templateNotFoundErr *template.TemplateNotFoundError
-	var invalidTemplateTypeErr *app.InvalidTemplateTypeError
+	var invalidTemplateTypeErr *cli.InvalidTemplateTypeError
 
 	switch {
 	case errors.As(err, &templateNotFoundErr):
