@@ -6,40 +6,40 @@ import (
 	"path"
 )
 
-// ResolveFromFS resolves a template from a given file system.
-func ResolveFromFS(rootFS fs.FS, ref TemplateRef) (*ResolvedTemplate, error) {
-	templatePath := path.Join(ref.Type.Folder(), ref.Name)
-
-	_, err := fs.Stat(rootFS, templatePath)
-	if err != nil {
-		return nil, &TemplateNotFoundError{Name: ref.Name}
-	}
-
-	return &ResolvedTemplate{
-		FS:   rootFS,
-		Path: templatePath,
-	}, nil
-}
-
 // FSResolver resolves templates from a file system.
 type FSResolver struct {
 	rootFS fs.FS
+	loader *FileLoader
 }
 
 // NewFSResolver creates a resolver backed by the provided file system.
 func NewFSResolver(rootFS fs.FS) *FSResolver {
-	return &FSResolver{rootFS: rootFS}
+	return &FSResolver{rootFS: rootFS, loader: NewLoader(rootFS)}
 }
 
 // Resolve resolves templates from the configured file system.
 func (r *FSResolver) Resolve(ref TemplateRef) (*ResolvedTemplate, error) {
-	return ResolveFromFS(r.rootFS, ref)
+	templates, err := r.Discover()
+
+	if err != nil {
+		return nil, err
+	}
+
+	for path, tmpl := range templates {
+		if tmpl.Name == ref.Name && tmpl.Type == ref.Type {
+			return &ResolvedTemplate{
+				Path: path,
+				FS:   r.rootFS,
+			}, nil
+		}
+	}
+
+	return nil, &TemplateNotFoundError{Name: ref.Name}
 }
 
 // Discover finds all templates and returns them keyed by template directory path.
 func (r *FSResolver) Discover() (map[string]*Template, error) {
 	templates := make(map[string]*Template)
-	loader := NewLoader(r.rootFS)
 
 	err := fs.WalkDir(r.rootFS, ".", func(pth string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -50,7 +50,7 @@ func (r *FSResolver) Discover() (map[string]*Template, error) {
 			return nil
 		}
 
-		tmpl, err := loader.Load(pth)
+		tmpl, err := r.loader.Load(pth)
 		if err != nil {
 			return nil
 		}
