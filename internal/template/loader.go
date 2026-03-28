@@ -34,7 +34,7 @@ func NewLoader(fs fs.FS) *FileLoader {
 // The loaded template is validated, and all file source paths
 // (Template.Files[].Src) are resolved relative to the template directory.
 func (l *FileLoader) Load(pth string) (*Template, error) {
-	templatePath := l.resolveTemplatePath(pth)
+	templatePath := resolveTemplatePath(pth)
 
 	data, err := fs.ReadFile(l.fs, templatePath)
 	if err != nil {
@@ -66,107 +66,8 @@ func (l *FileLoader) LoadFromDir(dir string) (*Template, error) {
 	return l.Load(templatePath)
 }
 
-// Discover finds all available templates in the base directory
-// Returns a map of template path -> template name
-func (l *FileLoader) Discover() (map[string]string, error) {
-	templates := make(map[string]string)
-
-	err := fs.WalkDir(l.fs, ".", func(pth string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if d.IsDir() {
-			return nil
-		}
-
-		if d.Name() != FileName {
-			return nil
-		}
-
-		tmpl, err := l.Load(pth)
-		if err != nil {
-			return nil
-		}
-
-		relDir := path.Dir(pth)
-
-		templates[relDir] = tmpl.Name
-		return nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to discover templates: %w", err)
-	}
-
-	return templates, nil
-}
-
-// DiscoverByType finds all templates of a specific type
-func (l *FileLoader) DiscoverByType(templateType Type) (map[string]string, error) {
-	allTemplates, err := l.Discover()
-	if err != nil {
-		return nil, err
-	}
-
-	filtered := make(map[string]string)
-	for pth, name := range allTemplates {
-		tmpl, err := l.LoadFromDir(pth)
-		if err != nil {
-			continue
-		}
-
-		if tmpl.Type == templateType {
-			filtered[pth] = name
-		}
-	}
-
-	return filtered, nil
-}
-
-// DiscoverAll finds all templates and returns the full Template structs.
-// If filterType is non-empty, only templates of that type are returned.
-func (l *FileLoader) DiscoverAll(filterType Type) ([]*Template, error) {
-	var templates []*Template
-
-	err := fs.WalkDir(l.fs, ".", func(pth string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if d.IsDir() || d.Name() != FileName {
-			return nil
-		}
-
-		tmpl, err := l.Load(pth)
-		if err != nil {
-			return nil
-		}
-
-		if filterType != "" && tmpl.Type != filterType {
-			return nil
-		}
-
-		templates = append(templates, tmpl)
-		return nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to discover templates: %w", err)
-	}
-
-	return templates, nil
-}
-
-// Exists checks if a template exists at the given path
-func (l *FileLoader) Exists(p string) bool {
-	templatePath := l.resolveTemplatePath(p)
-	_, err := fs.Stat(l.fs, templatePath)
-	return err == nil
-}
-
-// resolveTemplatePath resolves a template path to an absolute path
-func (l *FileLoader) resolveTemplatePath(pth string) string {
+// resolveTemplatePath resolves a template path to a template manifest path.
+func resolveTemplatePath(pth string) string {
 	if path.Base(pth) == FileName {
 		return pth
 	}

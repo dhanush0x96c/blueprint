@@ -18,3 +18,9 @@ type ResolvedTemplate struct {
 type Resolver interface {
 	Resolve(ref TemplateRef) (*ResolvedTemplate, error)
 }
+
+// Discoverer discovers templates available from a source.
+type Discoverer interface {
+	Discover() (map[string]*Template, error)
+	Exists(path string) bool
+}

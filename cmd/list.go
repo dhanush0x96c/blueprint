@@ -106,14 +106,18 @@ func discoverTemplates(
 }
 
 func discoverFromFS(fsys fs.FS, filterType template.Type, filterTags []string) ([]ui.TemplateListEntry, error) {
-	loader := template.NewLoader(fsys)
-	templates, err := loader.DiscoverAll(filterType)
+	resolver := template.NewFSResolver(fsys)
+	templates, err := resolver.Discover()
 	if err != nil {
 		return nil, err
 	}
 
 	entries := make([]ui.TemplateListEntry, 0, len(templates))
 	for _, tmpl := range templates {
+		if filterType != "" && tmpl.Type != filterType {
+			continue
+		}
+
 		if len(filterTags) > 0 && !matchesAnyTag(tmpl, filterTags) {
 			continue
 		}

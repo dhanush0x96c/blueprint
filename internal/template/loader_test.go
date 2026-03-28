@@ -76,52 +76,6 @@ func TestLoader_Load(t *testing.T) {
 	})
 }
 
-func TestLoader_Exists(t *testing.T) {
-	base := t.TempDir()
-	loader := NewLoader(os.DirFS(base))
-
-	templateName := "exists"
-	dir := filepath.Join(base, templateName)
-	writeTemplate(t, dir, validProjectTemplate)
-
-	require.True(t, loader.Exists(templateName))
-	require.False(t, loader.Exists("missing"))
-}
-
-func TestLoader_Discover(t *testing.T) {
-	base := t.TempDir()
-	loader := NewLoader(os.DirFS(base))
-
-	writeTemplate(t, filepath.Join(base, "projects", "go-cli"), validProjectTemplate)
-	writeTemplate(t, filepath.Join(base, "features", "testing"), validFeatureTemplate)
-	writeTemplate(t, filepath.Join(base, "broken"), invalidTemplate)
-
-	templates, err := loader.Discover()
-	require.NoError(t, err)
-
-	require.Len(t, templates, 2)
-	require.Equal(t, "go-cli", templates["projects/go-cli"])
-	require.Equal(t, "testing", templates["features/testing"])
-}
-
-func TestLoader_DiscoverByType(t *testing.T) {
-	base := t.TempDir()
-	loader := NewLoader(os.DirFS(base))
-
-	writeTemplate(t, filepath.Join(base, "projects", "go-cli"), validProjectTemplate)
-	writeTemplate(t, filepath.Join(base, "features", "testing"), validFeatureTemplate)
-
-	projects, err := loader.DiscoverByType(TypeProject)
-	require.NoError(t, err)
-	require.Len(t, projects, 1)
-	require.Equal(t, "go-cli", projects["projects/go-cli"])
-
-	features, err := loader.DiscoverByType(TypeFeature)
-	require.NoError(t, err)
-	require.Len(t, features, 1)
-	require.Equal(t, "testing", features["features/testing"])
-}
-
 func TestLoader_LoadTags(t *testing.T) {
 	base := t.TempDir()
 	loader := NewLoader(os.DirFS(base))
@@ -167,4 +121,3 @@ description: "Template without tags"
 		require.Nil(t, tmpl.Tags)
 	})
 }
-
