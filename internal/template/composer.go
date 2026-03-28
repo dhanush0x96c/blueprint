@@ -35,6 +35,7 @@ func (c *Composer) composeWithPath(tmpl *Template, path []string) (*Template, er
 		Type:         tmpl.Type,
 		Version:      tmpl.Version,
 		Description:  tmpl.Description,
+		Tags:         make([]string, len(tmpl.Tags)),
 		Variables:    make([]Variable, len(tmpl.Variables)),
 		Includes:     make([]Include, 0),
 		Dependencies: make([]string, len(tmpl.Dependencies)),
@@ -42,6 +43,7 @@ func (c *Composer) composeWithPath(tmpl *Template, path []string) (*Template, er
 		PostInit:     make([]PostInit, len(tmpl.PostInit)),
 	}
 
+	copy(composed.Tags, tmpl.Tags)
 	copy(composed.Variables, tmpl.Variables)
 	copy(composed.Dependencies, tmpl.Dependencies)
 	copy(composed.Files, tmpl.Files)
@@ -148,6 +150,7 @@ func (c *Composer) ComposeWithEnabledIncludes(tmpl *Template, enabledIncludes ma
 		Type:         tmpl.Type,
 		Version:      tmpl.Version,
 		Description:  tmpl.Description,
+		Tags:         append([]string(nil), tmpl.Tags...),
 		Variables:    tmpl.Variables,
 		Includes:     make([]Include, 0),
 		Dependencies: tmpl.Dependencies,

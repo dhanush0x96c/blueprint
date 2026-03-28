@@ -32,6 +32,7 @@ func TestCompose_SingleTemplate_NoIncludes(t *testing.T) {
 
 	tmpl := &Template{
 		Name: "base",
+		Tags: []string{"backend", "api"},
 		Variables: []Variable{
 			{Name: "project_name"},
 		},
@@ -42,6 +43,7 @@ func TestCompose_SingleTemplate_NoIncludes(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "base", out.Name)
+	assert.Equal(t, []string{"backend", "api"}, out.Tags)
 	assert.Len(t, out.Variables, 1)
 	assert.Equal(t, "project_name", out.Variables[0].Name)
 	assert.Equal(t, []string{"go@1.22"}, out.Dependencies)
@@ -127,6 +129,7 @@ func TestCompose_CircularDependencyDetected(t *testing.T) {
 func TestComposeWithEnabledIncludes_FiltersCorrectly(t *testing.T) {
 	base := &Template{
 		Name: "base",
+		Tags: []string{"service"},
 		Includes: []Include{
 			{Template: "logging", EnabledByDefault: true},
 			{Template: "metrics", EnabledByDefault: false},
@@ -152,6 +155,7 @@ func TestComposeWithEnabledIncludes_FiltersCorrectly(t *testing.T) {
 
 	// nothing material to assert on fields; success implies both included
 	assert.Equal(t, "base", out.Name)
+	assert.Equal(t, []string{"service"}, out.Tags)
 }
 
 func TestGetAllIncludes_Transitive(t *testing.T) {
