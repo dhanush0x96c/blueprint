@@ -22,12 +22,12 @@ func NewComposer(resolver Resolver, loader Loader) *Composer {
 // Compose resolves all includes for a template and returns a fully merged template
 // It recursively loads included templates and merges them into a single template
 func (c *Composer) Compose(tmpl *Template) (*Template, error) {
-	return c.composeWithPath(tmpl, []string{tmpl.Name})
+	return c.doCompose(tmpl, []string{tmpl.Name})
 }
 
-// composeWithPath is the internal recursive composition function that tracks the path
+// doCompose is the internal recursive composition function that tracks the stack
 // to detect circular dependencies
-func (c *Composer) composeWithPath(tmpl *Template, path []string) (*Template, error) {
+func (c *Composer) doCompose(tmpl *Template, stack []string) (*Template, error) {
 	composed := &Template{
 		Name:         tmpl.Name,
 		Type:         tmpl.Type,
@@ -48,8 +48,8 @@ func (c *Composer) composeWithPath(tmpl *Template, path []string) (*Template, er
 	copy(composed.PostInit, tmpl.PostInit)
 
 	for _, inc := range tmpl.Includes {
-		if slices.Contains(path, inc.Name) {
-			return nil, fmt.Errorf("circular dependency detected: %v -> %s", path, inc.Name)
+		if slices.Contains(stack, inc.Name) {
+			return nil, fmt.Errorf("circular dependency detected: %v -> %s", stack, inc.Name)
 		}
 
 		ref := TemplateRef{
@@ -66,8 +66,8 @@ func (c *Composer) composeWithPath(tmpl *Template, path []string) (*Template, er
 			return nil, fmt.Errorf("failed to load included template '%s' from %s: %w", inc.Name, resolved.Path, err)
 		}
 
-		newPath := append(slices.Clone(path), inc.Name)
-		resolvedInclude, err := c.composeWithPath(includedTmpl, newPath)
+		newStack := append(slices.Clone(stack), inc.Name)
+		resolvedInclude, err := c.doCompose(includedTmpl, newStack)
 		if err != nil {
 			return nil, err
 		}
@@ -181,17 +181,17 @@ func (c *Composer) ComposeWithEnabledIncludes(tmpl *Template, enabledIncludes ma
 // GetAllIncludes returns all includes (direct and transitive) for a template
 // This is useful for prompting users about which features to enable
 func (c *Composer) GetAllIncludes(tmpl *Template) ([]Include, error) {
-	return c.getAllIncludesWithPath(tmpl, []string{tmpl.Name})
+	return c.doGetAllIncludes(tmpl, []string{tmpl.Name})
 }
 
-// getAllIncludesWithPath recursively collects all includes
-func (c *Composer) getAllIncludesWithPath(tmpl *Template, path []string) ([]Include, error) {
+// doGetAllIncludes recursively collects all includes
+func (c *Composer) doGetAllIncludes(tmpl *Template, stack []string) ([]Include, error) {
 	allIncludes := make([]Include, 0)
 	seen := make(map[string]bool)
 
 	for _, inc := range tmpl.Includes {
-		if slices.Contains(path, inc.Name) {
-			return nil, fmt.Errorf("circular dependency detected: %v -> %s", path, inc.Name)
+		if slices.Contains(stack, inc.Name) {
+			return nil, fmt.Errorf("circular dependency detected: %v -> %s", stack, inc.Name)
 		}
 
 		// Add to result if not seen
@@ -214,8 +214,8 @@ func (c *Composer) getAllIncludesWithPath(tmpl *Template, path []string) ([]Incl
 			return nil, fmt.Errorf("failed to load included template '%s' from %s: %w", inc.Name, resolved.Path, err)
 		}
 
-		newPath := append(slices.Clone(path), inc.Name)
-		transitiveIncludes, err := c.getAllIncludesWithPath(includedTmpl, newPath)
+		newStack := append(slices.Clone(stack), inc.Name)
+		transitiveIncludes, err := c.doGetAllIncludes(includedTmpl, newStack)
 		if err != nil {
 			return nil, err
 		}
