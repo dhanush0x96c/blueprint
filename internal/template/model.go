@@ -1,6 +1,9 @@
 package template
 
-import "fmt"
+import (
+	"fmt"
+	"io/fs"
+)
 
 // Type represents the semantic type of a template
 type Type string
@@ -86,7 +89,7 @@ type Variable struct {
 
 // Include represents another template to compose into this one
 type Include struct {
-	Template         string `yaml:"template" validate:"required"`
+	Name             string `yaml:"name" validate:"required"`
 	EnabledByDefault bool   `yaml:"enabled_by_default"`
 }
 
@@ -95,6 +98,8 @@ type File struct {
 	// Src is resolved relative to the directory containing template.yaml when loaded.
 	Src  string `yaml:"src" validate:"required"`
 	Dest string `yaml:"dest" validate:"required"`
+	// FS is the filesystem containing the source file. It is set during loading.
+	FS fs.FS `yaml:"-"`
 }
 
 // PostInit represents a command to run after scaffolding

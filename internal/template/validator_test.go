@@ -245,3 +245,42 @@ func TestValidator_ValidateProjectNameRole(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestValidator_ValidateIncludes(t *testing.T) {
+	v := NewValidator()
+
+	t.Run("valid include passes", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "test",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
+			},
+			Includes: []Include{
+				{Name: "feature"},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.NoError(t, err)
+	})
+
+	t.Run("include with missing name fails", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "test",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
+			},
+			Includes: []Include{
+				{Name: ""},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "Name")
+	})
+}

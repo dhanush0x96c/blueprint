@@ -11,21 +11,19 @@ import (
 
 // Renderer handles rendering template files with variables
 type Renderer struct {
-	fs      fs.FS
 	funcMap template.FuncMap
 }
 
-// NewRenderer creates a new template renderer with the given base directory
-func NewRenderer(fs fs.FS) *Renderer {
-	r := &Renderer{fs: fs}
+// NewRenderer creates a new template renderer
+func NewRenderer() *Renderer {
+	r := &Renderer{}
 	r.funcMap = r.defaultFuncMap()
 	return r
 }
 
 // Render renders a template file with the given context
-// The templatePath is relative to the renderer's base directory
-func (r *Renderer) Render(templatePath string, ctx *Context) (string, error) {
-	content, err := fs.ReadFile(r.fs, templatePath)
+func (r *Renderer) Render(fsys fs.FS, templatePath string, ctx *Context) (string, error) {
+	content, err := fs.ReadFile(fsys, templatePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read template file %s: %w", templatePath, err)
 	}
@@ -55,8 +53,8 @@ func (r *Renderer) RenderPath(pathTemplate string, ctx *Context) (string, error)
 }
 
 // Copy reads a file and returns its content without template processing
-func (r *Renderer) Copy(filePath string) (string, error) {
-	content, err := fs.ReadFile(r.fs, filePath)
+func (r *Renderer) Copy(fsys fs.FS, filePath string) (string, error) {
+	content, err := fs.ReadFile(fsys, filePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read file %s: %w", filePath, err)
 	}
@@ -71,7 +69,7 @@ func (r *Renderer) RenderAll(tmpl *Template, ctx *Context) (map[string]string, e
 	results := make(map[string]string)
 
 	for _, file := range tmpl.Files {
-		if err := r.processPath(file.Src, file.Dest, ctx, results); err != nil {
+		if err := r.processPath(file.FS, file.Src, file.Dest, ctx, results); err != nil {
 			return nil, err
 		}
 	}
@@ -80,22 +78,22 @@ func (r *Renderer) RenderAll(tmpl *Template, ctx *Context) (map[string]string, e
 }
 
 // processPath processes a file or directory path recursively
-func (r *Renderer) processPath(srcPath, destPath string, ctx *Context, results map[string]string) error {
-	info, err := fs.Stat(r.fs, srcPath)
+func (r *Renderer) processPath(fsys fs.FS, srcPath, destPath string, ctx *Context, results map[string]string) error {
+	info, err := fs.Stat(fsys, srcPath)
 	if err != nil {
 		return fmt.Errorf("failed to stat %s: %w", srcPath, err)
 	}
 
 	if info.IsDir() {
-		return r.processDirectory(srcPath, destPath, ctx, results)
+		return r.processDirectory(fsys, srcPath, destPath, ctx, results)
 	}
 
-	return r.processFile(srcPath, destPath, ctx, results)
+	return r.processFile(fsys, srcPath, destPath, ctx, results)
 }
 
 // processDirectory recursively processes all files in a directory
-func (r *Renderer) processDirectory(srcDir, destDir string, ctx *Context, results map[string]string) error {
-	entries, err := fs.ReadDir(r.fs, srcDir)
+func (r *Renderer) processDirectory(fsys fs.FS, srcDir, destDir string, ctx *Context, results map[string]string) error {
+	entries, err := fs.ReadDir(fsys, srcDir)
 	if err != nil {
 		return fmt.Errorf("failed to read directory %s: %w", srcDir, err)
 	}
@@ -104,7 +102,7 @@ func (r *Renderer) processDirectory(srcDir, destDir string, ctx *Context, result
 		srcPath := path.Join(srcDir, entry.Name())
 		destPath := path.Join(destDir, entry.Name())
 
-		if err := r.processPath(srcPath, destPath, ctx, results); err != nil {
+		if err := r.processPath(fsys, srcPath, destPath, ctx, results); err != nil {
 			return err
 		}
 	}
@@ -123,7 +121,7 @@ func stripTemplateExt(path string) string {
 }
 
 // processFile processes a single file - renders .tmpl files, copies others
-func (r *Renderer) processFile(srcPath, destPath string, ctx *Context, results map[string]string) error {
+func (r *Renderer) processFile(fsys fs.FS, srcPath, destPath string, ctx *Context, results map[string]string) error {
 	// Render destination path template
 	renderedDestPath, err := r.RenderPath(destPath, ctx)
 	if err != nil {
@@ -135,12 +133,12 @@ func (r *Renderer) processFile(srcPath, destPath string, ctx *Context, results m
 	if isTemplateFile(srcPath) {
 		renderedDestPath = stripTemplateExt(renderedDestPath)
 
-		content, err = r.Render(srcPath, ctx)
+		content, err = r.Render(fsys, srcPath, ctx)
 		if err != nil {
 			return err
 		}
 	} else {
-		content, err = r.Copy(srcPath)
+		content, err = r.Copy(fsys, srcPath)
 		if err != nil {
 			return err
 		}

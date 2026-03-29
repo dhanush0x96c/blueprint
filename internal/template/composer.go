@@ -5,19 +5,17 @@ import (
 	"slices"
 )
 
-type Loader interface {
-	Load(name string) (*Template, error)
-}
-
 // Composer handles resolving and merging template includes
 type Composer struct {
-	loader Loader
+	resolver Resolver
+	loader   Loader
 }
 
-// NewComposer creates a new template composer with the given loader
-func NewComposer(loader Loader) *Composer {
+// NewComposer creates a new template composer with the given resolver and loader
+func NewComposer(resolver Resolver, loader Loader) *Composer {
 	return &Composer{
-		loader: loader,
+		resolver: resolver,
+		loader:   loader,
 	}
 }
 
@@ -50,16 +48,25 @@ func (c *Composer) composeWithPath(tmpl *Template, path []string) (*Template, er
 	copy(composed.PostInit, tmpl.PostInit)
 
 	for _, inc := range tmpl.Includes {
-		if slices.Contains(path, inc.Template) {
-			return nil, fmt.Errorf("circular dependency detected: %v -> %s", path, inc.Template)
+		if slices.Contains(path, inc.Name) {
+			return nil, fmt.Errorf("circular dependency detected: %v -> %s", path, inc.Name)
 		}
 
-		includedTmpl, err := c.loader.Load(inc.Template)
+		ref := TemplateRef{
+			Name: inc.Name,
+		}
+
+		resolved, err := c.resolver.Resolve(ref)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load included template '%s': %w", inc.Template, err)
+			return nil, fmt.Errorf("failed to resolve included template '%s': %w", inc.Name, err)
 		}
 
-		newPath := append(slices.Clone(path), inc.Template)
+		includedTmpl, err := c.loader.Load(resolved.FS, resolved.Path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load included template '%s' from %s: %w", inc.Name, resolved.Path, err)
+		}
+
+		newPath := append(slices.Clone(path), inc.Name)
 		resolvedInclude, err := c.composeWithPath(includedTmpl, newPath)
 		if err != nil {
 			return nil, err
@@ -160,7 +167,7 @@ func (c *Composer) ComposeWithEnabledIncludes(tmpl *Template, enabledIncludes ma
 
 	// Filter includes based on enabled map
 	for _, inc := range tmpl.Includes {
-		enabled, exists := enabledIncludes[inc.Template]
+		enabled, exists := enabledIncludes[inc.Name]
 		if exists && enabled {
 			filtered.Includes = append(filtered.Includes, inc)
 		} else if !exists && inc.EnabledByDefault {
@@ -183,31 +190,40 @@ func (c *Composer) getAllIncludesWithPath(tmpl *Template, path []string) ([]Incl
 	seen := make(map[string]bool)
 
 	for _, inc := range tmpl.Includes {
-		if slices.Contains(path, inc.Template) {
-			return nil, fmt.Errorf("circular dependency detected: %v -> %s", path, inc.Template)
+		if slices.Contains(path, inc.Name) {
+			return nil, fmt.Errorf("circular dependency detected: %v -> %s", path, inc.Name)
 		}
 
 		// Add to result if not seen
-		if !seen[inc.Template] {
+		if !seen[inc.Name] {
 			allIncludes = append(allIncludes, inc)
-			seen[inc.Template] = true
+			seen[inc.Name] = true
 		}
 
-		includedTmpl, err := c.loader.Load(inc.Template)
+		ref := TemplateRef{
+			Name: inc.Name,
+		}
+
+		resolved, err := c.resolver.Resolve(ref)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load included template '%s': %w", inc.Template, err)
+			return nil, fmt.Errorf("failed to resolve included template '%s': %w", inc.Name, err)
 		}
 
-		newPath := append(slices.Clone(path), inc.Template)
+		includedTmpl, err := c.loader.Load(resolved.FS, resolved.Path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load included template '%s' from %s: %w", inc.Name, resolved.Path, err)
+		}
+
+		newPath := append(slices.Clone(path), inc.Name)
 		transitiveIncludes, err := c.getAllIncludesWithPath(includedTmpl, newPath)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, transInc := range transitiveIncludes {
-			if !seen[transInc.Template] {
+			if !seen[transInc.Name] {
 				allIncludes = append(allIncludes, transInc)
-				seen[transInc.Template] = true
+				seen[transInc.Name] = true
 			}
 		}
 	}

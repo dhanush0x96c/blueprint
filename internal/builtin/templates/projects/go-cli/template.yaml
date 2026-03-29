@@ -20,7 +20,7 @@ variables:
     default: "A CLI application written in Go"
 
 includes:
-  - template: features/go/testing
+  - name: go-testing
     enabled_by_default: false
 
 dependencies:

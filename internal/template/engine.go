@@ -7,27 +7,38 @@ import (
 
 // Engine is the unified template engine that orchestrates loading, composing, and rendering
 type Engine struct {
+	resolver Resolver
 	loader   *FileLoader
 	composer *Composer
 	renderer *Renderer
 }
 
-// NewEngine creates a new template engine with the given template base directory
-func NewEngine(templatesFS fs.FS) *Engine {
-	loader := NewLoader(templatesFS)
-	composer := NewComposer(loader)
-	renderer := NewRenderer(templatesFS)
+// NewEngine creates a new template engine with the given resolver
+func NewEngine(resolver Resolver) *Engine {
+	loader := NewLoader()
+	composer := NewComposer(resolver, loader)
+	renderer := NewRenderer()
 
 	return &Engine{
+		resolver: resolver,
 		loader:   loader,
 		composer: composer,
 		renderer: renderer,
 	}
 }
 
-// LoadTemplate loads a template from the given path
-func (e *Engine) LoadTemplate(path string) (*Template, error) {
-	return e.loader.Load(path)
+// LoadTemplate loads a template from the given reference
+func (e *Engine) LoadTemplate(ref TemplateRef) (*Template, error) {
+	resolved, err := e.resolver.Resolve(ref)
+	if err != nil {
+		return nil, err
+	}
+	return e.loader.Load(resolved.FS, resolved.Path)
+}
+
+// LoadTemplateByPath loads a template from a specific path on a filesystem
+func (e *Engine) LoadTemplateByPath(fsys fs.FS, path string) (*Template, error) {
+	return e.loader.Load(fsys, path)
 }
 
 // ComposeTemplate resolves all includes and returns a fully composed template
@@ -52,10 +63,9 @@ func (e *Engine) RenderTemplate(tmpl *Template, ctx *Context) (map[string]string
 }
 
 // ProcessTemplate is the complete end-to-end flow: load, compose, and render
-// This is a convenience method that combines the three main operations
-func (e *Engine) ProcessTemplate(templatePath string, ctx *Context) (map[string]string, error) {
+func (e *Engine) ProcessTemplate(ref TemplateRef, ctx *Context) (map[string]string, error) {
 	// Load the template
-	tmpl, err := e.LoadTemplate(templatePath)
+	tmpl, err := e.LoadTemplate(ref)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template: %w", err)
 	}
@@ -76,9 +86,9 @@ func (e *Engine) ProcessTemplate(templatePath string, ctx *Context) (map[string]
 }
 
 // ProcessTemplateWithIncludes is like ProcessTemplate but allows selective includes
-func (e *Engine) ProcessTemplateWithIncludes(templatePath string, ctx *Context, enabledIncludes map[string]bool) (map[string]string, error) {
+func (e *Engine) ProcessTemplateWithIncludes(ref TemplateRef, ctx *Context, enabledIncludes map[string]bool) (map[string]string, error) {
 	// Load the template
-	tmpl, err := e.LoadTemplate(templatePath)
+	tmpl, err := e.LoadTemplate(ref)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template: %w", err)
 	}
@@ -99,9 +109,8 @@ func (e *Engine) ProcessTemplateWithIncludes(templatePath string, ctx *Context, 
 }
 
 // GetComposedTemplate returns the fully composed template without rendering
-// Useful for inspecting what variables, dependencies, and files will be generated
-func (e *Engine) GetComposedTemplate(templatePath string) (*Template, error) {
-	tmpl, err := e.LoadTemplate(templatePath)
+func (e *Engine) GetComposedTemplate(ref TemplateRef) (*Template, error) {
+	tmpl, err := e.LoadTemplate(ref)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template: %w", err)
 	}
@@ -114,9 +123,9 @@ func (e *Engine) GetComposedTemplate(templatePath string) (*Template, error) {
 	return composed, nil
 }
 
-// GetTemplateVariables returns all variables needed for a template (including from includes)
-func (e *Engine) GetTemplateVariables(templatePath string) ([]Variable, error) {
-	composed, err := e.GetComposedTemplate(templatePath)
+// GetTemplateVariables returns all variables needed for a template
+func (e *Engine) GetTemplateVariables(ref TemplateRef) ([]Variable, error) {
+	composed, err := e.GetComposedTemplate(ref)
 	if err != nil {
 		return nil, err
 	}
@@ -124,9 +133,9 @@ func (e *Engine) GetTemplateVariables(templatePath string) ([]Variable, error) {
 	return composed.Variables, nil
 }
 
-// GetTemplateDependencies returns all dependencies for a template (including from includes)
-func (e *Engine) GetTemplateDependencies(templatePath string) ([]string, error) {
-	composed, err := e.GetComposedTemplate(templatePath)
+// GetTemplateDependencies returns all dependencies for a template
+func (e *Engine) GetTemplateDependencies(ref TemplateRef) ([]string, error) {
+	composed, err := e.GetComposedTemplate(ref)
 	if err != nil {
 		return nil, err
 	}

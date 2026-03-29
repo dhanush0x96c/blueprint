@@ -2,23 +2,38 @@ package template
 
 import (
 	"errors"
+	"io/fs"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+type fakeResolver struct {
+	templates map[string]*Template
+}
+
+func (f *fakeResolver) Resolve(ref TemplateRef) (*ResolvedTemplate, error) {
+	if _, ok := f.templates[ref.Name]; !ok {
+		return nil, errors.New("template not found")
+	}
+	return &ResolvedTemplate{
+		Path: ref.Name,
+		FS:   nil, // Not used in fakeLoader
+	}, nil
+}
+
 type fakeLoader struct {
 	templates map[string]*Template
 	err       error
 }
 
-func (f *fakeLoader) Load(name string) (*Template, error) {
+func (f *fakeLoader) Load(fsys fs.FS, pth string) (*Template, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
 
-	t, ok := f.templates[name]
+	t, ok := f.templates[pth]
 	if !ok {
 		return nil, errors.New("template not found")
 	}
@@ -28,7 +43,8 @@ func (f *fakeLoader) Load(name string) (*Template, error) {
 
 func TestCompose_SingleTemplate_NoIncludes(t *testing.T) {
 	loader := &fakeLoader{}
-	composer := NewComposer(loader)
+	resolver := &fakeResolver{}
+	composer := NewComposer(resolver, loader)
 
 	tmpl := &Template{
 		Name: "base",
@@ -53,7 +69,7 @@ func TestCompose_WithIncludes_MergesFields(t *testing.T) {
 	base := &Template{
 		Name: "base",
 		Includes: []Include{
-			{Template: "logging"},
+			{Name: "logging"},
 		},
 		Variables: []Variable{
 			{Name: "project_name"},
@@ -72,13 +88,18 @@ func TestCompose_WithIncludes_MergesFields(t *testing.T) {
 		},
 	}
 
-	loader := &fakeLoader{
-		templates: map[string]*Template{
-			"logging": logging,
-		},
+	templates := map[string]*Template{
+		"logging": logging,
 	}
 
-	composer := NewComposer(loader)
+	loader := &fakeLoader{
+		templates: templates,
+	}
+	resolver := &fakeResolver{
+		templates: templates,
+	}
+
+	composer := NewComposer(resolver, loader)
 
 	out, err := composer.Compose(base)
 	require.NoError(t, err)
@@ -101,25 +122,30 @@ func TestCompose_CircularDependencyDetected(t *testing.T) {
 	a := &Template{
 		Name: "a",
 		Includes: []Include{
-			{Template: "b"},
+			{Name: "b"},
 		},
 	}
 
 	b := &Template{
 		Name: "b",
 		Includes: []Include{
-			{Template: "a"},
+			{Name: "a"},
 		},
+	}
+
+	templates := map[string]*Template{
+		"a": a,
+		"b": b,
 	}
 
 	loader := &fakeLoader{
-		templates: map[string]*Template{
-			"a": a,
-			"b": b,
-		},
+		templates: templates,
+	}
+	resolver := &fakeResolver{
+		templates: templates,
 	}
 
-	composer := NewComposer(loader)
+	composer := NewComposer(resolver, loader)
 
 	_, err := composer.Compose(a)
 	require.Error(t, err)
@@ -131,29 +157,33 @@ func TestComposeWithEnabledIncludes_FiltersCorrectly(t *testing.T) {
 		Name: "base",
 		Tags: []string{"service"},
 		Includes: []Include{
-			{Template: "logging", EnabledByDefault: true},
-			{Template: "metrics", EnabledByDefault: false},
+			{Name: "logging", EnabledByDefault: true},
+			{Name: "metrics", EnabledByDefault: false},
 		},
 	}
 
 	logging := &Template{Name: "logging"}
 	metrics := &Template{Name: "metrics"}
 
-	loader := &fakeLoader{
-		templates: map[string]*Template{
-			"logging": logging,
-			"metrics": metrics,
-		},
+	templates := map[string]*Template{
+		"logging": logging,
+		"metrics": metrics,
 	}
 
-	composer := NewComposer(loader)
+	loader := &fakeLoader{
+		templates: templates,
+	}
+	resolver := &fakeResolver{
+		templates: templates,
+	}
+
+	composer := NewComposer(resolver, loader)
 
 	out, err := composer.ComposeWithEnabledIncludes(base, map[string]bool{
 		"metrics": true,
 	})
 	require.NoError(t, err)
 
-	// nothing material to assert on fields; success implies both included
 	assert.Equal(t, "base", out.Name)
 	assert.Equal(t, []string{"service"}, out.Tags)
 }
@@ -162,14 +192,14 @@ func TestGetAllIncludes_Transitive(t *testing.T) {
 	base := &Template{
 		Name: "base",
 		Includes: []Include{
-			{Template: "a"},
+			{Name: "a"},
 		},
 	}
 
 	a := &Template{
 		Name: "a",
 		Includes: []Include{
-			{Template: "b"},
+			{Name: "b"},
 		},
 	}
 
@@ -177,14 +207,19 @@ func TestGetAllIncludes_Transitive(t *testing.T) {
 		Name: "b",
 	}
 
-	loader := &fakeLoader{
-		templates: map[string]*Template{
-			"a": a,
-			"b": b,
-		},
+	templates := map[string]*Template{
+		"a": a,
+		"b": b,
 	}
 
-	composer := NewComposer(loader)
+	loader := &fakeLoader{
+		templates: templates,
+	}
+	resolver := &fakeResolver{
+		templates: templates,
+	}
+
+	composer := NewComposer(resolver, loader)
 
 	includes, err := composer.GetAllIncludes(base)
 	require.NoError(t, err)
@@ -192,12 +227,12 @@ func TestGetAllIncludes_Transitive(t *testing.T) {
 	require.Len(t, includes, 2)
 	assert.ElementsMatch(t,
 		[]string{"a", "b"},
-		[]string{includes[0].Template, includes[1].Template},
+		[]string{includes[0].Name, includes[1].Name},
 	)
 }
 
 func TestMergeDependencies_PrefersVersioned(t *testing.T) {
-	composer := NewComposer(nil)
+	composer := NewComposer(nil, nil)
 
 	out := composer.mergeDependencies(
 		[]string{"foo"},

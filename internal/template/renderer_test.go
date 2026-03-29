@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// helper to create a renderer with a temp dir
+// helper to create a renderer
 func newTestRenderer(t *testing.T) (*Renderer, string) {
 	t.Helper()
 
 	dir := t.TempDir()
-	r := NewRenderer(os.DirFS(dir))
+	r := NewRenderer()
 
 	return r, dir
 }
@@ -95,6 +95,7 @@ func TestRender_File(t *testing.T) {
 	require.NoError(t, err)
 
 	out, err := r.Render(
+		os.DirFS(dir),
 		"hello.tmpl",
 		testContext(map[string]any{
 			"name": "World",
@@ -106,9 +107,10 @@ func TestRender_File(t *testing.T) {
 }
 
 func TestRender_FileNotFound(t *testing.T) {
-	r, _ := newTestRenderer(t)
+	r, dir := newTestRenderer(t)
 
 	_, err := r.Render(
+		os.DirFS(dir),
 		"missing.tmpl",
 		testContext(map[string]any{}),
 	)
@@ -168,15 +170,18 @@ func TestRenderAll(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	fsys := os.DirFS(dir)
 	tmpl := &Template{
 		Files: []File{
 			{
 				Src:  "a.tmpl",
 				Dest: "{{ .name }}/a.txt",
+				FS:   fsys,
 			},
 			{
 				Src:  "b.tmpl",
 				Dest: "{{ .name }}/b.txt",
+				FS:   fsys,
 			},
 		},
 	}

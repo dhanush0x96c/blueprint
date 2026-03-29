@@ -14,29 +14,27 @@ const (
 
 // FileLoader handles loading templates from the filesystem
 type FileLoader struct {
-	fs       fs.FS
 	validate *Validator
 }
 
-// NewLoader creates a new template loader with the given base directory
-func NewLoader(fs fs.FS) *FileLoader {
+// NewLoader creates a new template loader.
+func NewLoader() *FileLoader {
 	return &FileLoader{
-		fs:       fs,
 		validate: NewValidator(),
 	}
 }
 
-// Load loads a template from the filesystem
+// Load loads a template from the given filesystem.
 //
 // The path may refer to either a template.yaml file or a directory
 // containing one. In the latter case, "<dir>/template.yaml" is used.
 //
 // The loaded template is validated, and all file source paths
 // (Template.Files[].Src) are resolved relative to the template directory.
-func (l *FileLoader) Load(pth string) (*Template, error) {
+func (l *FileLoader) Load(fsys fs.FS, pth string) (*Template, error) {
 	templatePath := resolveTemplatePath(pth)
 
-	data, err := fs.ReadFile(l.fs, templatePath)
+	data, err := fs.ReadFile(fsys, templatePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read template file: %w", err)
 	}
@@ -55,15 +53,10 @@ func (l *FileLoader) Load(pth string) (*Template, error) {
 	for i := range tmpl.Files {
 		tmpl.Files[i].Src = path.Join(
 			tmplDir, tmpl.Files[i].Src)
+		tmpl.Files[i].FS = fsys
 	}
 
 	return &tmpl, nil
-}
-
-// LoadFromDir loads a template from a directory containing template.yaml
-func (l *FileLoader) LoadFromDir(dir string) (*Template, error) {
-	templatePath := path.Join(dir, FileName)
-	return l.Load(templatePath)
 }
 
 // resolveTemplatePath resolves a template path to a template manifest path.

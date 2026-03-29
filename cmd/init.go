@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/dhanush0x96c/blueprint/internal/app"
-	"github.com/dhanush0x96c/blueprint/internal/resolver"
 	"github.com/dhanush0x96c/blueprint/internal/scaffold"
 	"github.com/dhanush0x96c/blueprint/internal/template"
 	"github.com/dhanush0x96c/blueprint/internal/ui"
@@ -44,18 +43,11 @@ func NewInitCmd(appCtx *app.Context) *cobra.Command {
 				return err
 			}
 
-			resolved, err := appCtx.Resolver.Resolve(resolver.TemplateRef{
-				Name: templateName,
-				Type: template.TypeProject,
-			})
-
-			if err != nil {
-				return fmt.Errorf("failed to resolve template %s: %w", templateName, err)
-			}
-
-			scaffolder := scaffold.NewScaffolder(resolved.FS)
+			scaffolder := scaffold.NewScaffolder(appCtx.Resolver)
 			result, err := scaffolder.Scaffold(scaffold.Options{
-				TemplatePath:    resolved.Path,
+				TemplateRef: template.TemplateRef{
+					Name: templateName,
+				},
 				OutputDir:       outputDir,
 				Variables:       vars,
 				EnabledIncludes: enabledIncludes,

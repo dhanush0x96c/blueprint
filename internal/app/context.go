@@ -7,6 +7,7 @@ import (
 	"github.com/dhanush0x96c/blueprint/internal/builtin/templates"
 	"github.com/dhanush0x96c/blueprint/internal/config"
 	"github.com/dhanush0x96c/blueprint/internal/resolver"
+	"github.com/dhanush0x96c/blueprint/internal/template"
 )
 
 // Context holds runtime dependencies for the application.
@@ -14,7 +15,7 @@ type Context struct {
 	Config    *config.Config
 	BuiltinFS fs.FS
 	LocalFS   fs.FS
-	Resolver  resolver.Resolver
+	Resolver  template.Resolver
 	Options   Options
 }
 

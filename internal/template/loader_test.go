@@ -45,13 +45,14 @@ type: project
 
 func TestLoader_Load(t *testing.T) {
 	base := t.TempDir()
-	loader := NewLoader(os.DirFS(base))
+	fsys := os.DirFS(base)
+	loader := NewLoader()
 
 	t.Run("load from relative directory", func(t *testing.T) {
 		dir := filepath.Join(base, "projects", "go-cli")
 		writeTemplate(t, dir, validProjectTemplate)
 
-		tmpl, err := loader.Load("projects/go-cli")
+		tmpl, err := loader.Load(fsys, "projects/go-cli")
 		require.NoError(t, err)
 		require.Equal(t, "go-cli", tmpl.Name)
 	})
@@ -61,7 +62,7 @@ func TestLoader_Load(t *testing.T) {
 		writeTemplate(t, dir, validProjectTemplate)
 
 		path := filepath.Join("direct", FileName)
-		tmpl, err := loader.Load(path)
+		tmpl, err := loader.Load(fsys, path)
 		require.NoError(t, err)
 		require.Equal(t, "go-cli", tmpl.Name)
 	})
@@ -71,14 +72,15 @@ func TestLoader_Load(t *testing.T) {
 		dir := filepath.Join(base, templateName)
 		writeTemplate(t, dir, invalidTemplate)
 
-		_, err := loader.Load(templateName)
+		_, err := loader.Load(fsys, templateName)
 		require.Error(t, err)
 	})
 }
 
 func TestLoader_LoadTags(t *testing.T) {
 	base := t.TempDir()
-	loader := NewLoader(os.DirFS(base))
+	fsys := os.DirFS(base)
+	loader := NewLoader()
 
 	const templateWithTags = `
 name: tagged-template
@@ -104,7 +106,7 @@ description: "Template without tags"
 		dir := filepath.Join(base, "with-tags")
 		writeTemplate(t, dir, templateWithTags)
 
-		tmpl, err := loader.Load("with-tags")
+		tmpl, err := loader.Load(fsys, "with-tags")
 		require.NoError(t, err)
 		require.Equal(t, "tagged-template", tmpl.Name)
 		require.Len(t, tmpl.Tags, 3)
@@ -115,7 +117,7 @@ description: "Template without tags"
 		dir := filepath.Join(base, "without-tags")
 		writeTemplate(t, dir, templateWithoutTags)
 
-		tmpl, err := loader.Load("without-tags")
+		tmpl, err := loader.Load(fsys, "without-tags")
 		require.NoError(t, err)
 		require.Equal(t, "no-tags", tmpl.Name)
 		require.Nil(t, tmpl.Tags)

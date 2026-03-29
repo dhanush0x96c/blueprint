@@ -16,19 +16,19 @@ type FSResolver struct {
 
 // NewFSResolver creates a resolver backed by the provided file system.
 func NewFSResolver(rootFS fs.FS) *FSResolver {
-	return &FSResolver{rootFS: rootFS, loader: template.NewLoader(rootFS)}
+	return &FSResolver{rootFS: rootFS, loader: template.NewLoader()}
 }
 
 // Resolve resolves templates from the configured file system.
-func (r *FSResolver) Resolve(ref TemplateRef) (*ResolvedTemplate, error) {
+func (r *FSResolver) Resolve(ref template.TemplateRef) (*template.ResolvedTemplate, error) {
 	templates, err := r.Discover()
 	if err != nil {
 		return nil, err
 	}
 
 	for path, tmpl := range templates {
-		if tmpl.Name == ref.Name && tmpl.Type == ref.Type {
-			return &ResolvedTemplate{
+		if tmpl.Name == ref.Name {
+			return &template.ResolvedTemplate{
 				Path: path,
 				FS:   r.rootFS,
 			}, nil
@@ -51,7 +51,7 @@ func (r *FSResolver) Discover() (map[string]*template.Template, error) {
 			return nil
 		}
 
-		tmpl, err := r.loader.Load(pth)
+		tmpl, err := r.loader.Load(r.rootFS, pth)
 		if err != nil {
 			return nil
 		}

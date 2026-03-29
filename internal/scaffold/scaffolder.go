@@ -2,7 +2,6 @@ package scaffold
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -17,9 +16,9 @@ type Scaffolder struct {
 	writer    *Writer
 }
 
-// NewScaffolder creates a new scaffolder with the given template base directory
-func NewScaffolder(templatesFS fs.FS) *Scaffolder {
-	engine := template.NewEngine(templatesFS)
+// NewScaffolder creates a new scaffolder with the given template resolver
+func NewScaffolder(resolver template.Resolver) *Scaffolder {
+	engine := template.NewEngine(resolver)
 	collector := prompt.NewCollector()
 	writer := NewWriter()
 
@@ -32,13 +31,13 @@ func NewScaffolder(templatesFS fs.FS) *Scaffolder {
 
 // Options contains options for scaffolding
 type Options struct {
-	TemplatePath    string          // Path to the template
-	OutputDir       string          // Output directory for scaffolded files
-	Variables       map[string]any  // Pre-provided variables (skip prompts)
-	EnabledIncludes map[string]bool // Pre-selected includes (skip prompt)
-	Interactive     bool            // Whether to prompt for variables
-	DryRun          bool            // If true, don't write files
-	Overwrite       bool            // Whether to overwrite existing files
+	TemplateRef     template.TemplateRef // Template reference to scaffold
+	OutputDir       string               // Output directory for scaffolded files
+	Variables       map[string]any       // Pre-provided variables (skip prompts)
+	EnabledIncludes map[string]bool      // Pre-selected includes (skip prompt)
+	Interactive     bool                 // Whether to prompt for variables
+	DryRun          bool                 // If true, don't write files
+	Overwrite       bool                 // Whether to overwrite existing files
 }
 
 // Result contains the results of a scaffolding operation
@@ -53,10 +52,11 @@ type Result struct {
 // Scaffold performs the complete scaffolding operation
 func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 	// Load the template
-	tmpl, err := s.engine.LoadTemplate(opts.TemplatePath)
+	tmpl, err := s.engine.LoadTemplate(opts.TemplateRef)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template: %w", err)
 	}
+
 
 	// Collect variables and includes if interactive
 	var ctx *template.Context

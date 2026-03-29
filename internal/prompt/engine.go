@@ -107,9 +107,9 @@ func (e *Engine) PromptIncludes(includes []template.Include) (map[string]bool, e
 
 	// Pre-select includes that are enabled by default
 	for i, inc := range includes {
-		options[i] = huh.NewOption(inc.Template, inc.Template)
+		options[i] = huh.NewOption(inc.Name, inc.Name)
 		if inc.EnabledByDefault {
-			selected = append(selected, inc.Template)
+			selected = append(selected, inc.Name)
 		}
 	}
 
