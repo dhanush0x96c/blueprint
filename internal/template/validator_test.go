@@ -246,41 +246,92 @@ func TestValidator_ValidateProjectNameRole(t *testing.T) {
 	})
 }
 
-func TestValidator_ValidateIncludes(t *testing.T) {
+func TestValidator_ValidateTree(t *testing.T) {
 	v := NewValidator()
 
-	t.Run("valid include passes", func(t *testing.T) {
-		tmpl := &Template{
-			Name:    "test",
-			Type:    TypeProject,
-			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
+	t.Run("valid tree passes", func(t *testing.T) {
+		root := &TemplateNode{
+			Template: &Template{
+				Name:    "project",
+				Type:    TypeProject,
+				Version: "1.0.0",
+				Variables: []Variable{
+					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				},
 			},
-			Includes: []Include{
-				{Name: "feature"},
+			Children: []*TemplateNode{
+				{
+					Template: &Template{
+						Name:    "feature",
+						Type:    TypeFeature,
+						Version: "1.0.0",
+					},
+				},
 			},
 		}
 
-		err := v.Validate(tmpl)
+		err := v.ValidateTree(root)
 		require.NoError(t, err)
 	})
 
-	t.Run("include with missing name fails", func(t *testing.T) {
-		tmpl := &Template{
-			Name:    "test",
-			Type:    TypeProject,
-			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
+	t.Run("invalid node in tree fails", func(t *testing.T) {
+		root := &TemplateNode{
+			Template: &Template{
+				Name:    "project",
+				Type:    TypeProject,
+				Version: "1.0.0",
+				Variables: []Variable{
+					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				},
 			},
-			Includes: []Include{
-				{Name: ""},
+			Children: []*TemplateNode{
+				{
+					Template: &Template{
+						Name:    "", // invalid
+						Type:    TypeFeature,
+						Version: "1.0.0",
+					},
+				},
 			},
 		}
 
-		err := v.Validate(tmpl)
+		err := v.ValidateTree(root)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "Name")
+	})
+}
+
+func TestValidator_ValidateContext(t *testing.T) {
+	v := NewValidator()
+
+	tmpl := &Template{
+		Name: "test",
+		Variables: []Variable{
+			{Name: "required", Prompt: "?", Type: VariableTypeString},
+			{Name: "optional", Prompt: "?", Type: VariableTypeString, Default: "default"},
+		},
+	}
+
+	t.Run("valid context passes", func(t *testing.T) {
+		ctx := NewTemplateContext(map[string]any{
+			"required": "value",
+		})
+		err := v.ValidateContext(tmpl, ctx)
+		require.NoError(t, err)
+	})
+
+	t.Run("missing required variable fails", func(t *testing.T) {
+		ctx := NewTemplateContext(map[string]any{})
+		err := v.ValidateContext(tmpl, ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "required variable required is missing")
+	})
+
+	t.Run("missing optional variable with default passes", func(t *testing.T) {
+		ctx := NewTemplateContext(map[string]any{
+			"required": "value",
+		})
+		err := v.ValidateContext(tmpl, ctx)
+		require.NoError(t, err)
 	})
 }

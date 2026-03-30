@@ -5,13 +5,13 @@ import (
 	"slices"
 )
 
-// Composer handles resolving and merging template includes
+// Composer handles building the TemplateNode tree from a root Template.
 type Composer struct {
 	resolver Resolver
 	loader   Loader
 }
 
-// NewComposer creates a new template composer with the given resolver and loader
+// NewComposer creates a new template composer with the given resolver and loader.
 func NewComposer(resolver Resolver, loader Loader) *Composer {
 	return &Composer{
 		resolver: resolver,
@@ -19,35 +19,30 @@ func NewComposer(resolver Resolver, loader Loader) *Composer {
 	}
 }
 
-// Compose resolves all includes for a template and returns a fully merged template
-// It recursively loads included templates and merges them into a single template
-func (c *Composer) Compose(tmpl *Template) (*Template, error) {
-	return c.doCompose(tmpl, []string{tmpl.Name})
+// Compose resolves all includes for a template recursively and builds a TemplateNode tree.
+// It calls confirm for all includes of a template to decide which ones should be loaded.
+func (c *Composer) Compose(tmpl *Template, confirm ConfirmIncludes) (*TemplateNode, error) {
+	return c.doCompose(tmpl, []string{tmpl.Name}, confirm)
 }
 
 // doCompose is the internal recursive composition function that tracks the stack
-// to detect circular dependencies
-func (c *Composer) doCompose(tmpl *Template, stack []string) (*Template, error) {
-	composed := &Template{
-		Name:         tmpl.Name,
-		Type:         tmpl.Type,
-		Version:      tmpl.Version,
-		Description:  tmpl.Description,
-		Tags:         make([]string, len(tmpl.Tags)),
-		Variables:    make([]Variable, len(tmpl.Variables)),
-		Includes:     make([]Include, 0),
-		Dependencies: make([]string, len(tmpl.Dependencies)),
-		Files:        make([]File, len(tmpl.Files)),
-		PostInit:     make([]PostInit, len(tmpl.PostInit)),
+// to detect circular dependencies and builds the TemplateNode tree.
+func (c *Composer) doCompose(tmpl *Template, stack []string, confirm ConfirmIncludes) (*TemplateNode, error) {
+	node := &TemplateNode{
+		Template: tmpl,
+		Children: make([]*TemplateNode, 0),
 	}
 
-	copy(composed.Tags, tmpl.Tags)
-	copy(composed.Variables, tmpl.Variables)
-	copy(composed.Dependencies, tmpl.Dependencies)
-	copy(composed.Files, tmpl.Files)
-	copy(composed.PostInit, tmpl.PostInit)
+	if len(tmpl.Includes) == 0 {
+		return node, nil
+	}
 
-	for _, inc := range tmpl.Includes {
+	enabledIncludes, err := confirm(tmpl.Includes)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, inc := range enabledIncludes {
 		if slices.Contains(stack, inc.Name) {
 			return nil, fmt.Errorf("circular dependency detected: %v -> %s", stack, inc.Name)
 		}
@@ -67,166 +62,13 @@ func (c *Composer) doCompose(tmpl *Template, stack []string) (*Template, error) 
 		}
 
 		newStack := append(slices.Clone(stack), inc.Name)
-		resolvedInclude, err := c.doCompose(includedTmpl, newStack)
+		childNode, err := c.doCompose(includedTmpl, newStack, confirm)
 		if err != nil {
 			return nil, err
 		}
 
-		c.mergeTemplate(composed, resolvedInclude)
+		node.Children = append(node.Children, childNode)
 	}
 
-	return composed, nil
-}
-
-// mergeTemplate merges the source template into the destination template
-func (c *Composer) mergeTemplate(dst, src *Template) {
-	existingVars := make(map[string]bool)
-	for _, v := range dst.Variables {
-		existingVars[v.Name] = true
-	}
-
-	for _, v := range src.Variables {
-		if !existingVars[v.Name] {
-			dst.Variables = append(dst.Variables, v)
-			existingVars[v.Name] = true
-		}
-	}
-
-	dst.Dependencies = c.mergeDependencies(dst.Dependencies, src.Dependencies)
-
-	existingDests := make(map[string]bool)
-	for _, f := range dst.Files {
-		existingDests[f.Dest] = true
-	}
-
-	for _, f := range src.Files {
-		if !existingDests[f.Dest] {
-			dst.Files = append(dst.Files, f)
-			existingDests[f.Dest] = true
-		}
-	}
-
-	dst.PostInit = append(dst.PostInit, src.PostInit...)
-}
-
-// mergeDependencies merges two dependency lists and deduplicates them
-// Handles dependencies in the format "package@version" or just "package"
-func (c *Composer) mergeDependencies(dst, src []string) []string {
-	depMap := make(map[string]string)
-
-	for _, dep := range dst {
-		pkg, version := c.parseDependency(dep)
-		depMap[pkg] = version
-	}
-
-	for _, dep := range src {
-		pkg, version := c.parseDependency(dep)
-		if existing, ok := depMap[pkg]; !ok || existing == "" {
-			depMap[pkg] = version
-		}
-	}
-
-	result := make([]string, 0, len(depMap))
-	for pkg, version := range depMap {
-		if version != "" {
-			result = append(result, pkg+"@"+version)
-		} else {
-			result = append(result, pkg)
-		}
-	}
-
-	return result
-}
-
-// parseDependency parses a dependency string into package and version
-// Returns (package, version) where version may be empty
-func (c *Composer) parseDependency(dep string) (string, string) {
-	for i, ch := range dep {
-		if ch == '@' {
-			return dep[:i], dep[i+1:]
-		}
-	}
-	return dep, ""
-}
-
-// ComposeWithEnabledIncludes composes a template but allows filtering includes
-// based on user selection (respecting enabled_by_default)
-func (c *Composer) ComposeWithEnabledIncludes(tmpl *Template, enabledIncludes map[string]bool) (*Template, error) {
-	filtered := &Template{
-		Name:         tmpl.Name,
-		Type:         tmpl.Type,
-		Version:      tmpl.Version,
-		Description:  tmpl.Description,
-		Tags:         append([]string(nil), tmpl.Tags...),
-		Variables:    tmpl.Variables,
-		Includes:     make([]Include, 0),
-		Dependencies: tmpl.Dependencies,
-		Files:        tmpl.Files,
-		PostInit:     tmpl.PostInit,
-	}
-
-	// Filter includes based on enabled map
-	for _, inc := range tmpl.Includes {
-		enabled, exists := enabledIncludes[inc.Name]
-		if exists && enabled {
-			filtered.Includes = append(filtered.Includes, inc)
-		} else if !exists && inc.EnabledByDefault {
-			filtered.Includes = append(filtered.Includes, inc)
-		}
-	}
-
-	return c.Compose(filtered)
-}
-
-// GetAllIncludes returns all includes (direct and transitive) for a template
-// This is useful for prompting users about which features to enable
-func (c *Composer) GetAllIncludes(tmpl *Template) ([]Include, error) {
-	return c.doGetAllIncludes(tmpl, []string{tmpl.Name})
-}
-
-// doGetAllIncludes recursively collects all includes
-func (c *Composer) doGetAllIncludes(tmpl *Template, stack []string) ([]Include, error) {
-	allIncludes := make([]Include, 0)
-	seen := make(map[string]bool)
-
-	for _, inc := range tmpl.Includes {
-		if slices.Contains(stack, inc.Name) {
-			return nil, fmt.Errorf("circular dependency detected: %v -> %s", stack, inc.Name)
-		}
-
-		// Add to result if not seen
-		if !seen[inc.Name] {
-			allIncludes = append(allIncludes, inc)
-			seen[inc.Name] = true
-		}
-
-		ref := TemplateRef{
-			Name: inc.Name,
-		}
-
-		resolved, err := c.resolver.Resolve(ref)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve included template '%s': %w", inc.Name, err)
-		}
-
-		includedTmpl, err := c.loader.Load(resolved.FS, resolved.Path)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load included template '%s' from %s: %w", inc.Name, resolved.Path, err)
-		}
-
-		newStack := append(slices.Clone(stack), inc.Name)
-		transitiveIncludes, err := c.doGetAllIncludes(includedTmpl, newStack)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, transInc := range transitiveIncludes {
-			if !seen[transInc.Name] {
-				allIncludes = append(allIncludes, transInc)
-				seen[transInc.Name] = true
-			}
-		}
-	}
-
-	return allIncludes, nil
+	return node, nil
 }

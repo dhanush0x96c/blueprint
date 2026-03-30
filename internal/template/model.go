@@ -77,6 +77,25 @@ func (t *Template) ProjectName(ctx *Context) (string, error) {
 	return name, nil
 }
 
+// RenderedFile represents a file that has been rendered but not yet written to disk.
+type RenderedFile struct {
+	Path    string
+	Content string
+}
+
+// TemplateNode represents a resolved node in the template tree.
+// It carries a guarantee that its full subtree is present and confirmed.
+type TemplateNode struct {
+	Template *Template
+	Children []*TemplateNode
+}
+
+// ConfirmIncludes is a function that decides which optional includes should be loaded.
+type ConfirmIncludes func(includes []Include) ([]Include, error)
+
+// RenderContexts maps a template name to its specific rendering context.
+type RenderContexts map[string]*Context
+
 // Variable represents a user-configurable variable with an interactive prompt
 type Variable struct {
 	Name    string       `yaml:"name" validate:"required"`
@@ -100,12 +119,6 @@ type File struct {
 	Dest string `yaml:"dest" validate:"required"`
 	// FS is the filesystem containing the source file. It is set during loading.
 	FS fs.FS `yaml:"-"`
-}
-
-// PostInit represents a command to run after scaffolding
-type PostInit struct {
-	Command string `yaml:"command" validate:"required"`
-	WorkDir string `yaml:"workdir,omitempty"`
 }
 
 // Context holds all resolved variables for template rendering

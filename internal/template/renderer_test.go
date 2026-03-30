@@ -172,6 +172,7 @@ func TestRenderAll(t *testing.T) {
 
 	fsys := os.DirFS(dir)
 	tmpl := &Template{
+		Name: "root",
 		Files: []File{
 			{
 				Src:  "a.tmpl",
@@ -186,18 +187,29 @@ func TestRenderAll(t *testing.T) {
 		},
 	}
 
+	node := &TemplateNode{
+		Template: tmpl,
+	}
+
 	out, err := r.RenderAll(
-		tmpl,
-		testContext(map[string]any{
-			"name": "output",
-			"a":    1,
-			"b":    2,
-		}),
+		node,
+		RenderContexts{
+			"root": testContext(map[string]any{
+				"name": "output",
+				"a":    1,
+				"b":    2,
+			}),
+		},
 	)
 
 	require.NoError(t, err)
 	assert.Len(t, out, 2)
 
-	assert.Equal(t, "A=1", out["output/a.txt"])
-	assert.Equal(t, "B=2", out["output/b.txt"])
+	resMap := make(map[string]string)
+	for _, f := range out {
+		resMap[f.Path] = f.Content
+	}
+
+	assert.Equal(t, "A=1", resMap["output/a.txt"])
+	assert.Equal(t, "B=2", resMap["output/b.txt"])
 }

@@ -61,20 +61,45 @@ func (r *Renderer) Copy(fsys fs.FS, filePath string) (string, error) {
 	return string(content), nil
 }
 
-// RenderAll renders all files from a template with the given context
-// Returns a map of destination path -> rendered content
-// Files with .tmpl extension are rendered and the extension is stripped
-// Other files are copied as-is
-func (r *Renderer) RenderAll(tmpl *Template, ctx *Context) (map[string]string, error) {
+// RenderAll renders all files from a template tree with the given contexts.
+// It walks the tree and renders files for each node with its corresponding context.
+func (r *Renderer) RenderAll(node *TemplateNode, contexts RenderContexts) ([]RenderedFile, error) {
 	results := make(map[string]string)
+	if err := r.renderNode(node, contexts, results); err != nil {
+		return nil, err
+	}
 
-	for _, file := range tmpl.Files {
+	renderedFiles := make([]RenderedFile, 0, len(results))
+	for path, content := range results {
+		renderedFiles = append(renderedFiles, RenderedFile{
+			Path:    path,
+			Content: content,
+		})
+	}
+
+	return renderedFiles, nil
+}
+
+// renderNode recursively renders a node and its children.
+func (r *Renderer) renderNode(node *TemplateNode, contexts RenderContexts, results map[string]string) error {
+	ctx, ok := contexts[node.Template.Name]
+	if !ok {
+		return fmt.Errorf("no context found for template %s", node.Template.Name)
+	}
+
+	for _, file := range node.Template.Files {
 		if err := r.processPath(file.FS, file.Src, file.Dest, ctx, results); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return results, nil
+	for _, child := range node.Children {
+		if err := r.renderNode(child, contexts, results); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // processPath processes a file or directory path recursively

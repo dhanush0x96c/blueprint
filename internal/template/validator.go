@@ -19,6 +19,59 @@ func NewValidator() *Validator {
 	}
 }
 
+// ValidateTree recursively validates a template tree.
+func (v *Validator) ValidateTree(node *TemplateNode) error {
+	var errs []error
+
+	if err := v.Validate(node.Template); err != nil {
+		errs = append(errs, err)
+	}
+
+	for _, child := range node.Children {
+		if err := v.ValidateTree(child); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) == 0 {
+		return nil
+	}
+
+	return errors.Join(errs...)
+}
+
+// ValidateTreeContexts recursively validates that all required variables are present
+// in the provided contexts for the entire tree.
+func (v *Validator) ValidateTreeContexts(node *TemplateNode, contexts RenderContexts) error {
+	ctx, ok := contexts[node.Template.Name]
+	if !ok {
+		return fmt.Errorf("no context found for template %s", node.Template.Name)
+	}
+
+	if err := v.ValidateContext(node.Template, ctx); err != nil {
+		return fmt.Errorf("template %s: %w", node.Template.Name, err)
+	}
+
+	for _, child := range node.Children {
+		if err := v.ValidateTreeContexts(child, contexts); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ValidateContext validates that all required variables are present in the context.
+func (v *Validator) ValidateContext(tmpl *Template, ctx *Context) error {
+	for _, variable := range tmpl.Variables {
+		_, exists := ctx.Get(variable.Name)
+		if !exists && variable.Default == nil {
+			return fmt.Errorf("required variable %s is missing", variable.Name)
+		}
+	}
+	return nil
+}
+
 // Validate validates a template and returns all validation errors.
 // Returns nil if the template is valid.
 func (v *Validator) Validate(tmpl *Template) error {

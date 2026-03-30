@@ -42,121 +42,153 @@ type Options struct {
 
 // Result contains the results of a scaffolding operation
 type Result struct {
-	FilesWritten  []string            // List of files written
-	FilesSkipped  []string            // List of files skipped (already exist)
-	Dependencies  []string            // Dependencies that need to be installed
-	PostInitCmds  []template.PostInit // Post-init commands to run
-	RenderedFiles map[string]string   // Map of file path -> content (for dry-run)
+	FilesWritten  []string                // List of files written
+	FilesSkipped  []string                // List of files skipped (already exist)
+	Dependencies  []string                // Dependencies that need to be installed
+	PostInitCmds  []template.PostInit     // Post-init commands to run
+	RenderedFiles []template.RenderedFile // List of rendered files
 }
 
 // Scaffold performs the complete scaffolding operation
 func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
-	// Load the template
+	// Load the root template
 	tmpl, err := s.engine.LoadTemplate(opts.TemplateRef)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template: %w", err)
 	}
 
-
-	// Collect variables and includes if interactive
-	var ctx *template.Context
-	var enabledIncludes map[string]bool
-
+	// 1. Composition Stage
+	var confirm template.ConfirmIncludes
 	if opts.Interactive {
-		// Get all includes for prompting
-		allIncludes, err := s.engine.GetAllIncludes(tmpl)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get includes: %w", err)
-		}
-
-		// Collect interactively
-		ctx, enabledIncludes, err = s.collector.CollectWithIncludes(tmpl, allIncludes)
-		if err != nil {
-			return nil, fmt.Errorf("failed to collect input: %w", err)
-		}
-
-		// Merge with pre-provided includes (pre-provided takes precedence)
-		if opts.EnabledIncludes != nil {
-			for name, enabled := range opts.EnabledIncludes {
-				enabledIncludes[name] = enabled
-			}
-		}
-
-		// Merge with pre-provided variables (pre-provided takes precedence)
-		if opts.Variables != nil {
-			providedCtx := template.NewTemplateContext(opts.Variables)
-			ctx.Merge(providedCtx)
-		}
+		confirm = s.collector.ConfirmIncludes
 	} else {
-		// Use pre-provided variables
-		if opts.Variables == nil {
-			opts.Variables = make(map[string]any)
-		}
-		ctx = template.NewTemplateContext(opts.Variables)
-		enabledIncludes = opts.EnabledIncludes
-		if enabledIncludes == nil {
-			enabledIncludes = make(map[string]bool)
+		// Non-interactive: use pre-provided enabled includes or defaults
+		confirm = func(includes []template.Include) ([]template.Include, error) {
+			var enabled []template.Include
+			for _, inc := range includes {
+				isEnabled := inc.EnabledByDefault
+				if opts.EnabledIncludes != nil {
+					if val, ok := opts.EnabledIncludes[inc.Name]; ok {
+						isEnabled = val
+					}
+				}
+				if isEnabled {
+					enabled = append(enabled, inc)
+				}
+			}
+			return enabled, nil
 		}
 	}
 
-	// Compose template with selected includes
-	composedTmpl, err := s.engine.ComposeTemplateWithIncludes(tmpl, enabledIncludes)
+	tree, err := s.engine.Compose(tmpl, confirm)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose template: %w", err)
+		return nil, fmt.Errorf("failed to compose template tree: %w", err)
 	}
 
-	// Collect variables from enabled includes
-	if opts.Interactive {
-		if err := s.collector.CollectMissing(composedTmpl, ctx); err != nil {
-			return nil, fmt.Errorf("failed to collect include variables: %w", err)
-		}
-	}
-
-	// Validate that all required variables are present
-	if err := s.collector.ValidateContext(composedTmpl, ctx); err != nil {
+	// Validate tree before prompting
+	if err := s.engine.ValidateTree(tree); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
-	if opts.OutputDir == "" {
-		opts.OutputDir, err = composedTmpl.ProjectName(ctx)
+	// 2. Prompt Stage
+	var contexts template.RenderContexts
+	if opts.Interactive {
+		contexts, err = s.collector.CollectTreeVariables(tree)
 		if err != nil {
-			return nil, fmt.Errorf("failed to determine output directory: %w", err)
+			return nil, fmt.Errorf("failed to collect variables: %w", err)
+		}
+
+		// Merge with pre-provided variables
+		if opts.Variables != nil {
+			for _, ctx := range contexts {
+				for k, v := range opts.Variables {
+					ctx.Set(k, v)
+				}
+			}
+		}
+	} else {
+		// Non-interactive: use pre-provided variables for ALL nodes
+		contexts = make(template.RenderContexts)
+		s.fillContextsWithDefaults(tree, contexts, opts.Variables)
+	}
+
+	// Validate contexts before rendering
+	if err := s.engine.ValidateContexts(tree, contexts); err != nil {
+		return nil, fmt.Errorf("context validation failed: %w", err)
+	}
+
+	// Determine output directory
+	if opts.OutputDir == "" {
+		// Use project name from root template if available
+		rootCtx := contexts[tree.Template.Name]
+		projectName, err := tree.Template.ProjectName(rootCtx)
+		if err != nil {
+			// Fallback to name from variables or current directory
+			if name, ok := opts.Variables["project_name"].(string); ok {
+				opts.OutputDir = name
+			} else {
+				opts.OutputDir = "."
+			}
+		} else {
+			opts.OutputDir = projectName
 		}
 	}
 
-	// Render all files
-	renderedFiles, err := s.engine.RenderTemplate(composedTmpl, ctx)
+	// 3. Render Stage
+	renderedFiles, err := s.engine.RenderNode(tree, contexts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to render template: %w", err)
+		return nil, fmt.Errorf("failed to render template tree: %w", err)
 	}
 
 	result := &Result{
 		FilesWritten:  make([]string, 0),
 		FilesSkipped:  make([]string, 0),
-		Dependencies:  composedTmpl.Dependencies,
-		PostInitCmds:  composedTmpl.PostInit,
+		Dependencies:  tree.AllDependencies(),
+		PostInitCmds:  tree.AllPostInit(),
 		RenderedFiles: renderedFiles,
 	}
 
-	// Write files if not dry-run
+	// 4. Write Stage
 	if !opts.DryRun {
-		for destPath, content := range renderedFiles {
-			fullPath := filepath.Join(opts.OutputDir, destPath)
+		for _, file := range renderedFiles {
+			fullPath := filepath.Join(opts.OutputDir, file.Path)
 
 			// Check if file exists
 			if _, err := os.Stat(fullPath); err == nil && !opts.Overwrite {
-				result.FilesSkipped = append(result.FilesSkipped, destPath)
+				result.FilesSkipped = append(result.FilesSkipped, file.Path)
 				continue
 			}
 
 			// Write the file
-			if err := s.writer.WriteFile(fullPath, content); err != nil {
-				return nil, fmt.Errorf("failed to write file %s: %w", destPath, err)
+			if err := s.writer.WriteFile(fullPath, file.Content); err != nil {
+				return nil, fmt.Errorf("failed to write file %s: %w", file.Path, err)
 			}
 
-			result.FilesWritten = append(result.FilesWritten, destPath)
+			result.FilesWritten = append(result.FilesWritten, file.Path)
 		}
 	}
 
 	return result, nil
+}
+
+// TODO: parse variable keys with template prefix e.g. template_name:var_name
+func (s *Scaffolder) fillContextsWithDefaults(node *template.TemplateNode, contexts template.RenderContexts, vars map[string]any) {
+	if _, ok := contexts[node.Template.Name]; !ok {
+		ctx := template.NewTemplateContext(make(map[string]any))
+		// Set defaults from template
+		for _, v := range node.Template.Variables {
+			if v.Default != nil {
+				ctx.Set(v.Name, v.Default)
+			}
+		}
+		// Overwrite with provided variables
+		for k, v := range vars {
+			ctx.Set(k, v)
+		}
+		contexts[node.Template.Name] = ctx
+	}
+
+	for _, child := range node.Children {
+		s.fillContextsWithDefaults(child, contexts, vars)
+	}
 }
