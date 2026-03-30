@@ -79,6 +79,35 @@ func (e *Engine) ValidateContexts(node *TemplateNode, contexts RenderContexts) e
 	return e.validator.ValidateTreeContexts(node, contexts)
 }
 
+// TODO: parse variable keys with template prefix e.g. template_name:var_name
+// BuildContext recursively builds the render contexts with default values from the template tree.
+func (e *Engine) BuildContext(node *TemplateNode, vars map[string]any) RenderContexts {
+	contexts := make(RenderContexts)
+	e.fillContexts(node, contexts, vars)
+	return contexts
+}
+
+func (e *Engine) fillContexts(node *TemplateNode, contexts RenderContexts, vars map[string]any) {
+	if _, ok := contexts[node.Template.Name]; !ok {
+		ctx := NewTemplateContext(make(map[string]any))
+		// Set defaults from template
+		for _, v := range node.Template.Variables {
+			if v.Default != nil {
+				ctx.Set(v.Name, v.Default)
+			}
+		}
+		// Overwrite with provided variables
+		for k, v := range vars {
+			ctx.Set(k, v)
+		}
+		contexts[node.Template.Name] = ctx
+	}
+
+	for _, child := range node.Children {
+		e.fillContexts(child, contexts, vars)
+	}
+}
+
 // AddTemplateFunc adds a custom function to the template renderer
 func (e *Engine) AddTemplateFunc(name string, fn any) {
 	e.renderer.AddFunc(name, fn)

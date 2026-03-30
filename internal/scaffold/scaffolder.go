@@ -57,27 +57,43 @@ func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 		return nil, fmt.Errorf("failed to load template: %w", err)
 	}
 
-	// 1. Composition Stage
+	tree, err := s.compose(tmpl, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	contexts, err := s.collectVariables(tree, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	outputDir := s.determineOutputDir(tree, contexts, opts)
+
+	renderedFiles, err := s.render(tree, contexts)
+	if err != nil {
+		return nil, err
+	}
+
+	written, skipped, err := s.writeFiles(renderedFiles, outputDir, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Result{
+		FilesWritten:  written,
+		FilesSkipped:  skipped,
+		Dependencies:  tree.AllDependencies(),
+		PostInitCmds:  tree.AllPostInit(),
+		RenderedFiles: renderedFiles,
+	}, nil
+}
+
+func (s *Scaffolder) compose(tmpl *template.Template, opts Options) (*template.TemplateNode, error) {
 	var confirm template.ConfirmIncludes
 	if opts.Interactive {
 		confirm = s.collector.ConfirmIncludes
 	} else {
-		// Non-interactive: use pre-provided enabled includes or defaults
-		confirm = func(includes []template.Include) ([]template.Include, error) {
-			var enabled []template.Include
-			for _, inc := range includes {
-				isEnabled := inc.EnabledByDefault
-				if opts.EnabledIncludes != nil {
-					if val, ok := opts.EnabledIncludes[inc.Name]; ok {
-						isEnabled = val
-					}
-				}
-				if isEnabled {
-					enabled = append(enabled, inc)
-				}
-			}
-			return enabled, nil
-		}
+		confirm = s.confirmIncludesFromOptions(opts)
 	}
 
 	tree, err := s.engine.Compose(tmpl, confirm)
@@ -85,13 +101,35 @@ func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 		return nil, fmt.Errorf("failed to compose template tree: %w", err)
 	}
 
-	// Validate tree before prompting
 	if err := s.engine.ValidateTree(tree); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
-	// 2. Prompt Stage
+	return tree, nil
+}
+
+func (s *Scaffolder) confirmIncludesFromOptions(opts Options) template.ConfirmIncludes {
+	return func(includes []template.Include) ([]template.Include, error) {
+		var enabled []template.Include
+		for _, inc := range includes {
+			isEnabled := inc.EnabledByDefault
+			if opts.EnabledIncludes != nil {
+				if val, ok := opts.EnabledIncludes[inc.Name]; ok {
+					isEnabled = val
+				}
+			}
+			if isEnabled {
+				enabled = append(enabled, inc)
+			}
+		}
+		return enabled, nil
+	}
+}
+
+func (s *Scaffolder) collectVariables(tree *template.TemplateNode, opts Options) (template.RenderContexts, error) {
 	var contexts template.RenderContexts
+	var err error
+
 	if opts.Interactive {
 		contexts, err = s.collector.CollectTreeVariables(tree)
 		if err != nil {
@@ -107,9 +145,7 @@ func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 			}
 		}
 	} else {
-		// Non-interactive: use pre-provided variables for ALL nodes
-		contexts = make(template.RenderContexts)
-		s.fillContextsWithDefaults(tree, contexts, opts.Variables)
+		contexts = s.engine.BuildContext(tree, opts.Variables)
 	}
 
 	// Validate contexts before rendering
@@ -117,78 +153,56 @@ func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 		return nil, fmt.Errorf("context validation failed: %w", err)
 	}
 
-	// Determine output directory
-	if opts.OutputDir == "" {
-		// Use project name from root template if available
-		rootCtx := contexts[tree.Template.Name]
-		projectName, err := tree.Template.ProjectName(rootCtx)
-		if err != nil {
-			// Fallback to name from variables or current directory
-			if name, ok := opts.Variables["project_name"].(string); ok {
-				opts.OutputDir = name
-			} else {
-				opts.OutputDir = "."
-			}
-		} else {
-			opts.OutputDir = projectName
-		}
+	return contexts, nil
+}
+
+func (s *Scaffolder) determineOutputDir(tree *template.TemplateNode, contexts template.RenderContexts, opts Options) string {
+	if opts.OutputDir != "" {
+		return opts.OutputDir
 	}
 
-	// 3. Render Stage
+	// Use project name from root template if available
+	rootCtx := contexts[tree.Template.Name]
+	projectName, err := tree.Template.ProjectName(rootCtx)
+	if err == nil {
+		return projectName
+	}
+
+	return "."
+}
+
+func (s *Scaffolder) render(tree *template.TemplateNode, contexts template.RenderContexts) ([]template.RenderedFile, error) {
 	renderedFiles, err := s.engine.RenderNode(tree, contexts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render template tree: %w", err)
 	}
-
-	result := &Result{
-		FilesWritten:  make([]string, 0),
-		FilesSkipped:  make([]string, 0),
-		Dependencies:  tree.AllDependencies(),
-		PostInitCmds:  tree.AllPostInit(),
-		RenderedFiles: renderedFiles,
-	}
-
-	// 4. Write Stage
-	if !opts.DryRun {
-		for _, file := range renderedFiles {
-			fullPath := filepath.Join(opts.OutputDir, file.Path)
-
-			// Check if file exists
-			if _, err := os.Stat(fullPath); err == nil && !opts.Overwrite {
-				result.FilesSkipped = append(result.FilesSkipped, file.Path)
-				continue
-			}
-
-			// Write the file
-			if err := s.writer.WriteFile(fullPath, file.Content); err != nil {
-				return nil, fmt.Errorf("failed to write file %s: %w", file.Path, err)
-			}
-
-			result.FilesWritten = append(result.FilesWritten, file.Path)
-		}
-	}
-
-	return result, nil
+	return renderedFiles, nil
 }
 
-// TODO: parse variable keys with template prefix e.g. template_name:var_name
-func (s *Scaffolder) fillContextsWithDefaults(node *template.TemplateNode, contexts template.RenderContexts, vars map[string]any) {
-	if _, ok := contexts[node.Template.Name]; !ok {
-		ctx := template.NewTemplateContext(make(map[string]any))
-		// Set defaults from template
-		for _, v := range node.Template.Variables {
-			if v.Default != nil {
-				ctx.Set(v.Name, v.Default)
-			}
-		}
-		// Overwrite with provided variables
-		for k, v := range vars {
-			ctx.Set(k, v)
-		}
-		contexts[node.Template.Name] = ctx
+func (s *Scaffolder) writeFiles(renderedFiles []template.RenderedFile, outputDir string, opts Options) ([]string, []string, error) {
+	written := make([]string, 0)
+	skipped := make([]string, 0)
+
+	if opts.DryRun {
+		return written, skipped, nil
 	}
 
-	for _, child := range node.Children {
-		s.fillContextsWithDefaults(child, contexts, vars)
+	for _, file := range renderedFiles {
+		fullPath := filepath.Join(outputDir, file.Path)
+
+		// Check if file exists
+		if _, err := os.Stat(fullPath); err == nil && !opts.Overwrite {
+			skipped = append(skipped, file.Path)
+			continue
+		}
+
+		// Write the file
+		if err := s.writer.WriteFile(fullPath, file.Content); err != nil {
+			return nil, nil, fmt.Errorf("failed to write file %s: %w", file.Path, err)
+		}
+
+		written = append(written, file.Path)
 	}
+
+	return written, skipped, nil
 }
