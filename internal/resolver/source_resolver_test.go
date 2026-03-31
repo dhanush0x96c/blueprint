@@ -61,6 +61,27 @@ func TestSourceResolver_Exists(t *testing.T) {
 	require.False(t, r.Exists("missing"))
 }
 
+const validTemplateWithTags = `
+name: go-api
+type: project
+version: "1.0.0"
+description: "Go API project"
+tags: ["go", "api"]
+variables:
+  - name: app_name
+    prompt: "App name?"
+    type: string
+    role: project_name
+`
+
+const validFeatureTemplateWithTags = `
+name: auth
+type: feature
+version: "1.0.0"
+description: "Authentication"
+tags: ["auth", "security"]
+`
+
 func TestSourceResolver_Discover(t *testing.T) {
 	base := t.TempDir()
 	r := NewSourceResolver(Source{
@@ -70,14 +91,63 @@ func TestSourceResolver_Discover(t *testing.T) {
 	})
 
 	writeTemplate(t, filepath.Join(base, "projects", "go-cli"), validProjectTemplate)
+	writeTemplate(t, filepath.Join(base, "projects", "go-api"), validTemplateWithTags)
 	writeTemplate(t, filepath.Join(base, "features", "testing"), validFeatureTemplate)
+	writeTemplate(t, filepath.Join(base, "features", "auth"), validFeatureTemplateWithTags)
 	writeTemplate(t, filepath.Join(base, "broken"), invalidTemplate)
 
-	templates, err := r.Discover()
-	require.NoError(t, err)
-	require.Len(t, templates, 2)
-	require.Contains(t, templates, "projects/go-cli")
-	require.Contains(t, templates, "features/testing")
-	require.Equal(t, "go-cli", templates["projects/go-cli"].Name)
-	require.Equal(t, template.TypeFeature, templates["features/testing"].Type)
+	t.Run("all templates", func(t *testing.T) {
+		templates, err := r.Discover(template.DiscoverOptions{IgnoreErrors: true})
+		require.NoError(t, err)
+		require.Len(t, templates, 4)
+	})
+
+	t.Run("filter by type", func(t *testing.T) {
+		templates, err := r.Discover(template.DiscoverOptions{
+			Type:         template.TypeProject,
+			IgnoreErrors: true,
+		})
+		require.NoError(t, err)
+		require.Len(t, templates, 2)
+		for _, tmpl := range templates {
+			require.Equal(t, template.TypeProject, tmpl.Type)
+		}
+	})
+
+	t.Run("filter by tag", func(t *testing.T) {
+		templates, err := r.Discover(template.DiscoverOptions{
+			Tags:         []string{"go"},
+			IgnoreErrors: true,
+		})
+		require.NoError(t, err)
+		require.Len(t, templates, 1)
+		require.Equal(t, "go-api", templates["projects/go-api"].Name)
+	})
+
+	t.Run("filter by multiple tags", func(t *testing.T) {
+		templates, err := r.Discover(template.DiscoverOptions{
+			Tags:         []string{"go", "auth"},
+			IgnoreErrors: true,
+		})
+		require.NoError(t, err)
+		require.Len(t, templates, 2)
+		require.Contains(t, templates, "projects/go-api")
+		require.Contains(t, templates, "features/auth")
+	})
+
+	t.Run("filter by type and tag", func(t *testing.T) {
+		templates, err := r.Discover(template.DiscoverOptions{
+			Type:         template.TypeFeature,
+			Tags:         []string{"auth"},
+			IgnoreErrors: true,
+		})
+		require.NoError(t, err)
+		require.Len(t, templates, 1)
+		require.Equal(t, "auth", templates["features/auth"].Name)
+	})
+
+	t.Run("error on invalid template when IgnoreErrors is false", func(t *testing.T) {
+		_, err := r.Discover(template.DiscoverOptions{IgnoreErrors: false})
+		require.Error(t, err)
+	})
 }

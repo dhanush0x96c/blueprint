@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"sort"
-	"strings"
 
 	"github.com/dhanush0x96c/blueprint/internal/app"
 	"github.com/dhanush0x96c/blueprint/internal/cli"
@@ -102,21 +101,17 @@ func discoverTemplates(
 
 func discoverFromSource(src resolver.Source, filterType template.Type, filterTags []string) ([]ui.TemplateListEntry, error) {
 	r := resolver.NewSourceResolver(src)
-	templates, err := r.Discover()
+	templates, err := r.Discover(template.DiscoverOptions{
+		Type:         filterType,
+		Tags:         filterTags,
+		IgnoreErrors: true,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	entries := make([]ui.TemplateListEntry, 0, len(templates))
 	for _, tmpl := range templates {
-		if filterType != "" && tmpl.Type != filterType {
-			continue
-		}
-
-		if len(filterTags) > 0 && !matchesAnyTag(tmpl, filterTags) {
-			continue
-		}
-
 		entries = append(entries, ui.TemplateListEntry{
 			Name:        tmpl.Name,
 			Type:        tmpl.Type,
@@ -138,24 +133,4 @@ func discoverFromSource(src resolver.Source, filterType template.Type, filterTag
 	})
 
 	return entries, nil
-}
-
-// matchesAnyTag returns true if the template has at least one of the filter tags
-func matchesAnyTag(tmpl *template.Template, filterTags []string) bool {
-	if len(tmpl.Tags) == 0 {
-		return false
-	}
-
-	tagSet := make(map[string]struct{}, len(tmpl.Tags))
-	for _, t := range tmpl.Tags {
-		tagSet[strings.ToLower(t)] = struct{}{}
-	}
-
-	for _, ft := range filterTags {
-		if _, ok := tagSet[strings.ToLower(ft)]; ok {
-			return true
-		}
-	}
-
-	return false
 }

@@ -18,9 +18,16 @@ type Resolver interface {
 	Resolve(ref TemplateRef) (*ResolvedTemplate, error)
 }
 
+// DiscoverOptions contains options for template discovery.
+type DiscoverOptions struct {
+	Type         Type
+	Tags         []string
+	IgnoreErrors bool
+}
+
 // Discoverer discovers templates available from a source.
 type Discoverer interface {
-	Discover() (map[string]*Template, error)
+	Discover(opts DiscoverOptions) (map[string]*Template, error)
 	Exists(name string) bool
 }
 
