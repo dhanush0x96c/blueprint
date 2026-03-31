@@ -2,6 +2,7 @@ package template
 
 import (
 	"testing"
+	"testing/fstest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -298,6 +299,128 @@ func TestValidator_ValidateTree(t *testing.T) {
 		err := v.ValidateTree(root)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "Name")
+	})
+
+	t.Run("feature including project fails", func(t *testing.T) {
+		root := &TemplateNode{
+			Template: &Template{
+				Name:    "feature",
+				Type:    TypeFeature,
+				Version: "1.0.0",
+			},
+			Children: []*TemplateNode{
+				{
+					Template: &Template{
+						Name:    "project",
+						Type:    TypeProject,
+						Version: "1.0.0",
+						Variables: []Variable{
+							{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+						},
+					},
+				},
+			},
+		}
+
+		err := v.ValidateTree(root)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "feature \"feature\" cannot include project \"project\"")
+	})
+
+	t.Run("component including project fails", func(t *testing.T) {
+		root := &TemplateNode{
+			Template: &Template{
+				Name:    "component",
+				Type:    TypeComponent,
+				Version: "1.0.0",
+			},
+			Children: []*TemplateNode{
+				{
+					Template: &Template{
+						Name:    "project",
+						Type:    TypeProject,
+						Version: "1.0.0",
+						Variables: []Variable{
+							{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+						},
+					},
+				},
+			},
+		}
+
+		err := v.ValidateTree(root)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "component \"component\" cannot include project \"project\"")
+	})
+
+	t.Run("project including project passes", func(t *testing.T) {
+		root := &TemplateNode{
+			Template: &Template{
+				Name:    "project1",
+				Type:    TypeProject,
+				Version: "1.0.0",
+				Variables: []Variable{
+					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				},
+			},
+			Children: []*TemplateNode{
+				{
+					Template: &Template{
+						Name:    "project2",
+						Type:    TypeProject,
+						Version: "1.0.0",
+						Variables: []Variable{
+							{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+						},
+					},
+				},
+			},
+		}
+
+		err := v.ValidateTree(root)
+		require.NoError(t, err)
+	})
+}
+
+func TestValidator_ValidateFiles(t *testing.T) {
+	v := NewValidator()
+	fsys := fstest.MapFS{
+		"existing.txt": &fstest.MapFile{Data: []byte("content")},
+	}
+
+	t.Run("existing file passes", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "test",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+			},
+			Files: []File{
+				{Src: "existing.txt", Dest: "dest.txt", FS: fsys},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.NoError(t, err)
+	})
+
+	t.Run("missing file fails", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "test",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+			},
+			Files: []File{
+				{Src: "missing.txt", Dest: "dest.txt", FS: fsys},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "source file \"missing.txt\" does not exist")
 	})
 }
 

@@ -46,14 +46,14 @@ func (l *FileLoader) Load(fsys fs.FS, pth string) (*Template, error) {
 
 	tmplDir := path.Dir(templatePath)
 
-	if err := l.validate.Validate(&tmpl); err != nil {
-		return nil, fmt.Errorf("template validation failed: %w", err)
-	}
-
 	for i := range tmpl.Files {
 		tmpl.Files[i].Src = path.Join(
 			tmplDir, tmpl.Files[i].Src)
 		tmpl.Files[i].FS = fsys
+	}
+
+	if err := l.validate.Validate(&tmpl); err != nil {
+		return nil, fmt.Errorf("template validation failed: %w", err)
 	}
 
 	return &tmpl, nil

@@ -3,6 +3,7 @@ package template
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -24,6 +25,10 @@ func (v *Validator) ValidateTree(node *TemplateNode) error {
 	var errs []error
 
 	if err := v.Validate(node.Template); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := v.validateIncludes(node); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -84,6 +89,7 @@ func (v *Validator) Validate(tmpl *Template) error {
 
 	// Semantic validation
 	errs = append(errs, v.validateVariables(tmpl.Variables)...)
+	errs = append(errs, v.validateFiles(tmpl.Files)...)
 
 	if err := v.validateProjectNameRole(tmpl); err != nil {
 		errs = append(errs, err)
@@ -117,6 +123,45 @@ func (v *Validator) validateVariables(vars []Variable) []error {
 	}
 
 	return errs
+}
+
+// validateFiles validates that all source files exist.
+func (v *Validator) validateFiles(files []File) []error {
+	var errs []error
+
+	for i, file := range files {
+		if file.FS == nil {
+			// If FS is not set, we can't validate existence yet.
+			// This might happen if Validate is called before FS is initialized in Loader.
+			continue
+		}
+
+		_, err := fs.Stat(file.FS, file.Src)
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				errs = append(errs, fmt.Errorf("file[%d]: source file %q does not exist", i, file.Src))
+			} else {
+				errs = append(errs, fmt.Errorf("file[%d]: failed to stat source file %q: %w", i, file.Src, err))
+			}
+		}
+	}
+
+	return errs
+}
+
+// validateIncludes validates that features and components do not include projects.
+func (v *Validator) validateIncludes(node *TemplateNode) error {
+	if node.Template.Type == TypeProject {
+		return nil
+	}
+
+	for _, child := range node.Children {
+		if child.Template.Type == TypeProject {
+			return fmt.Errorf("%s %q cannot include project %q", node.Template.Type, node.Template.Name, child.Template.Name)
+		}
+	}
+
+	return nil
 }
 
 // validateProjectNameRole validates that project templates have exactly one
