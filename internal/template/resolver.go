@@ -21,7 +21,7 @@ type Resolver interface {
 // Discoverer discovers templates available from a source.
 type Discoverer interface {
 	Discover() (map[string]*Template, error)
-	Exists(path string) bool
+	Exists(name string) bool
 }
 
 // Loader loads a template from a filesystem.

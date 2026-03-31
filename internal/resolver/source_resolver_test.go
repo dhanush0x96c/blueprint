@@ -52,11 +52,12 @@ func TestSourceResolver_Exists(t *testing.T) {
 		Filesystem: os.DirFS(base),
 	})
 
-	templateName := "exists"
-	dir := filepath.Join(base, templateName)
+	templatePath := "exists"
+	dir := filepath.Join(base, templatePath)
 	writeTemplate(t, dir, validProjectTemplate)
 
-	require.True(t, r.Exists(templateName))
+	require.True(t, r.Exists("go-cli"))
+	require.False(t, r.Exists("exists"))
 	require.False(t, r.Exists("missing"))
 }
 

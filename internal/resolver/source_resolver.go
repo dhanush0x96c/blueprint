@@ -66,16 +66,18 @@ func (r *SourceResolver) Discover() (map[string]*template.Template, error) {
 	return templates, nil
 }
 
-// Exists checks if a template exists at the given path.
-func (r *SourceResolver) Exists(templatePath string) bool {
-	_, err := fs.Stat(r.source.Filesystem, resolveTemplatePath(templatePath))
-	return err == nil
-}
-
-func resolveTemplatePath(pth string) string {
-	if path.Base(pth) == template.FileName {
-		return pth
+// Exists checks if a template exists with the given name.
+func (r *SourceResolver) Exists(name string) bool {
+	templates, err := r.Discover()
+	if err != nil {
+		return false
 	}
 
-	return path.Join(pth, template.FileName)
+	for _, tmpl := range templates {
+		if tmpl.Name == name {
+			return true
+		}
+	}
+
+	return false
 }
