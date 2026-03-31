@@ -1,7 +1,6 @@
 package app
 
 import (
-	"io/fs"
 	"os"
 
 	"github.com/dhanush0x96c/blueprint/internal/builtin/templates"
@@ -12,11 +11,10 @@ import (
 
 // Context holds runtime dependencies for the application.
 type Context struct {
-	Config    *config.Config
-	BuiltinFS fs.FS
-	LocalFS   fs.FS
-	Resolver  template.Resolver
-	Options   Options
+	Config   *config.Config
+	Sources  []resolver.Source
+	Resolver template.Resolver
+	Options  Options
 }
 
 // Options holds CLI flags and runtime options.
@@ -30,14 +28,23 @@ func NewContext(cfg *config.Config, opts Options) *Context {
 	localFS := os.DirFS(cfg.TemplatesDir)
 	builtinFS := templates.Templates
 
+	sources := []resolver.Source{
+		{
+			Name:       "USER",
+			Type:       resolver.SourceTypeUser,
+			Filesystem: localFS,
+		},
+		{
+			Name:       "BUILTIN",
+			Type:       resolver.SourceTypeBuiltin,
+			Filesystem: builtinFS,
+		},
+	}
+
 	return &Context{
-		Config:    cfg,
-		LocalFS:   localFS,
-		BuiltinFS: builtinFS,
-		Options:   opts,
-		Resolver: resolver.NewChainResolver(
-			resolver.NewFSResolver(localFS),
-			resolver.NewFSResolver(builtinFS),
-		),
+		Config:   cfg,
+		Sources:  sources,
+		Options:  opts,
+		Resolver: resolver.NewChainResolver(sources...),
 	}
 }

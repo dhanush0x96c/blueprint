@@ -44,27 +44,35 @@ name:
 type: project
 `
 
-func TestFSResolver_Exists(t *testing.T) {
+func TestSourceResolver_Exists(t *testing.T) {
 	base := t.TempDir()
-	resolver := NewFSResolver(os.DirFS(base))
+	r := NewSourceResolver(Source{
+		Name:       "test",
+		Type:       SourceTypeUser,
+		Filesystem: os.DirFS(base),
+	})
 
 	templateName := "exists"
 	dir := filepath.Join(base, templateName)
 	writeTemplate(t, dir, validProjectTemplate)
 
-	require.True(t, resolver.Exists(templateName))
-	require.False(t, resolver.Exists("missing"))
+	require.True(t, r.Exists(templateName))
+	require.False(t, r.Exists("missing"))
 }
 
-func TestFSResolver_Discover(t *testing.T) {
+func TestSourceResolver_Discover(t *testing.T) {
 	base := t.TempDir()
-	resolver := NewFSResolver(os.DirFS(base))
+	r := NewSourceResolver(Source{
+		Name:       "test",
+		Type:       SourceTypeUser,
+		Filesystem: os.DirFS(base),
+	})
 
 	writeTemplate(t, filepath.Join(base, "projects", "go-cli"), validProjectTemplate)
 	writeTemplate(t, filepath.Join(base, "features", "testing"), validFeatureTemplate)
 	writeTemplate(t, filepath.Join(base, "broken"), invalidTemplate)
 
-	templates, err := resolver.Discover()
+	templates, err := r.Discover()
 	require.NoError(t, err)
 	require.Len(t, templates, 2)
 	require.Contains(t, templates, "projects/go-cli")

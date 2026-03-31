@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"io/fs"
 	"sort"
 	"strings"
 
@@ -76,30 +75,24 @@ func NewListCmd(appCtx *app.Context) *cobra.Command {
 func discoverTemplates(
 	appCtx *app.Context,
 	filterType template.Type,
-	source string,
+	sourceFilter string,
 	tags []string,
 ) ([]ui.TemplateListGroup, error) {
 	var groups []ui.TemplateListGroup
 
-	if source == "" || source == "builtin" {
-		entries, err := discoverFromFS(appCtx.BuiltinFS, filterType, tags)
-		if err != nil {
-			return nil, err
+	for _, src := range appCtx.Sources {
+		if sourceFilter != "" && string(src.Type) != sourceFilter {
+			continue
 		}
-		groups = append(groups, ui.TemplateListGroup{
-			Source:  "BUILTIN",
-			Entries: entries,
-		})
-	}
 
-	if source == "" || source == "user" {
-		entries, err := discoverFromFS(appCtx.LocalFS, filterType, tags)
+		entries, err := discoverFromSource(src, filterType, tags)
 		if err != nil {
-			// User template dir may not exist; treat as empty
-			entries = nil
+			// Skip source if it fails to discover (e.g., local dir doesn't exist)
+			continue
 		}
+
 		groups = append(groups, ui.TemplateListGroup{
-			Source:  "USER",
+			Source:  src.Name,
 			Entries: entries,
 		})
 	}
@@ -107,9 +100,9 @@ func discoverTemplates(
 	return groups, nil
 }
 
-func discoverFromFS(fsys fs.FS, filterType template.Type, filterTags []string) ([]ui.TemplateListEntry, error) {
-	resolver := resolver.NewFSResolver(fsys)
-	templates, err := resolver.Discover()
+func discoverFromSource(src resolver.Source, filterType template.Type, filterTags []string) ([]ui.TemplateListEntry, error) {
+	r := resolver.NewSourceResolver(src)
+	templates, err := r.Discover()
 	if err != nil {
 		return nil, err
 	}

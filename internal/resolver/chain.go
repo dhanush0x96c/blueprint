@@ -11,8 +11,12 @@ type ChainResolver struct {
 	resolvers []template.Resolver
 }
 
-// NewChainResolver creates a new chain resolver.
-func NewChainResolver(resolvers ...template.Resolver) *ChainResolver {
+// NewChainResolver creates a new chain resolver from the provided sources.
+func NewChainResolver(sources ...Source) *ChainResolver {
+	resolvers := make([]template.Resolver, 0, len(sources))
+	for _, src := range sources {
+		resolvers = append(resolvers, NewSourceResolver(src))
+	}
 	return &ChainResolver{resolvers: resolvers}
 }
 
