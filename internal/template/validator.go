@@ -102,6 +102,11 @@ func (v *Validator) Validate(tmpl *Template) error {
 	return errors.Join(errs...)
 }
 
+// ValidateMetadata validates a template metadata and returns all validation errors.
+func (v *Validator) ValidateMetadata(meta *Metadata) error {
+	return v.validate.Struct(meta)
+}
+
 // validateVariables validates variable-specific rules.
 func (v *Validator) validateVariables(vars []Variable) []error {
 	var errs []error

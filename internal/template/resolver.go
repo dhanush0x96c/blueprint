@@ -27,11 +27,11 @@ type DiscoverOptions struct {
 
 // Discoverer discovers templates available from a source.
 type Discoverer interface {
-	Discover(opts DiscoverOptions) (map[string]*Template, error)
+	Discover(opts DiscoverOptions) (map[string]*Metadata, error)
 	Exists(name string) bool
 }
 
-// Loader loads a template from a filesystem.
-type Loader interface {
-	Load(fsys fs.FS, pth string) (*Template, error)
+// MetadataLoader loads template metadata from a filesystem.
+type MetadataLoader interface {
+	LoadMetadata(fsys fs.FS, pth string) (*Metadata, error)
 }

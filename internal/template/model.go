@@ -47,6 +47,15 @@ type Template struct {
 	PostInit     []PostInit `yaml:"post_init,omitempty" validate:"dive"`
 }
 
+// Metadata represents a subset of Template containing only identification and description fields.
+type Metadata struct {
+	Name        string   `yaml:"name" validate:"required"`
+	Type        Type     `yaml:"type" validate:"required,oneof=project feature component"`
+	Version     string   `yaml:"version" validate:"required"`
+	Description string   `yaml:"description"`
+	Tags        []string `yaml:"tags,omitempty"`
+}
+
 // VariableByRole returns the variable with the given role.
 func (t *Template) VariableByRole(role VariableRole) (*Variable, error) {
 	for i, v := range t.Variables {

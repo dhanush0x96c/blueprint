@@ -12,6 +12,11 @@ const (
 	FileName = "template.yaml"
 )
 
+// Loader handles loading templates from the filesystem
+type Loader interface {
+	Load(fsys fs.FS, pth string) (*Template, error)
+}
+
 // FileLoader handles loading templates from the filesystem
 type FileLoader struct {
 	validate *Validator
@@ -57,6 +62,27 @@ func (l *FileLoader) Load(fsys fs.FS, pth string) (*Template, error) {
 	}
 
 	return &tmpl, nil
+}
+
+// LoadMetadata loads template metadata from the given filesystem.
+func (l *FileLoader) LoadMetadata(fsys fs.FS, pth string) (*Metadata, error) {
+	templatePath := resolveTemplatePath(pth)
+
+	data, err := fs.ReadFile(fsys, templatePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read template file: %w", err)
+	}
+
+	var meta Metadata
+	if err := yaml.Unmarshal(data, &meta); err != nil {
+		return nil, fmt.Errorf("failed to parse template YAML: %w", err)
+	}
+
+	if err := l.validate.ValidateMetadata(&meta); err != nil {
+		return nil, fmt.Errorf("metadata validation failed: %w", err)
+	}
+
+	return &meta, nil
 }
 
 // resolveTemplatePath resolves a template path to a template manifest path.

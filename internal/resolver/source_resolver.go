@@ -12,7 +12,7 @@ import (
 // SourceResolver resolves templates from a source.
 type SourceResolver struct {
 	source Source
-	loader *template.FileLoader
+	loader template.MetadataLoader
 }
 
 // NewSourceResolver creates a resolver backed by the provided source.
@@ -40,8 +40,8 @@ func (r *SourceResolver) Resolve(ref template.TemplateRef) (*template.ResolvedTe
 }
 
 // Discover finds all templates and returns them keyed by template directory path.
-func (r *SourceResolver) Discover(opts template.DiscoverOptions) (map[string]*template.Template, error) {
-	templates := make(map[string]*template.Template)
+func (r *SourceResolver) Discover(opts template.DiscoverOptions) (map[string]*template.Metadata, error) {
+	templates := make(map[string]*template.Metadata)
 
 	err := fs.WalkDir(r.source.Filesystem, ".", func(pth string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -55,7 +55,7 @@ func (r *SourceResolver) Discover(opts template.DiscoverOptions) (map[string]*te
 			return nil
 		}
 
-		tmpl, err := r.loader.Load(r.source.Filesystem, pth)
+		meta, err := r.loader.LoadMetadata(r.source.Filesystem, pth)
 		if err != nil {
 			if opts.IgnoreErrors {
 				return nil
@@ -63,15 +63,15 @@ func (r *SourceResolver) Discover(opts template.DiscoverOptions) (map[string]*te
 			return err
 		}
 
-		if opts.Type != "" && tmpl.Type != opts.Type {
+		if opts.Type != "" && meta.Type != opts.Type {
 			return nil
 		}
 
-		if len(opts.Tags) > 0 && !matchesAnyTag(tmpl, opts.Tags) {
+		if len(opts.Tags) > 0 && !matchesAnyTag(meta, opts.Tags) {
 			return nil
 		}
 
-		templates[path.Dir(pth)] = tmpl
+		templates[path.Dir(pth)] = meta
 		return nil
 	})
 	if err != nil {
@@ -82,13 +82,13 @@ func (r *SourceResolver) Discover(opts template.DiscoverOptions) (map[string]*te
 }
 
 // matchesAnyTag returns true if the template has at least one of the filter tags.
-func matchesAnyTag(tmpl *template.Template, filterTags []string) bool {
-	if len(tmpl.Tags) == 0 {
+func matchesAnyTag(meta *template.Metadata, filterTags []string) bool {
+	if len(meta.Tags) == 0 {
 		return false
 	}
 
-	tagSet := make(map[string]struct{}, len(tmpl.Tags))
-	for _, t := range tmpl.Tags {
+	tagSet := make(map[string]struct{}, len(meta.Tags))
+	for _, t := range meta.Tags {
 		tagSet[strings.ToLower(t)] = struct{}{}
 	}
 
