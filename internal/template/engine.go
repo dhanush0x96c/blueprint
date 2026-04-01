@@ -55,17 +55,24 @@ func (e *Engine) RenderNode(node *TemplateNode, contexts RenderContexts) ([]Rend
 	return e.renderer.RenderAll(node, contexts)
 }
 
-// GetFullTree returns a TemplateNode tree with ALL includes enabled.
-func (e *Engine) GetFullTree(ref TemplateRef) (*TemplateNode, error) {
+// GetFullTree loads a template, resolves all includes using the provided confirm function,
+// and validates the resulting tree.
+func (e *Engine) GetFullTree(ref TemplateRef, confirm ConfirmIncludes) (*TemplateNode, error) {
 	loaded, err := e.LoadTemplate(ref)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template: %w", err)
 	}
 
-	// Always return all includes as enabled.
-	return e.composer.Compose(loaded, func(includes []Include) ([]Include, error) {
-		return includes, nil
-	})
+	tree, err := e.composer.Compose(loaded, confirm)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := e.ValidateTree(tree); err != nil {
+		return nil, fmt.Errorf("validation failed: %w", err)
+	}
+
+	return tree, nil
 }
 
 // ValidateTree recursively validates a template tree.
