@@ -21,23 +21,25 @@ func NewComposer(resolver Resolver, loader Loader) *Composer {
 
 // Compose resolves all includes for a template recursively and builds a TemplateNode tree.
 // It calls confirm for all includes of a template to decide which ones should be loaded.
-func (c *Composer) Compose(tmpl *Template, confirm ConfirmIncludes) (*TemplateNode, error) {
-	return c.doCompose(tmpl, []string{tmpl.Name}, confirm)
+func (c *Composer) Compose(loaded *LoadedTemplate, confirm ConfirmIncludes) (*TemplateNode, error) {
+	return c.doCompose(loaded, []string{loaded.Template.Name}, confirm)
 }
 
 // doCompose is the internal recursive composition function that tracks the stack
 // to detect circular dependencies and builds the TemplateNode tree.
-func (c *Composer) doCompose(tmpl *Template, stack []string, confirm ConfirmIncludes) (*TemplateNode, error) {
+func (c *Composer) doCompose(loaded *LoadedTemplate, stack []string, confirm ConfirmIncludes) (*TemplateNode, error) {
 	node := &TemplateNode{
-		Template: tmpl,
+		Template: loaded.Template,
+		FS:       loaded.FS,
+		Path:     loaded.Path,
 		Children: make([]*TemplateNode, 0),
 	}
 
-	if len(tmpl.Includes) == 0 {
+	if len(loaded.Template.Includes) == 0 {
 		return node, nil
 	}
 
-	enabledIncludes, err := confirm(tmpl.Includes)
+	enabledIncludes, err := confirm(loaded.Template.Includes)
 	if err != nil {
 		return nil, err
 	}

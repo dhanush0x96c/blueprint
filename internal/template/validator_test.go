@@ -389,36 +389,44 @@ func TestValidator_ValidateFiles(t *testing.T) {
 	}
 
 	t.Run("existing file passes", func(t *testing.T) {
-		tmpl := &Template{
-			Name:    "test",
-			Type:    TypeProject,
-			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+		node := &TemplateNode{
+			Template: &Template{
+				Name:    "test",
+				Type:    TypeProject,
+				Version: "1.0.0",
+				Variables: []Variable{
+					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				},
+				Files: []File{
+					{Src: "existing.txt", Dest: "dest.txt"},
+				},
 			},
-			Files: []File{
-				{Src: "existing.txt", Dest: "dest.txt", FS: fsys},
-			},
+			FS:   fsys,
+			Path: ".",
 		}
 
-		err := v.Validate(tmpl)
+		err := v.ValidateTree(node)
 		require.NoError(t, err)
 	})
 
 	t.Run("missing file fails", func(t *testing.T) {
-		tmpl := &Template{
-			Name:    "test",
-			Type:    TypeProject,
-			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+		node := &TemplateNode{
+			Template: &Template{
+				Name:    "test",
+				Type:    TypeProject,
+				Version: "1.0.0",
+				Variables: []Variable{
+					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				},
+				Files: []File{
+					{Src: "missing.txt", Dest: "dest.txt"},
+				},
 			},
-			Files: []File{
-				{Src: "missing.txt", Dest: "dest.txt", FS: fsys},
-			},
+			FS:   fsys,
+			Path: ".",
 		}
 
-		err := v.Validate(tmpl)
+		err := v.ValidateTree(node)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "source file \"missing.txt\" does not exist")
 	})

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"path"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -32,6 +33,8 @@ func (v *Validator) ValidateTree(node *TemplateNode) error {
 		errs = append(errs, err)
 	}
 
+	errs = append(errs, v.validateNodeFiles(node)...)
+
 	for _, child := range node.Children {
 		if err := v.ValidateTree(child); err != nil {
 			errs = append(errs, err)
@@ -43,6 +46,25 @@ func (v *Validator) ValidateTree(node *TemplateNode) error {
 	}
 
 	return errors.Join(errs...)
+}
+
+// validateNodeFiles validates that all source files exist for a node.
+func (v *Validator) validateNodeFiles(node *TemplateNode) []error {
+	var errs []error
+
+	for i, file := range node.Template.Files {
+		srcPath := path.Join(node.Path, file.Src)
+		_, err := fs.Stat(node.FS, srcPath)
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				errs = append(errs, fmt.Errorf("file[%d]: source file %q does not exist", i, srcPath))
+			} else {
+				errs = append(errs, fmt.Errorf("file[%d]: failed to stat source file %q: %w", i, srcPath, err))
+			}
+		}
+	}
+
+	return errs
 }
 
 // ValidateTreeContexts recursively validates that all required variables are present
@@ -89,7 +111,6 @@ func (v *Validator) Validate(tmpl *Template) error {
 
 	// Semantic validation
 	errs = append(errs, v.validateVariables(tmpl.Variables)...)
-	errs = append(errs, v.validateFiles(tmpl.Files)...)
 
 	if err := v.validateProjectNameRole(tmpl); err != nil {
 		errs = append(errs, err)
@@ -123,30 +144,6 @@ func (v *Validator) validateVariables(vars []Variable) []error {
 		if variable.Type == VariableTypeSelect || variable.Type == VariableTypeMultiSelect {
 			if len(variable.Options) == 0 {
 				errs = append(errs, fmt.Errorf("variable[%d] %q: options required for type %s", i, variable.Name, variable.Type))
-			}
-		}
-	}
-
-	return errs
-}
-
-// validateFiles validates that all source files exist.
-func (v *Validator) validateFiles(files []File) []error {
-	var errs []error
-
-	for i, file := range files {
-		if file.FS == nil {
-			// If FS is not set, we can't validate existence yet.
-			// This might happen if Validate is called before FS is initialized in Loader.
-			continue
-		}
-
-		_, err := fs.Stat(file.FS, file.Src)
-		if err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				errs = append(errs, fmt.Errorf("file[%d]: source file %q does not exist", i, file.Src))
-			} else {
-				errs = append(errs, fmt.Errorf("file[%d]: failed to stat source file %q: %w", i, file.Src, err))
 			}
 		}
 	}

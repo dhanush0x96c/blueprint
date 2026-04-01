@@ -88,7 +88,8 @@ func (r *Renderer) renderNode(node *TemplateNode, contexts RenderContexts, resul
 	}
 
 	for _, file := range node.Template.Files {
-		if err := r.processPath(file.FS, file.Src, file.Dest, ctx, results); err != nil {
+		srcPath := path.Join(node.Path, file.Src)
+		if err := r.processPath(node.FS, srcPath, file.Dest, ctx, results); err != nil {
 			return err
 		}
 	}

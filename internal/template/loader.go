@@ -12,9 +12,16 @@ const (
 	FileName = "template.yaml"
 )
 
+// LoadedTemplate represents a template along with its source information
+type LoadedTemplate struct {
+	Template *Template
+	FS       fs.FS
+	Path     string
+}
+
 // Loader handles loading templates from the filesystem
 type Loader interface {
-	Load(fsys fs.FS, pth string) (*Template, error)
+	Load(fsys fs.FS, pth string) (*LoadedTemplate, error)
 }
 
 // FileLoader handles loading templates from the filesystem
@@ -34,9 +41,8 @@ func NewLoader() *FileLoader {
 // The path may refer to either a template.yaml file or a directory
 // containing one. In the latter case, "<dir>/template.yaml" is used.
 //
-// The loaded template is validated, and all file source paths
-// (Template.Files[].Src) are resolved relative to the template directory.
-func (l *FileLoader) Load(fsys fs.FS, pth string) (*Template, error) {
+// The loaded template is validated.
+func (l *FileLoader) Load(fsys fs.FS, pth string) (*LoadedTemplate, error) {
 	templatePath := resolveTemplatePath(pth)
 
 	data, err := fs.ReadFile(fsys, templatePath)
@@ -49,19 +55,15 @@ func (l *FileLoader) Load(fsys fs.FS, pth string) (*Template, error) {
 		return nil, fmt.Errorf("failed to parse template YAML: %w", err)
 	}
 
-	tmplDir := path.Dir(templatePath)
-
-	for i := range tmpl.Files {
-		tmpl.Files[i].Src = path.Join(
-			tmplDir, tmpl.Files[i].Src)
-		tmpl.Files[i].FS = fsys
-	}
-
 	if err := l.validate.Validate(&tmpl); err != nil {
 		return nil, fmt.Errorf("template validation failed: %w", err)
 	}
 
-	return &tmpl, nil
+	return &LoadedTemplate{
+		Template: &tmpl,
+		FS:       fsys,
+		Path:     path.Dir(templatePath),
+	}, nil
 }
 
 // LoadMetadata loads template metadata from the given filesystem.

@@ -52,12 +52,12 @@ type Result struct {
 // Scaffold performs the complete scaffolding operation
 func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 	// Load the root template
-	tmpl, err := s.engine.LoadTemplate(opts.TemplateRef)
+	loaded, err := s.engine.LoadTemplate(opts.TemplateRef)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template: %w", err)
 	}
 
-	tree, err := s.compose(tmpl, opts)
+	tree, err := s.compose(loaded, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 	}, nil
 }
 
-func (s *Scaffolder) compose(tmpl *template.Template, opts Options) (*template.TemplateNode, error) {
+func (s *Scaffolder) compose(loaded *template.LoadedTemplate, opts Options) (*template.TemplateNode, error) {
 	var confirm template.ConfirmIncludes
 	if opts.Interactive {
 		confirm = s.collector.ConfirmIncludes
@@ -96,7 +96,7 @@ func (s *Scaffolder) compose(tmpl *template.Template, opts Options) (*template.T
 		confirm = s.confirmIncludesFromOptions(opts)
 	}
 
-	tree, err := s.engine.Compose(tmpl, confirm)
+	tree, err := s.engine.Compose(loaded, confirm)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compose template tree: %w", err)
 	}

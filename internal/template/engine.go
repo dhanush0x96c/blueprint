@@ -31,7 +31,7 @@ func NewEngine(resolver Resolver) *Engine {
 }
 
 // LoadTemplate loads a template from the given reference
-func (e *Engine) LoadTemplate(ref TemplateRef) (*Template, error) {
+func (e *Engine) LoadTemplate(ref TemplateRef) (*LoadedTemplate, error) {
 	resolved, err := e.resolver.Resolve(ref)
 	if err != nil {
 		return nil, err
@@ -40,14 +40,14 @@ func (e *Engine) LoadTemplate(ref TemplateRef) (*Template, error) {
 }
 
 // LoadTemplateByPath loads a template from a specific path on a filesystem
-func (e *Engine) LoadTemplateByPath(fsys fs.FS, path string) (*Template, error) {
+func (e *Engine) LoadTemplateByPath(fsys fs.FS, path string) (*LoadedTemplate, error) {
 	return e.loader.Load(fsys, path)
 }
 
 // Compose resolves all includes for a template recursively and builds a TemplateNode tree.
 // It calls confirm for all includes of a template to decide which ones should be loaded.
-func (e *Engine) Compose(tmpl *Template, confirm ConfirmIncludes) (*TemplateNode, error) {
-	return e.composer.Compose(tmpl, confirm)
+func (e *Engine) Compose(loaded *LoadedTemplate, confirm ConfirmIncludes) (*TemplateNode, error) {
+	return e.composer.Compose(loaded, confirm)
 }
 
 // RenderNode renders all files from a template tree with the given contexts.
@@ -57,13 +57,13 @@ func (e *Engine) RenderNode(node *TemplateNode, contexts RenderContexts) ([]Rend
 
 // GetFullTree returns a TemplateNode tree with ALL includes enabled.
 func (e *Engine) GetFullTree(ref TemplateRef) (*TemplateNode, error) {
-	tmpl, err := e.LoadTemplate(ref)
+	loaded, err := e.LoadTemplate(ref)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template: %w", err)
 	}
 
 	// Always return all includes as enabled.
-	return e.composer.Compose(tmpl, func(includes []Include) ([]Include, error) {
+	return e.composer.Compose(loaded, func(includes []Include) ([]Include, error) {
 		return includes, nil
 	})
 }

@@ -28,7 +28,7 @@ type fakeLoader struct {
 	err       error
 }
 
-func (f *fakeLoader) Load(fsys fs.FS, pth string) (*Template, error) {
+func (f *fakeLoader) Load(fsys fs.FS, pth string) (*LoadedTemplate, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -38,7 +38,11 @@ func (f *fakeLoader) Load(fsys fs.FS, pth string) (*Template, error) {
 		return nil, errors.New("template not found")
 	}
 
-	return t, nil
+	return &LoadedTemplate{
+		Template: t,
+		FS:       fsys,
+		Path:     pth,
+	}, nil
 }
 
 func TestCompose_SingleTemplate_NoIncludes(t *testing.T) {
@@ -55,7 +59,13 @@ func TestCompose_SingleTemplate_NoIncludes(t *testing.T) {
 		Dependencies: []string{"go@1.22"},
 	}
 
-	out, err := composer.Compose(tmpl, func(includes []Include) ([]Include, error) {
+	loaded := &LoadedTemplate{
+		Template: tmpl,
+		FS:       nil,
+		Path:     "base",
+	}
+
+	out, err := composer.Compose(loaded, func(includes []Include) ([]Include, error) {
 		return nil, nil
 	})
 	require.NoError(t, err)
@@ -101,7 +111,13 @@ func TestCompose_WithIncludes_BuildsTree(t *testing.T) {
 
 	composer := NewComposer(resolver, loader)
 
-	out, err := composer.Compose(base, func(includes []Include) ([]Include, error) {
+	loaded := &LoadedTemplate{
+		Template: base,
+		FS:       nil,
+		Path:     "base",
+	}
+
+	out, err := composer.Compose(loaded, func(includes []Include) ([]Include, error) {
 		return includes, nil
 	})
 	require.NoError(t, err)
@@ -145,7 +161,13 @@ func TestCompose_CircularDependencyDetected(t *testing.T) {
 
 	composer := NewComposer(resolver, loader)
 
-	_, err := composer.Compose(a, func(includes []Include) ([]Include, error) {
+	loaded := &LoadedTemplate{
+		Template: a,
+		FS:       nil,
+		Path:     "a",
+	}
+
+	_, err := composer.Compose(loaded, func(includes []Include) ([]Include, error) {
 		return includes, nil
 	})
 	require.Error(t, err)
@@ -182,6 +204,12 @@ func TestCompose_OptionalIncludes_ConfirmCalled(t *testing.T) {
 
 	composer := NewComposer(resolver, loader)
 
+	loaded := &LoadedTemplate{
+		Template: base,
+		FS:       nil,
+		Path:     "base",
+	}
+
 	// Enable only logging
 	confirm := func(includes []Include) ([]Include, error) {
 		var enabled []Include
@@ -193,7 +221,7 @@ func TestCompose_OptionalIncludes_ConfirmCalled(t *testing.T) {
 		return enabled, nil
 	}
 
-	out, err := composer.Compose(base, confirm)
+	out, err := composer.Compose(loaded, confirm)
 	require.NoError(t, err)
 
 	assert.Equal(t, "base", out.Template.Name)

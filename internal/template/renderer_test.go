@@ -177,18 +177,18 @@ func TestRenderAll(t *testing.T) {
 			{
 				Src:  "a.tmpl",
 				Dest: "{{ .name }}/a.txt",
-				FS:   fsys,
 			},
 			{
 				Src:  "b.tmpl",
 				Dest: "{{ .name }}/b.txt",
-				FS:   fsys,
 			},
 		},
 	}
 
 	node := &TemplateNode{
 		Template: tmpl,
+		FS:       fsys,
+		Path:     ".",
 	}
 
 	out, err := r.RenderAll(

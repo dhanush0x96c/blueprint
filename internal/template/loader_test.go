@@ -54,7 +54,7 @@ func TestLoader_Load(t *testing.T) {
 
 		tmpl, err := loader.Load(fsys, "projects/go-cli")
 		require.NoError(t, err)
-		require.Equal(t, "go-cli", tmpl.Name)
+		require.Equal(t, "go-cli", tmpl.Template.Name)
 	})
 
 	t.Run("load from template.yaml path", func(t *testing.T) {
@@ -64,7 +64,7 @@ func TestLoader_Load(t *testing.T) {
 		path := filepath.Join("direct", FileName)
 		tmpl, err := loader.Load(fsys, path)
 		require.NoError(t, err)
-		require.Equal(t, "go-cli", tmpl.Name)
+		require.Equal(t, "go-cli", tmpl.Template.Name)
 	})
 
 	t.Run("invalid template fails validation", func(t *testing.T) {
@@ -108,9 +108,9 @@ description: "Template without tags"
 
 		tmpl, err := loader.Load(fsys, "with-tags")
 		require.NoError(t, err)
-		require.Equal(t, "tagged-template", tmpl.Name)
-		require.Len(t, tmpl.Tags, 3)
-		require.Equal(t, []string{"go", "cli", "testing"}, tmpl.Tags)
+		require.Equal(t, "tagged-template", tmpl.Template.Name)
+		require.Len(t, tmpl.Template.Tags, 3)
+		require.Equal(t, []string{"go", "cli", "testing"}, tmpl.Template.Tags)
 	})
 
 	t.Run("handles missing tags", func(t *testing.T) {
@@ -119,7 +119,7 @@ description: "Template without tags"
 
 		tmpl, err := loader.Load(fsys, "without-tags")
 		require.NoError(t, err)
-		require.Equal(t, "no-tags", tmpl.Name)
-		require.Nil(t, tmpl.Tags)
+		require.Equal(t, "no-tags", tmpl.Template.Name)
+		require.Nil(t, tmpl.Template.Tags)
 	})
 }

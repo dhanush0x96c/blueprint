@@ -96,6 +96,8 @@ type RenderedFile struct {
 // It carries a guarantee that its full subtree is present and confirmed.
 type TemplateNode struct {
 	Template *Template
+	FS       fs.FS
+	Path     string
 	Children []*TemplateNode
 }
 
@@ -123,11 +125,8 @@ type Include struct {
 
 // File represents a template file to be rendered and written
 type File struct {
-	// Src is resolved relative to the directory containing template.yaml when loaded.
 	Src  string `yaml:"src" validate:"required"`
 	Dest string `yaml:"dest" validate:"required"`
-	// FS is the filesystem containing the source file. It is set during loading.
-	FS fs.FS `yaml:"-"`
 }
 
 // Context holds all resolved variables for template rendering
