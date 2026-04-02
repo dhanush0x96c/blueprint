@@ -95,6 +95,7 @@ type RenderedFile struct {
 // TemplateNode represents a resolved node in the template tree.
 // It carries a guarantee that its full subtree is present and confirmed.
 type TemplateNode struct {
+	ID       string
 	Template *Template
 	FS       fs.FS
 	Path     string

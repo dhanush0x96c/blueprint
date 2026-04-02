@@ -22,13 +22,14 @@ func NewComposer(resolver Resolver, loader Loader) *Composer {
 // Compose resolves all includes for a template recursively and builds a TemplateNode tree.
 // It calls confirm for all includes of a template to decide which ones should be loaded.
 func (c *Composer) Compose(loaded *LoadedTemplate, confirm ConfirmIncludes) (*TemplateNode, error) {
-	return c.doCompose(loaded, []string{loaded.Template.Name}, confirm)
+	return c.doCompose(loaded, []string{loaded.Template.Name}, confirm, "0")
 }
 
 // doCompose is the internal recursive composition function that tracks the stack
 // to detect circular dependencies and builds the TemplateNode tree.
-func (c *Composer) doCompose(loaded *LoadedTemplate, stack []string, confirm ConfirmIncludes) (*TemplateNode, error) {
+func (c *Composer) doCompose(loaded *LoadedTemplate, stack []string, confirm ConfirmIncludes, id string) (*TemplateNode, error) {
 	node := &TemplateNode{
+		ID:       id,
 		Template: loaded.Template,
 		FS:       loaded.FS,
 		Path:     loaded.Path,
@@ -44,7 +45,7 @@ func (c *Composer) doCompose(loaded *LoadedTemplate, stack []string, confirm Con
 		return nil, err
 	}
 
-	for _, inc := range enabledIncludes {
+	for i, inc := range enabledIncludes {
 		if slices.Contains(stack, inc.Name) {
 			return nil, fmt.Errorf("circular dependency detected: %v -> %s", stack, inc.Name)
 		}
@@ -64,7 +65,8 @@ func (c *Composer) doCompose(loaded *LoadedTemplate, stack []string, confirm Con
 		}
 
 		newStack := append(slices.Clone(stack), inc.Name)
-		childNode, err := c.doCompose(includedTmpl, newStack, confirm)
+		childID := fmt.Sprintf("%s.%d", id, i)
+		childNode, err := c.doCompose(includedTmpl, newStack, confirm, childID)
 		if err != nil {
 			return nil, err
 		}
