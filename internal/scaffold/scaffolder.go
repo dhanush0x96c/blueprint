@@ -152,7 +152,7 @@ func (s *Scaffolder) determineOutputDir(tree *template.TemplateNode, contexts te
 	}
 
 	// Use project name from root template if available
-	rootCtx := contexts[tree.Template.Name]
+	rootCtx := contexts[tree.ID]
 	projectName, err := tree.Template.ProjectName(rootCtx)
 	if err == nil {
 		return projectName

@@ -53,14 +53,14 @@ func (c *Collector) CollectTreeVariables(node *template.TemplateNode) (template.
 
 // collectNodeVariables recursively collects variables for a node and its children.
 func (c *Collector) collectNodeVariables(node *template.TemplateNode, contexts template.RenderContexts) error {
-	// If we already have a context for this template, skip it (already prompted).
-	if _, ok := contexts[node.Template.Name]; !ok {
-		fmt.Printf("\n--- Variables for %s ---\n", node.Template.Name)
+	// If we already have a context for this node, skip it.
+	if _, ok := contexts[node.ID]; !ok {
+		fmt.Printf("\n--- Variables for %s (ID: %s) ---\n", node.Template.Name, node.ID)
 		ctx, err := c.engine.PromptVariablesAsForm(node.Template.Variables)
 		if err != nil {
 			return fmt.Errorf("failed to collect variables for %s: %w", node.Template.Name, err)
 		}
-		contexts[node.Template.Name] = ctx
+		contexts[node.ID] = ctx
 	}
 
 	for _, child := range node.Children {

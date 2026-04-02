@@ -95,7 +95,7 @@ func (e *Engine) BuildContext(node *TemplateNode, vars map[string]any) RenderCon
 }
 
 func (e *Engine) fillContexts(node *TemplateNode, contexts RenderContexts, vars map[string]any) {
-	if _, ok := contexts[node.Template.Name]; !ok {
+	if _, ok := contexts[node.ID]; !ok {
 		ctx := NewTemplateContext(make(map[string]any))
 		// Set defaults from template
 		for _, v := range node.Template.Variables {
@@ -107,7 +107,7 @@ func (e *Engine) fillContexts(node *TemplateNode, contexts RenderContexts, vars 
 		for k, v := range vars {
 			ctx.Set(k, v)
 		}
-		contexts[node.Template.Name] = ctx
+		contexts[node.ID] = ctx
 	}
 
 	for _, child := range node.Children {

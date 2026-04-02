@@ -70,13 +70,13 @@ func (v *Validator) validateNodeFiles(node *TemplateNode) []error {
 // ValidateTreeContexts recursively validates that all required variables are present
 // in the provided contexts for the entire tree.
 func (v *Validator) ValidateTreeContexts(node *TemplateNode, contexts RenderContexts) error {
-	ctx, ok := contexts[node.Template.Name]
+	ctx, ok := contexts[node.ID]
 	if !ok {
-		return fmt.Errorf("no context found for template %s", node.Template.Name)
+		return fmt.Errorf("no context found for template %s (ID: %s)", node.Template.Name, node.ID)
 	}
 
 	if err := v.ValidateContext(node.Template, ctx); err != nil {
-		return fmt.Errorf("template %s: %w", node.Template.Name, err)
+		return fmt.Errorf("template %s (ID: %s): %w", node.Template.Name, node.ID, err)
 	}
 
 	for _, child := range node.Children {

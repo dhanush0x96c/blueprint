@@ -186,6 +186,7 @@ func TestRenderAll(t *testing.T) {
 	}
 
 	node := &TemplateNode{
+		ID:       "0",
 		Template: tmpl,
 		FS:       fsys,
 		Path:     ".",
@@ -194,7 +195,7 @@ func TestRenderAll(t *testing.T) {
 	out, err := r.RenderAll(
 		node,
 		RenderContexts{
-			"root": testContext(map[string]any{
+			"0": testContext(map[string]any{
 				"name": "output",
 				"a":    1,
 				"b":    2,
