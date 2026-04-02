@@ -466,3 +466,56 @@ func TestValidator_ValidateContext(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestValidator_ValidateTreeContexts(t *testing.T) {
+	v := NewValidator()
+
+	root := &TemplateNode{
+		ID: "0",
+		Template: &Template{
+			Name: "root",
+			Variables: []Variable{
+				{Name: "var_root", Prompt: "?", Type: VariableTypeString},
+			},
+		},
+		Children: []*TemplateNode{
+			{
+				ID: "0.0",
+				Template: &Template{
+					Name: "child",
+					Variables: []Variable{
+						{Name: "var_child", Prompt: "?", Type: VariableTypeString},
+					},
+				},
+			},
+		},
+	}
+
+	t.Run("valid contexts pass", func(t *testing.T) {
+		contexts := RenderContexts{
+			"0":   NewTemplateContext(map[string]any{"var_root": "val"}),
+			"0.0": NewTemplateContext(map[string]any{"var_child": "val"}),
+		}
+		err := v.ValidateTreeContexts(root, contexts)
+		require.NoError(t, err)
+	})
+
+	t.Run("missing context for a node fails", func(t *testing.T) {
+		contexts := RenderContexts{
+			"0": NewTemplateContext(map[string]any{"var_root": "val"}),
+		}
+		err := v.ValidateTreeContexts(root, contexts)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "no context found for template child (ID: 0.0)")
+	})
+
+	t.Run("missing variable in one of the contexts fails", func(t *testing.T) {
+		contexts := RenderContexts{
+			"0":   NewTemplateContext(map[string]any{"var_root": "val"}),
+			"0.0": NewTemplateContext(map[string]any{}), // missing var_child
+		}
+		err := v.ValidateTreeContexts(root, contexts)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "required variable var_child is missing")
+	})
+}
