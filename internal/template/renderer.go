@@ -89,7 +89,13 @@ func (r *Renderer) renderNode(node *TemplateNode, contexts RenderContexts, resul
 
 	for _, file := range node.Template.Files {
 		srcPath := path.Join(node.Path, file.Src)
-		if err := r.processPath(node.FS, srcPath, file.Dest, ctx, results); err != nil {
+
+		destPath, err := r.RenderPath(file.Dest, ctx)
+		if err != nil {
+			return fmt.Errorf("failed to render destination path for %s: %w", srcPath, err)
+		}
+
+		if err := r.processPath(node.FS, srcPath, destPath, ctx, results); err != nil {
 			return err
 		}
 	}
@@ -148,16 +154,11 @@ func stripTemplateExt(path string) string {
 
 // processFile processes a single file - renders .tmpl files, copies others
 func (r *Renderer) processFile(fsys fs.FS, srcPath, destPath string, ctx *Context, results map[string]string) error {
-	// Render destination path template
-	renderedDestPath, err := r.RenderPath(destPath, ctx)
-	if err != nil {
-		return fmt.Errorf("failed to render destination path for %s: %w", srcPath, err)
-	}
-
 	var content string
+	var err error
 
 	if isTemplateFile(srcPath) {
-		renderedDestPath = stripTemplateExt(renderedDestPath)
+		destPath = stripTemplateExt(destPath)
 
 		content, err = r.Render(fsys, srcPath, ctx)
 		if err != nil {
@@ -170,7 +171,7 @@ func (r *Renderer) processFile(fsys fs.FS, srcPath, destPath string, ctx *Contex
 		}
 	}
 
-	results[renderedDestPath] = content
+	results[destPath] = content
 
 	return nil
 }
