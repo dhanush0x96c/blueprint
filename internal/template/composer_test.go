@@ -228,3 +228,75 @@ func TestCompose_OptionalIncludes_ConfirmCalled(t *testing.T) {
 	require.Len(t, out.Children, 1)
 	assert.Equal(t, "logging", out.Children[0].Template.Name)
 }
+
+func TestCompose_AssignsIDs(t *testing.T) {
+	root := &Template{
+		Name: "root",
+		Includes: []Include{
+			{Name: "child0", EnabledByDefault: true},
+			{Name: "child1", EnabledByDefault: true},
+		},
+	}
+
+	child0 := &Template{
+		Name: "child0",
+	}
+
+	child1 := &Template{
+		Name: "child1",
+		Includes: []Include{
+			{Name: "grandchild0", EnabledByDefault: true},
+			{Name: "grandchild1", EnabledByDefault: true},
+		},
+	}
+
+	grandchild0 := &Template{
+		Name: "grandchild0",
+	}
+
+	grandchild1 := &Template{
+		Name: "grandchild1",
+	}
+
+	templates := map[string]*Template{
+		"child0":      child0,
+		"child1":      child1,
+		"grandchild0": grandchild0,
+		"grandchild1": grandchild1,
+	}
+
+	loader := &fakeLoader{
+		templates: templates,
+	}
+	resolver := &fakeResolver{
+		templates: templates,
+	}
+
+	composer := NewComposer(resolver, loader)
+
+	loaded := &LoadedTemplate{
+		Template: root,
+		FS:       nil,
+		Path:     "root",
+	}
+
+	out, err := composer.Compose(loaded, func(includes []Include) ([]Include, error) {
+		return includes, nil
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, "0", out.ID)
+	require.Len(t, out.Children, 2)
+
+	assert.Equal(t, "0.0", out.Children[0].ID)
+	assert.Equal(t, "child0", out.Children[0].Template.Name)
+
+	assert.Equal(t, "0.1", out.Children[1].ID)
+	assert.Equal(t, "child1", out.Children[1].Template.Name)
+
+	require.Len(t, out.Children[1].Children, 2)
+	assert.Equal(t, "0.1.0", out.Children[1].Children[0].ID)
+	assert.Equal(t, "grandchild0", out.Children[1].Children[0].Template.Name)
+	assert.Equal(t, "0.1.1", out.Children[1].Children[1].ID)
+	assert.Equal(t, "grandchild1", out.Children[1].Children[1].Template.Name)
+}
