@@ -22,49 +22,53 @@ func NewRenderer() *Renderer {
 }
 
 // Render renders a template file with the given context
-func (r *Renderer) Render(fsys fs.FS, templatePath string, ctx *Context) (string, error) {
+func (r *Renderer) Render(fsys fs.FS, templatePath string, ctx *Context) ([]byte, error) {
 	content, err := fs.ReadFile(fsys, templatePath)
 	if err != nil {
-		return "", fmt.Errorf("failed to read template file %s: %w", templatePath, err)
+		return nil, fmt.Errorf("failed to read template file %s: %w", templatePath, err)
 	}
 
 	return r.RenderString(string(content), ctx, templatePath)
 }
 
 // RenderString renders a template string with the given context
-func (r *Renderer) RenderString(content string, ctx *Context, name string) (string, error) {
+func (r *Renderer) RenderString(content string, ctx *Context, name string) ([]byte, error) {
 	tmpl, err := template.New(name).Funcs(r.funcMap).Parse(content)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse template %s: %w", name, err)
+		return nil, fmt.Errorf("failed to parse template %s: %w", name, err)
 	}
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, ctx.Variables); err != nil {
-		return "", fmt.Errorf("failed to execute template %s: %w", name, err)
+		return nil, fmt.Errorf("failed to execute template %s: %w", name, err)
 	}
 
-	return buf.String(), nil
+	return buf.Bytes(), nil
 }
 
 // RenderPath renders a destination path template with the given context
 // This allows dynamic file paths like "{{ .package_name }}/main.go"
 func (r *Renderer) RenderPath(pathTemplate string, ctx *Context) (string, error) {
-	return r.RenderString(pathTemplate, ctx, "path")
+	rendered, err := r.RenderString(pathTemplate, ctx, "path")
+	if err != nil {
+		return "", err
+	}
+	return string(rendered), nil
 }
 
 // Copy reads a file and returns its content without template processing
-func (r *Renderer) Copy(fsys fs.FS, filePath string) (string, error) {
+func (r *Renderer) Copy(fsys fs.FS, filePath string) ([]byte, error) {
 	content, err := fs.ReadFile(fsys, filePath)
 	if err != nil {
-		return "", fmt.Errorf("failed to read file %s: %w", filePath, err)
+		return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
 	}
-	return string(content), nil
+	return content, nil
 }
 
 // RenderAll renders all files from a template tree with the given contexts.
 // It walks the tree and renders files for each node with its corresponding context.
 func (r *Renderer) RenderAll(node *TemplateNode, contexts RenderContexts) ([]RenderedFile, error) {
-	results := make(map[string]string)
+	results := make(map[string][]byte)
 	if err := r.renderNode(node, contexts, results); err != nil {
 		return nil, err
 	}
@@ -81,7 +85,7 @@ func (r *Renderer) RenderAll(node *TemplateNode, contexts RenderContexts) ([]Ren
 }
 
 // renderNode recursively renders a node and its children.
-func (r *Renderer) renderNode(node *TemplateNode, contexts RenderContexts, results map[string]string) error {
+func (r *Renderer) renderNode(node *TemplateNode, contexts RenderContexts, results map[string][]byte) error {
 	ctx, ok := contexts[node.ID]
 	if !ok {
 		return fmt.Errorf("no context found for template %s (ID: %s)", node.Template.Name, node.ID)
@@ -110,7 +114,7 @@ func (r *Renderer) renderNode(node *TemplateNode, contexts RenderContexts, resul
 }
 
 // processPath processes a file or directory path recursively
-func (r *Renderer) processPath(fsys fs.FS, srcPath, destPath string, ctx *Context, results map[string]string) error {
+func (r *Renderer) processPath(fsys fs.FS, srcPath, destPath string, ctx *Context, results map[string][]byte) error {
 	info, err := fs.Stat(fsys, srcPath)
 	if err != nil {
 		return fmt.Errorf("failed to stat %s: %w", srcPath, err)
@@ -124,7 +128,7 @@ func (r *Renderer) processPath(fsys fs.FS, srcPath, destPath string, ctx *Contex
 }
 
 // processDirectory recursively processes all files in a directory
-func (r *Renderer) processDirectory(fsys fs.FS, srcDir, destDir string, ctx *Context, results map[string]string) error {
+func (r *Renderer) processDirectory(fsys fs.FS, srcDir, destDir string, ctx *Context, results map[string][]byte) error {
 	entries, err := fs.ReadDir(fsys, srcDir)
 	if err != nil {
 		return fmt.Errorf("failed to read directory %s: %w", srcDir, err)
@@ -153,8 +157,8 @@ func stripTemplateExt(path string) string {
 }
 
 // processFile processes a single file - renders .tmpl files, copies others
-func (r *Renderer) processFile(fsys fs.FS, srcPath, destPath string, ctx *Context, results map[string]string) error {
-	var content string
+func (r *Renderer) processFile(fsys fs.FS, srcPath, destPath string, ctx *Context, results map[string][]byte) error {
+	var content []byte
 	var err error
 
 	if isTemplateFile(srcPath) {

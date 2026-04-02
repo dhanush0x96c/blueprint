@@ -29,12 +29,12 @@ func NewWriterWithPerms(filePerm, dirPerm os.FileMode) *Writer {
 }
 
 // WriteFile writes content to a file, creating parent directories if needed
-func (w *Writer) WriteFile(path string, content string) error {
+func (w *Writer) WriteFile(path string, content []byte) error {
 	return w.WriteFileWithPerm(path, content, w.defaultPerm)
 }
 
 // WriteFileWithPerm writes content to a file with specific permissions
-func (w *Writer) WriteFileWithPerm(path string, content string, perm os.FileMode) error {
+func (w *Writer) WriteFileWithPerm(path string, content []byte, perm os.FileMode) error {
 	// Create parent directories
 	dir := filepath.Dir(path)
 	if err := w.EnsureDir(dir); err != nil {
@@ -42,7 +42,7 @@ func (w *Writer) WriteFileWithPerm(path string, content string, perm os.FileMode
 	}
 
 	// Write the file
-	if err := os.WriteFile(path, []byte(content), perm); err != nil {
+	if err := os.WriteFile(path, content, perm); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
@@ -50,7 +50,7 @@ func (w *Writer) WriteFileWithPerm(path string, content string, perm os.FileMode
 }
 
 // WriteFiles writes multiple files from a map of path -> content
-func (w *Writer) WriteFiles(files map[string]string) error {
+func (w *Writer) WriteFiles(files map[string][]byte) error {
 	for path, content := range files {
 		if err := w.WriteFile(path, content); err != nil {
 			return fmt.Errorf("failed to write file %s: %w", path, err)
@@ -60,7 +60,7 @@ func (w *Writer) WriteFiles(files map[string]string) error {
 }
 
 // WriteFilesWithBase writes multiple files with a base directory prefix
-func (w *Writer) WriteFilesWithBase(baseDir string, files map[string]string) error {
+func (w *Writer) WriteFilesWithBase(baseDir string, files map[string][]byte) error {
 	for path, content := range files {
 		fullPath := filepath.Join(baseDir, path)
 		if err := w.WriteFile(fullPath, content); err != nil {
@@ -109,7 +109,7 @@ func (w *Writer) IsEmpty(path string) (bool, error) {
 
 // SafeWrite writes a file only if it doesn't exist
 // Returns true if the file was written, false if it was skipped
-func (w *Writer) SafeWrite(path string, content string) (bool, error) {
+func (w *Writer) SafeWrite(path string, content []byte) (bool, error) {
 	if w.FileExists(path) {
 		return false, nil
 	}
@@ -123,7 +123,7 @@ func (w *Writer) SafeWrite(path string, content string) (bool, error) {
 
 // SafeWriteFiles writes multiple files, skipping existing ones
 // Returns a list of files that were written and a list that were skipped
-func (w *Writer) SafeWriteFiles(files map[string]string) (written []string, skipped []string, err error) {
+func (w *Writer) SafeWriteFiles(files map[string][]byte) (written []string, skipped []string, err error) {
 	written = make([]string, 0)
 	skipped = make([]string, 0)
 
@@ -144,7 +144,7 @@ func (w *Writer) SafeWriteFiles(files map[string]string) (written []string, skip
 }
 
 // SafeWriteFilesWithBase is like SafeWriteFiles but with a base directory prefix
-func (w *Writer) SafeWriteFilesWithBase(baseDir string, files map[string]string) (written []string, skipped []string, err error) {
+func (w *Writer) SafeWriteFilesWithBase(baseDir string, files map[string][]byte) (written []string, skipped []string, err error) {
 	written = make([]string, 0)
 	skipped = make([]string, 0)
 
@@ -198,7 +198,7 @@ func (w *Writer) CopyFile(src, dst string) error {
 		return fmt.Errorf("failed to read source file: %w", err)
 	}
 
-	return w.WriteFile(dst, string(content))
+	return w.WriteFile(dst, content)
 }
 
 // GetAbsolutePath returns the absolute path for a given path

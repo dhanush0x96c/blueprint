@@ -89,7 +89,7 @@ func (t *Template) ProjectName(ctx *Context) (string, error) {
 // RenderedFile represents a file that has been rendered but not yet written to disk.
 type RenderedFile struct {
 	Path    string
-	Content string
+	Content []byte
 }
 
 // TemplateNode represents a resolved node in the template tree.

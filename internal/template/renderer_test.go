@@ -38,7 +38,7 @@ func TestRenderString_Simple(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.Equal(t, "Hello Blueprint", out)
+	assert.Equal(t, "Hello Blueprint", string(out))
 }
 
 func TestRenderString_WithDefaultFuncs(t *testing.T) {
@@ -53,7 +53,7 @@ func TestRenderString_WithDefaultFuncs(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.Equal(t, "BLUEPRINT", out)
+	assert.Equal(t, "BLUEPRINT", string(out))
 }
 
 func TestRenderString_ParseError(t *testing.T) {
@@ -103,7 +103,7 @@ func TestRender_File(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.Equal(t, "Hi World", out)
+	assert.Equal(t, "Hi World", string(out))
 }
 
 func TestRender_FileNotFound(t *testing.T) {
@@ -149,7 +149,7 @@ func TestAddFunc_CustomFunction(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.Equal(t, "hey!!!", out)
+	assert.Equal(t, "hey!!!", string(out))
 }
 
 func TestRenderAll(t *testing.T) {
@@ -208,7 +208,7 @@ func TestRenderAll(t *testing.T) {
 
 	resMap := make(map[string]string)
 	for _, f := range out {
-		resMap[f.Path] = f.Content
+		resMap[f.Path] = string(f.Content)
 	}
 
 	assert.Equal(t, "A=1", resMap["output/a.txt"])
