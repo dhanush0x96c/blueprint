@@ -60,14 +60,14 @@ func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 		return nil, err
 	}
 
-	outputDir := s.determineOutputDir(tree, contexts, opts)
+	outputDir := s.determineOutputDir(opts)
 
 	renderResult, err := s.render(tree, contexts)
 	if err != nil {
 		return nil, err
 	}
 
-	written, skipped, err := s.writeFiles(tree, renderResult, outputDir, opts)
+	written, skipped, err := s.writeFiles(tree, renderResult, contexts, outputDir, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -144,16 +144,9 @@ func (s *Scaffolder) collectVariables(tree *template.TemplateNode, opts Options)
 	return contexts, nil
 }
 
-func (s *Scaffolder) determineOutputDir(tree *template.TemplateNode, contexts template.RenderContexts, opts Options) string {
+func (s *Scaffolder) determineOutputDir(opts Options) string {
 	if opts.OutputDir != "" {
 		return opts.OutputDir
-	}
-
-	// Use project name from root template if available
-	rootCtx := contexts[tree.ID]
-	projectName, err := tree.Template.ProjectName(rootCtx)
-	if err == nil {
-		return projectName
 	}
 
 	return "."
@@ -170,6 +163,7 @@ func (s *Scaffolder) render(tree *template.TemplateNode, contexts template.Rende
 func (s *Scaffolder) writeFiles(
 	tree *template.TemplateNode,
 	renderResult *template.RenderResult,
+	contexts template.RenderContexts,
 	outputDir string,
 	opts Options,
 ) ([]string, []string, error) {
@@ -180,7 +174,7 @@ func (s *Scaffolder) writeFiles(
 		return written, skipped, nil
 	}
 
-	if err := s.writeNode(tree, renderResult, outputDir, opts, &written, &skipped); err != nil {
+	if err := s.writeNode(tree, renderResult, contexts, outputDir, opts, &written, &skipped); err != nil {
 		return nil, nil, err
 	}
 
@@ -190,15 +184,25 @@ func (s *Scaffolder) writeFiles(
 func (s *Scaffolder) writeNode(
 	node *template.TemplateNode,
 	renderResult *template.RenderResult,
+	contexts template.RenderContexts,
 	outputDir string,
 	opts Options,
 	written *[]string,
 	skipped *[]string,
 ) error {
+	nodeOutputDir := outputDir
+	if node.Template.Type == template.TypeProject {
+		ctx := contexts[node.ID]
+		projectName, err := node.Template.ProjectName(ctx)
+		if err == nil {
+			nodeOutputDir = filepath.Join(outputDir, projectName)
+		}
+	}
+
 	files, ok := renderResult.Files[node.ID]
 	if ok {
 		for _, file := range files {
-			fullPath := filepath.Join(outputDir, file.Path)
+			fullPath := filepath.Join(nodeOutputDir, file.Path)
 
 			if _, err := os.Stat(fullPath); err == nil && !opts.Overwrite {
 				*skipped = append(*skipped, file.Path)
@@ -214,9 +218,10 @@ func (s *Scaffolder) writeNode(
 	}
 
 	for _, child := range node.Children {
-		if err := s.writeNode(child, renderResult, outputDir, opts, written, skipped); err != nil {
+		if err := s.writeNode(child, renderResult, contexts, nodeOutputDir, opts, written, skipped); err != nil {
 			return err
 		}
 	}
 	return nil
 }
+
