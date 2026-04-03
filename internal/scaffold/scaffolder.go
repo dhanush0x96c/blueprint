@@ -42,11 +42,10 @@ type Options struct {
 
 // Result contains the results of a scaffolding operation
 type Result struct {
-	FilesWritten  []string                // List of files written
-	FilesSkipped  []string                // List of files skipped (already exist)
-	Dependencies  []string                // Dependencies that need to be installed
-	PostInitCmds  []template.PostInit     // Post-init commands to run
-	RenderedFiles []template.RenderedFile // List of rendered files
+	FilesWritten []string            // List of files written
+	FilesSkipped []string            // List of files skipped (already exist)
+	Dependencies []string            // Dependencies that need to be installed
+	PostInitCmds []template.PostInit // Post-init commands to run
 }
 
 // Scaffold performs the complete scaffolding operation
@@ -63,22 +62,21 @@ func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 
 	outputDir := s.determineOutputDir(tree, contexts, opts)
 
-	renderedFiles, err := s.render(tree, contexts)
+	renderResult, err := s.render(tree, contexts)
 	if err != nil {
 		return nil, err
 	}
 
-	written, skipped, err := s.writeFiles(renderedFiles, outputDir, opts)
+	written, skipped, err := s.writeFiles(tree, renderResult, outputDir, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Result{
-		FilesWritten:  written,
-		FilesSkipped:  skipped,
-		Dependencies:  tree.AllDependencies(),
-		PostInitCmds:  tree.AllPostInit(),
-		RenderedFiles: renderedFiles,
+		FilesWritten: written,
+		FilesSkipped: skipped,
+		Dependencies: tree.AllDependencies(),
+		PostInitCmds: tree.AllPostInit(),
 	}, nil
 }
 
@@ -161,15 +159,20 @@ func (s *Scaffolder) determineOutputDir(tree *template.TemplateNode, contexts te
 	return "."
 }
 
-func (s *Scaffolder) render(tree *template.TemplateNode, contexts template.RenderContexts) ([]template.RenderedFile, error) {
-	renderedFiles, err := s.engine.RenderNode(tree, contexts)
+func (s *Scaffolder) render(tree *template.TemplateNode, contexts template.RenderContexts) (*template.RenderResult, error) {
+	renderResult, err := s.engine.RenderNode(tree, contexts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render template tree: %w", err)
 	}
-	return renderedFiles, nil
+	return renderResult, nil
 }
 
-func (s *Scaffolder) writeFiles(renderedFiles []template.RenderedFile, outputDir string, opts Options) ([]string, []string, error) {
+func (s *Scaffolder) writeFiles(
+	tree *template.TemplateNode,
+	renderResult *template.RenderResult,
+	outputDir string,
+	opts Options,
+) ([]string, []string, error) {
 	written := make([]string, 0)
 	skipped := make([]string, 0)
 
@@ -177,22 +180,43 @@ func (s *Scaffolder) writeFiles(renderedFiles []template.RenderedFile, outputDir
 		return written, skipped, nil
 	}
 
-	for _, file := range renderedFiles {
-		fullPath := filepath.Join(outputDir, file.Path)
-
-		// Check if file exists
-		if _, err := os.Stat(fullPath); err == nil && !opts.Overwrite {
-			skipped = append(skipped, file.Path)
-			continue
-		}
-
-		// Write the file
-		if err := s.writer.WriteFile(fullPath, file.Content); err != nil {
-			return nil, nil, fmt.Errorf("failed to write file %s: %w", file.Path, err)
-		}
-
-		written = append(written, file.Path)
+	if err := s.writeNode(tree, renderResult, outputDir, opts, &written, &skipped); err != nil {
+		return nil, nil, err
 	}
 
 	return written, skipped, nil
+}
+
+func (s *Scaffolder) writeNode(
+	node *template.TemplateNode,
+	renderResult *template.RenderResult,
+	outputDir string,
+	opts Options,
+	written *[]string,
+	skipped *[]string,
+) error {
+	files, ok := renderResult.Files[node.ID]
+	if ok {
+		for _, file := range files {
+			fullPath := filepath.Join(outputDir, file.Path)
+
+			if _, err := os.Stat(fullPath); err == nil && !opts.Overwrite {
+				*skipped = append(*skipped, file.Path)
+				continue
+			}
+
+			if err := s.writer.WriteFile(fullPath, file.Content); err != nil {
+				return fmt.Errorf("failed to write file %s: %w", file.Path, err)
+			}
+
+			*written = append(*written, file.Path)
+		}
+	}
+
+	for _, child := range node.Children {
+		if err := s.writeNode(child, renderResult, outputDir, opts, written, skipped); err != nil {
+			return err
+		}
+	}
+	return nil
 }

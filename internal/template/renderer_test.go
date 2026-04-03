@@ -204,10 +204,10 @@ func TestRenderAll(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.Len(t, out, 2)
+	assert.Len(t, out.Files["0"], 2)
 
 	resMap := make(map[string]string)
-	for _, f := range out {
+	for _, f := range out.Files["0"] {
 		resMap[f.Path] = string(f.Content)
 	}
 

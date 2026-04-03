@@ -51,7 +51,7 @@ func (e *Engine) Compose(loaded *LoadedTemplate, confirm ConfirmIncludes) (*Temp
 }
 
 // RenderNode renders all files from a template tree with the given contexts.
-func (e *Engine) RenderNode(node *TemplateNode, contexts RenderContexts) ([]RenderedFile, error) {
+func (e *Engine) RenderNode(node *TemplateNode, contexts RenderContexts) (*RenderResult, error) {
 	return e.renderer.RenderAll(node, contexts)
 }
 

@@ -67,30 +67,25 @@ func (r *Renderer) Copy(fsys fs.FS, filePath string) ([]byte, error) {
 
 // RenderAll renders all files from a template tree with the given contexts.
 // It walks the tree and renders files for each node with its corresponding context.
-func (r *Renderer) RenderAll(node *TemplateNode, contexts RenderContexts) ([]RenderedFile, error) {
-	results := make(map[string][]byte)
-	if err := r.renderNode(node, contexts, results); err != nil {
+func (r *Renderer) RenderAll(node *TemplateNode, contexts RenderContexts) (*RenderResult, error) {
+	result := &RenderResult{
+		Files: make(map[string][]RenderedFile),
+	}
+	if err := r.renderNode(node, contexts, result); err != nil {
 		return nil, err
 	}
 
-	renderedFiles := make([]RenderedFile, 0, len(results))
-	for path, content := range results {
-		renderedFiles = append(renderedFiles, RenderedFile{
-			Path:    path,
-			Content: content,
-		})
-	}
-
-	return renderedFiles, nil
+	return result, nil
 }
 
 // renderNode recursively renders a node and its children.
-func (r *Renderer) renderNode(node *TemplateNode, contexts RenderContexts, results map[string][]byte) error {
+func (r *Renderer) renderNode(node *TemplateNode, contexts RenderContexts, result *RenderResult) error {
 	ctx, ok := contexts[node.ID]
 	if !ok {
 		return fmt.Errorf("no context found for template %s (ID: %s)", node.Template.Name, node.ID)
 	}
 
+	var nodeFiles []RenderedFile
 	for _, file := range node.Template.Files {
 		srcPath := path.Join(node.Path, file.Src)
 
@@ -99,13 +94,17 @@ func (r *Renderer) renderNode(node *TemplateNode, contexts RenderContexts, resul
 			return fmt.Errorf("failed to render destination path for %s: %w", srcPath, err)
 		}
 
-		if err := r.processPath(node.FS, srcPath, destPath, ctx, results); err != nil {
+		if err := r.processPath(node.FS, srcPath, destPath, ctx, &nodeFiles); err != nil {
 			return err
 		}
 	}
 
+	if len(nodeFiles) > 0 {
+		result.Files[node.ID] = nodeFiles
+	}
+
 	for _, child := range node.Children {
-		if err := r.renderNode(child, contexts, results); err != nil {
+		if err := r.renderNode(child, contexts, result); err != nil {
 			return err
 		}
 	}
@@ -114,7 +113,7 @@ func (r *Renderer) renderNode(node *TemplateNode, contexts RenderContexts, resul
 }
 
 // processPath processes a file or directory path recursively
-func (r *Renderer) processPath(fsys fs.FS, srcPath, destPath string, ctx *Context, results map[string][]byte) error {
+func (r *Renderer) processPath(fsys fs.FS, srcPath, destPath string, ctx *Context, results *[]RenderedFile) error {
 	info, err := fs.Stat(fsys, srcPath)
 	if err != nil {
 		return fmt.Errorf("failed to stat %s: %w", srcPath, err)
@@ -128,7 +127,7 @@ func (r *Renderer) processPath(fsys fs.FS, srcPath, destPath string, ctx *Contex
 }
 
 // processDirectory recursively processes all files in a directory
-func (r *Renderer) processDirectory(fsys fs.FS, srcDir, destDir string, ctx *Context, results map[string][]byte) error {
+func (r *Renderer) processDirectory(fsys fs.FS, srcDir, destDir string, ctx *Context, results *[]RenderedFile) error {
 	entries, err := fs.ReadDir(fsys, srcDir)
 	if err != nil {
 		return fmt.Errorf("failed to read directory %s: %w", srcDir, err)
@@ -157,7 +156,7 @@ func stripTemplateExt(path string) string {
 }
 
 // processFile processes a single file - renders .tmpl files, copies others
-func (r *Renderer) processFile(fsys fs.FS, srcPath, destPath string, ctx *Context, results map[string][]byte) error {
+func (r *Renderer) processFile(fsys fs.FS, srcPath, destPath string, ctx *Context, results *[]RenderedFile) error {
 	var content []byte
 	var err error
 
@@ -175,7 +174,10 @@ func (r *Renderer) processFile(fsys fs.FS, srcPath, destPath string, ctx *Contex
 		}
 	}
 
-	results[destPath] = content
+	*results = append(*results, RenderedFile{
+		Path:    destPath,
+		Content: content,
+	})
 
 	return nil
 }
