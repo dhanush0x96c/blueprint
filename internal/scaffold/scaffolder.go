@@ -2,7 +2,6 @@ package scaffold
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/dhanush0x96c/blueprint/internal/prompt"
@@ -194,20 +193,12 @@ func (s *Scaffolder) writeNode(
 
 	files, ok := renderResult.Files[node.ID]
 	if ok {
-		for _, file := range files {
-			fullPath := filepath.Join(nodeOutputDir, file.Path)
-
-			if _, err := os.Stat(fullPath); err == nil && !opts.Overwrite {
-				*skipped = append(*skipped, file.Path)
-				continue
-			}
-
-			if err := s.writer.WriteFile(fullPath, file.Content); err != nil {
-				return fmt.Errorf("failed to write file %s: %w", file.Path, err)
-			}
-
-			*written = append(*written, file.Path)
+		writeResult, err := s.writer.WriteFiles(nodeOutputDir, files, opts.Overwrite)
+		if err != nil {
+			return err
 		}
+		*written = append(*written, writeResult.Written...)
+		*skipped = append(*skipped, writeResult.Skipped...)
 	}
 
 	for _, child := range node.Children {
