@@ -114,6 +114,7 @@ type TemplateNode struct {
 	FS       fs.FS
 	Path     string
 	Children []*TemplateNode
+	Mount    string
 }
 
 // ConfirmIncludes is a function that decides which optional includes should be loaded.
@@ -136,6 +137,7 @@ type Variable struct {
 type Include struct {
 	Name             string `yaml:"name" validate:"required"`
 	EnabledByDefault bool   `yaml:"enabled_by_default"`
+	Mount            string `yaml:"mount,omitempty"`
 }
 
 // File represents a template file to be rendered and written

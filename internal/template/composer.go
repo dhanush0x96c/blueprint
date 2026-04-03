@@ -70,6 +70,7 @@ func (c *Composer) doCompose(loaded *LoadedTemplate, stack []string, confirm Con
 		if err != nil {
 			return nil, err
 		}
+		childNode.Mount = inc.Mount
 
 		node.Children = append(node.Children, childNode)
 	}

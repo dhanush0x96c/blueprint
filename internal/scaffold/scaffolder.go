@@ -190,14 +190,7 @@ func (s *Scaffolder) writeNode(
 	written *[]string,
 	skipped *[]string,
 ) error {
-	nodeOutputDir := outputDir
-	if node.Template.Type == template.TypeProject {
-		ctx := contexts[node.ID]
-		projectName, err := node.Template.ProjectName(ctx)
-		if err == nil {
-			nodeOutputDir = filepath.Join(outputDir, projectName)
-		}
-	}
+	nodeOutputDir := s.resolveNodeOutputDir(node, contexts, outputDir)
 
 	files, ok := renderResult.Files[node.ID]
 	if ok {
@@ -225,3 +218,23 @@ func (s *Scaffolder) writeNode(
 	return nil
 }
 
+func (s *Scaffolder) resolveNodeOutputDir(
+	node *template.TemplateNode,
+	contexts template.RenderContexts,
+	parentDir string,
+) string {
+	mount := node.Mount
+	if mount == "" && node.Template.Type == template.TypeProject {
+		ctx := contexts[node.ID]
+		projectName, err := node.Template.ProjectName(ctx)
+		if err == nil {
+			mount = projectName
+		}
+	}
+
+	if mount != "" {
+		return filepath.Join(parentDir, mount)
+	}
+
+	return parentDir
+}
