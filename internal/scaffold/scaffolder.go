@@ -118,18 +118,10 @@ func (s *Scaffolder) collectVariables(tree *template.TemplateNode, opts Options)
 	var err error
 
 	if opts.Interactive {
+		// TODO: Merge the pre-provided variables before prompting and pass them to the collector to prepopulate the values.
 		contexts, err = s.collector.CollectTreeVariables(tree)
 		if err != nil {
 			return nil, fmt.Errorf("failed to collect variables: %w", err)
-		}
-
-		// Merge with pre-provided variables
-		if opts.Variables != nil {
-			for _, ctx := range contexts {
-				for k, v := range opts.Variables {
-					ctx.Set(k, v)
-				}
-			}
 		}
 	} else {
 		contexts = s.engine.BuildContext(tree, opts.Variables)
