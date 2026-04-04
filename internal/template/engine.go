@@ -86,31 +86,49 @@ func (e *Engine) ValidateContexts(node *TemplateNode, contexts RenderContexts) e
 	return e.validator.ValidateTreeContexts(node, contexts)
 }
 
-// TODO: parse variable keys with template prefix e.g. template_name:var_name
-// BuildContext recursively builds the render contexts with default values from the template tree.
-func (e *Engine) BuildContext(node *TemplateNode, vars map[string]any) RenderContexts {
+// BuildOptions holds options for building render contexts from a template tree.
+type BuildOptions struct {
+	GlobalVars       map[string]string
+	NameSpecificVars map[string]map[string]string
+	NodeSpecificVars map[string]map[string]string
+}
+
+// BuildContext recursively builds the render contexts from the template tree.
+// Variables are applied in order: defaults -> inheritance -> global -> name-specific -> node-specific.
+func (e *Engine) BuildContext(node *TemplateNode, opts BuildOptions) RenderContexts {
 	contexts := make(RenderContexts)
-	e.fillContexts(node, "", contexts, vars)
+	e.fillContexts(node, "", contexts, opts)
 	return contexts
 }
 
-func (e *Engine) fillContexts(node *TemplateNode, parentID string, contexts RenderContexts, vars map[string]any) {
+func (e *Engine) fillContexts(node *TemplateNode, parentID string, contexts RenderContexts, opts BuildOptions) {
 	if _, ok := contexts[node.ID]; !ok {
 		ctx := NewTemplateContext(make(map[string]any))
 
-		e.applyInheritance(node, parentID, contexts, ctx)
 		e.applyDefaults(node, ctx)
+		e.applyInheritance(node, parentID, contexts, ctx)
 
-		// Overwrite with provided variables
-		for k, v := range vars {
+		for k, v := range opts.GlobalVars {
 			ctx.Set(k, v)
+		}
+
+		if nameVars, ok := opts.NameSpecificVars[node.Template.Name]; ok {
+			for k, v := range nameVars {
+				ctx.Set(k, v)
+			}
+		}
+
+		if nodeVars, ok := opts.NodeSpecificVars[node.ID]; ok {
+			for k, v := range nodeVars {
+				ctx.Set(k, v)
+			}
 		}
 
 		contexts[node.ID] = ctx
 	}
 
 	for _, child := range node.Children {
-		e.fillContexts(child, node.ID, contexts, vars)
+		e.fillContexts(child, node.ID, contexts, opts)
 	}
 }
 

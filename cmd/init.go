@@ -106,20 +106,62 @@ func NewInitCmd(appCtx *app.Context) *cobra.Command {
 	return cmd
 }
 
-func parseVarFlags(flags []string) (map[string]any, error) {
-	if len(flags) == 0 {
-		return nil, nil
+func parseVarFlags(flags []string) (scaffold.Variables, error) {
+	vars := scaffold.Variables{
+		Global:       make(map[string]string),
+		NameSpecific: make(map[string]map[string]string),
+		NodeSpecific: make(map[string]map[string]string),
 	}
 
-	vars := make(map[string]any, len(flags))
-	for _, f := range flags {
-		key, value, ok := strings.Cut(f, "=")
-		if !ok {
-			return nil, fmt.Errorf("invalid variable format %q: expected key=value", f)
-		}
-		vars[key] = value
+	if len(flags) == 0 {
+		return vars, nil
 	}
+
+	for _, f := range flags {
+		scope, key, value, err := parseVarFlag(f)
+		if err != nil {
+			return vars, err
+		}
+
+		if strings.HasPrefix(scope, "#") {
+			nodeID := scope[1:]
+			if vars.NodeSpecific[nodeID] == nil {
+				vars.NodeSpecific[nodeID] = make(map[string]string)
+			}
+			vars.NodeSpecific[nodeID][key] = value
+			continue
+		}
+
+		if scope != "" {
+			if vars.NameSpecific[scope] == nil {
+				vars.NameSpecific[scope] = make(map[string]string)
+			}
+			vars.NameSpecific[scope][key] = value
+			continue
+		}
+
+		vars.Global[key] = value
+	}
+
 	return vars, nil
+}
+
+func parseVarFlag(flag string) (scope, key, value string, err error) {
+	left, value, ok := strings.Cut(flag, "=")
+	if !ok {
+		return "", "", "", fmt.Errorf("invalid variable format %q: expected key=value", flag)
+	}
+
+	if !strings.Contains(left, ":") {
+		return "", left, value, nil
+	}
+
+	scope, key, ok = strings.Cut(left, ":")
+	if !ok || key == "" {
+		return "", "", "", fmt.Errorf("invalid variable format %q: expected scope:key=value", flag)
+	}
+
+	return scope, key, value, nil
 }
 
 func parseIncludeFlags(includeFlags, excludeFlags []string) (map[string]bool, error) {

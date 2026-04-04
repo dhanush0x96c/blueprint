@@ -32,7 +32,7 @@ func NewScaffolder(resolver template.Resolver) *Scaffolder {
 type Options struct {
 	TemplateRef     template.TemplateRef // Template reference to scaffold
 	OutputDir       string               // Output directory for scaffolded files
-	Variables       map[string]any       // Pre-provided variables (skip prompts)
+	Variables       Variables            // Pre-provided variables (skip prompts)
 	EnabledIncludes map[string]bool      // Pre-selected includes (skip prompt)
 	Interactive     bool                 // Whether to prompt for variables
 	DryRun          bool                 // If true, don't write files
@@ -124,7 +124,11 @@ func (s *Scaffolder) collectVariables(tree *template.TemplateNode, opts Options)
 			return nil, fmt.Errorf("failed to collect variables: %w", err)
 		}
 	} else {
-		contexts = s.engine.BuildContext(tree, opts.Variables)
+		contexts = s.engine.BuildContext(tree, template.BuildOptions{
+			GlobalVars:       opts.Variables.Global,
+			NameSpecificVars: opts.Variables.NameSpecific,
+			NodeSpecificVars: opts.Variables.NodeSpecific,
+		})
 	}
 
 	// Validate contexts before rendering
