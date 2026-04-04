@@ -109,12 +109,13 @@ func (r *RenderResult) AllFiles() []RenderedFile {
 // TemplateNode represents a resolved node in the template tree.
 // It carries a guarantee that its full subtree is present and confirmed.
 type TemplateNode struct {
-	ID       string
-	Template *Template
-	FS       fs.FS
-	Path     string
-	Children []*TemplateNode
-	Mount    string
+	ID        string
+	Template  *Template
+	FS        fs.FS
+	Path      string
+	Children  []*TemplateNode
+	Mount     string
+	Inherited map[string]string
 }
 
 // ConfirmIncludes is a function that decides which optional includes should be loaded.
@@ -135,9 +136,10 @@ type Variable struct {
 
 // Include represents another template to compose into this one
 type Include struct {
-	Name             string `yaml:"name" validate:"required"`
-	EnabledByDefault bool   `yaml:"enabled_by_default"`
-	Mount            string `yaml:"mount,omitempty"`
+	Name             string            `yaml:"name" validate:"required"`
+	EnabledByDefault bool              `yaml:"enabled_by_default"`
+	Mount            string            `yaml:"mount,omitempty"`
+	Inherits         map[string]string `yaml:"inherits,omitempty"`
 }
 
 // File represents a template file to be rendered and written

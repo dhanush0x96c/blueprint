@@ -45,28 +45,68 @@ func (c *Collector) ConfirmIncludes(includes []template.Include) ([]template.Inc
 // It returns a RenderContexts map (templateName -> Context).
 func (c *Collector) CollectTreeVariables(node *template.TemplateNode) (template.RenderContexts, error) {
 	contexts := make(template.RenderContexts)
-	if err := c.collectNodeVariables(node, contexts); err != nil {
+	if err := c.collectNodeVariables(node, "", contexts); err != nil {
 		return nil, err
 	}
 	return contexts, nil
 }
 
 // collectNodeVariables recursively collects variables for a node and its children.
-func (c *Collector) collectNodeVariables(node *template.TemplateNode, contexts template.RenderContexts) error {
+func (c *Collector) collectNodeVariables(node *template.TemplateNode, parentID string, contexts template.RenderContexts) error {
 	// If we already have a context for this node, skip it.
 	if _, ok := contexts[node.ID]; !ok {
-		fmt.Printf("\n--- Variables for %s (ID: %s) ---\n", node.Template.Name, node.ID)
-		ctx, err := c.engine.PromptVariablesAsForm(node.Template.Variables)
-		if err != nil {
-			return fmt.Errorf("failed to collect variables for %s: %w", node.Template.Name, err)
+		ctx := c.buildNodeContext(node, parentID, contexts)
+
+		if err := c.promptForVariables(node, ctx); err != nil {
+			return err
 		}
+
 		contexts[node.ID] = ctx
 	}
 
 	for _, child := range node.Children {
-		if err := c.collectNodeVariables(child, contexts); err != nil {
+		if err := c.collectNodeVariables(child, node.ID, contexts); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// buildNodeContext initializes the context for a node, handling inheritance.
+func (c *Collector) buildNodeContext(node *template.TemplateNode, parentID string, contexts template.RenderContexts) *template.Context {
+	ctx := template.NewTemplateContext(make(map[string]any))
+
+	// Inherit variables from parent context if any
+	if parentID != "" && len(node.Inherited) > 0 {
+		parentCtx := contexts[parentID]
+		for childVar, parentVar := range node.Inherited {
+			if val, ok := parentCtx.Get(parentVar); ok {
+				ctx.Set(childVar, val)
+			}
+		}
+	}
+
+	return ctx
+}
+
+// promptForVariables filters inherited variables and prompts for the remaining ones.
+func (c *Collector) promptForVariables(node *template.TemplateNode, ctx *template.Context) error {
+	var variablesToPrompt []template.Variable
+	for _, v := range node.Template.Variables {
+		if _, inherited := node.Inherited[v.Name]; !inherited {
+			variablesToPrompt = append(variablesToPrompt, v)
+		}
+	}
+
+	if len(variablesToPrompt) > 0 {
+		fmt.Printf("\n--- Variables for %s (ID: %s) ---\n", node.Template.Name, node.ID)
+		promptedCtx, err := c.engine.PromptVariablesAsForm(variablesToPrompt)
+		if err != nil {
+			return fmt.Errorf("failed to collect variables for %s: %w", node.Template.Name, err)
+		}
+		// Merge prompted values into our context
+		ctx.Merge(promptedCtx)
 	}
 
 	return nil

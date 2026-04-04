@@ -90,28 +90,54 @@ func (e *Engine) ValidateContexts(node *TemplateNode, contexts RenderContexts) e
 // BuildContext recursively builds the render contexts with default values from the template tree.
 func (e *Engine) BuildContext(node *TemplateNode, vars map[string]any) RenderContexts {
 	contexts := make(RenderContexts)
-	e.fillContexts(node, contexts, vars)
+	e.fillContexts(node, "", contexts, vars)
 	return contexts
 }
 
-func (e *Engine) fillContexts(node *TemplateNode, contexts RenderContexts, vars map[string]any) {
+func (e *Engine) fillContexts(node *TemplateNode, parentID string, contexts RenderContexts, vars map[string]any) {
 	if _, ok := contexts[node.ID]; !ok {
 		ctx := NewTemplateContext(make(map[string]any))
-		// Set defaults from template
-		for _, v := range node.Template.Variables {
-			if v.Default != nil {
-				ctx.Set(v.Name, v.Default)
-			}
-		}
+
+		e.applyInheritance(node, parentID, contexts, ctx)
+		e.applyDefaults(node, ctx)
+
 		// Overwrite with provided variables
 		for k, v := range vars {
 			ctx.Set(k, v)
 		}
+
 		contexts[node.ID] = ctx
 	}
 
 	for _, child := range node.Children {
-		e.fillContexts(child, contexts, vars)
+		e.fillContexts(child, node.ID, contexts, vars)
+	}
+}
+
+func (e *Engine) applyInheritance(node *TemplateNode, parentID string, contexts RenderContexts, ctx *Context) {
+	if parentID == "" || len(node.Inherited) == 0 {
+		return
+	}
+
+	parentCtx, ok := contexts[parentID]
+	if !ok {
+		return
+	}
+
+	for childVar, parentVar := range node.Inherited {
+		if val, ok := parentCtx.Get(parentVar); ok {
+			ctx.Set(childVar, val)
+		}
+	}
+}
+
+func (e *Engine) applyDefaults(node *TemplateNode, ctx *Context) {
+	for _, v := range node.Template.Variables {
+		if _, inherited := node.Inherited[v.Name]; !inherited {
+			if v.Default != nil {
+				ctx.Set(v.Name, v.Default)
+			}
+		}
 	}
 }
 

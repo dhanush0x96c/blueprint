@@ -71,6 +71,7 @@ func (c *Composer) doCompose(loaded *LoadedTemplate, stack []string, confirm Con
 			return nil, err
 		}
 		childNode.Mount = inc.Mount
+		childNode.Inherited = inc.Inherits
 
 		node.Children = append(node.Children, childNode)
 	}
