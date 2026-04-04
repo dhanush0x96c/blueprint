@@ -101,7 +101,7 @@ func (c *Collector) promptForVariables(node *template.TemplateNode, ctx *templat
 
 	if len(variablesToPrompt) > 0 {
 		fmt.Printf("\n--- Variables for %s (ID: %s) ---\n", node.Template.Name, node.ID)
-		promptedCtx, err := c.engine.PromptVariablesAsForm(variablesToPrompt)
+		promptedCtx, err := c.engine.PromptVariables(variablesToPrompt)
 		if err != nil {
 			return fmt.Errorf("failed to collect variables for %s: %w", node.Template.Name, err)
 		}
