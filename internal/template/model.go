@@ -118,6 +118,24 @@ type TemplateNode struct {
 	Inherited map[string]string
 }
 
+// RequiredVariables returns the variables that need input for this node.
+// Variables inherited from the parent are excluded.
+func (n *TemplateNode) RequiredVariables() []Variable {
+	if n == nil || n.Template == nil || len(n.Template.Variables) == 0 {
+		return nil
+	}
+
+	required := make([]Variable, 0, len(n.Template.Variables))
+	for _, v := range n.Template.Variables {
+		if _, inherited := n.Inherited[v.Name]; inherited {
+			continue
+		}
+		required = append(required, v)
+	}
+
+	return required
+}
+
 // ConfirmIncludes is a function that decides which optional includes should be loaded.
 type ConfirmIncludes func(includes []Include) ([]Include, error)
 

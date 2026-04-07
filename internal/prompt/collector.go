@@ -92,12 +92,7 @@ func (c *Collector) buildNodeContext(node *template.TemplateNode, parentID strin
 
 // promptForVariables filters inherited variables and prompts for the remaining ones.
 func (c *Collector) promptForVariables(node *template.TemplateNode, ctx *template.Context) error {
-	var variablesToPrompt []template.Variable
-	for _, v := range node.Template.Variables {
-		if _, inherited := node.Inherited[v.Name]; !inherited {
-			variablesToPrompt = append(variablesToPrompt, v)
-		}
-	}
+	variablesToPrompt := node.RequiredVariables()
 
 	if len(variablesToPrompt) > 0 {
 		fmt.Printf("\n--- Variables for %s (ID: %s) ---\n", node.Template.Name, node.ID)

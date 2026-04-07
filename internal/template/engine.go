@@ -150,11 +150,9 @@ func (e *Engine) applyInheritance(node *TemplateNode, parentID string, contexts 
 }
 
 func (e *Engine) applyDefaults(node *TemplateNode, ctx *Context) {
-	for _, v := range node.Template.Variables {
-		if _, inherited := node.Inherited[v.Name]; !inherited {
-			if v.Default != nil {
-				ctx.Set(v.Name, v.Default)
-			}
+	for _, v := range node.RequiredVariables() {
+		if v.Default != nil {
+			ctx.Set(v.Name, v.Default)
 		}
 	}
 }
