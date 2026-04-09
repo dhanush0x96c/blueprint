@@ -8,6 +8,7 @@ import (
 	"github.com/dhanush0x96c/blueprint/internal/scaffold"
 	"github.com/dhanush0x96c/blueprint/internal/template"
 	"github.com/dhanush0x96c/blueprint/internal/ui"
+	"github.com/dhanush0x96c/blueprint/internal/vars"
 	"github.com/spf13/cobra"
 )
 
@@ -106,8 +107,8 @@ func NewInitCmd(appCtx *app.Context) *cobra.Command {
 	return cmd
 }
 
-func parseVarFlags(flags []string) (scaffold.Variables, error) {
-	vars := scaffold.Variables{
+func parseVarFlags(flags []string) (vars.Variables, error) {
+	vars := vars.Variables{
 		Global:       make(map[string]string),
 		NameSpecific: make(map[string]map[string]string),
 		NodeSpecific: make(map[string]map[string]string),

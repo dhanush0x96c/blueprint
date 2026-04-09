@@ -6,25 +6,22 @@ import (
 
 	"github.com/dhanush0x96c/blueprint/internal/prompt"
 	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/vars"
 )
 
 // Scaffolder orchestrates the complete scaffolding process
 type Scaffolder struct {
-	engine    *template.Engine
-	collector *prompt.Collector
-	writer    *Writer
+	engine       *template.Engine
+	promptEngine *prompt.Engine
+	writer       *Writer
 }
 
-// NewScaffolder creates a new scaffolder with the given template resolver
+// NewScaffolder creates a new scaffolder with the given template resolver.
 func NewScaffolder(resolver template.Resolver) *Scaffolder {
-	engine := template.NewEngine(resolver)
-	collector := prompt.NewCollector()
-	writer := NewWriter()
-
 	return &Scaffolder{
-		engine:    engine,
-		collector: collector,
-		writer:    writer,
+		engine:       template.NewEngine(resolver),
+		promptEngine: prompt.NewEngine(),
+		writer:       NewWriter(),
 	}
 }
 
@@ -32,7 +29,7 @@ func NewScaffolder(resolver template.Resolver) *Scaffolder {
 type Options struct {
 	TemplateRef     template.TemplateRef // Template reference to scaffold
 	OutputDir       string               // Output directory for scaffolded files
-	Variables       Variables            // Pre-provided variables (skip prompts)
+	Variables       vars.Variables       // Pre-provided variables
 	EnabledIncludes map[string]bool      // Pre-selected includes (skip prompt)
 	Interactive     bool                 // Whether to prompt for variables
 	DryRun          bool                 // If true, don't write files
@@ -82,9 +79,9 @@ func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 func (s *Scaffolder) resolveTemplateTree(opts Options) (*template.TemplateNode, error) {
 	var confirm template.ConfirmIncludes
 	if opts.Interactive {
-		confirm = s.collector.ConfirmIncludes
+		confirm = s.collectIncludes
 	} else {
-		confirm = s.confirmIncludesFromOptions(opts)
+		confirm = s.confirmIncludesFromOptions(opts.EnabledIncludes)
 	}
 
 	tree, err := s.engine.GetFullTree(opts.TemplateRef, confirm)
@@ -95,13 +92,33 @@ func (s *Scaffolder) resolveTemplateTree(opts Options) (*template.TemplateNode, 
 	return tree, nil
 }
 
-func (s *Scaffolder) confirmIncludesFromOptions(opts Options) template.ConfirmIncludes {
+func (s *Scaffolder) collectIncludes(includes []template.Include) ([]template.Include, error) {
+	if len(includes) == 0 {
+		return nil, nil
+	}
+
+	enabledMap, err := s.promptEngine.PromptIncludes(includes)
+	if err != nil {
+		return nil, err
+	}
+
+	var enabled []template.Include
+	for _, inc := range includes {
+		if enabledMap[inc.Name] {
+			enabled = append(enabled, inc)
+		}
+	}
+
+	return enabled, nil
+}
+
+func (s *Scaffolder) confirmIncludesFromOptions(enabledIncludes map[string]bool) template.ConfirmIncludes {
 	return func(includes []template.Include) ([]template.Include, error) {
 		var enabled []template.Include
 		for _, inc := range includes {
 			isEnabled := inc.EnabledByDefault
-			if opts.EnabledIncludes != nil {
-				if val, ok := opts.EnabledIncludes[inc.Name]; ok {
+			if enabledIncludes != nil {
+				if val, ok := enabledIncludes[inc.Name]; ok {
 					isEnabled = val
 				}
 			}
@@ -114,29 +131,8 @@ func (s *Scaffolder) confirmIncludesFromOptions(opts Options) template.ConfirmIn
 }
 
 func (s *Scaffolder) collectVariables(tree *template.TemplateNode, opts Options) (template.RenderContexts, error) {
-	var contexts template.RenderContexts
-	var err error
-
-	if opts.Interactive {
-		// TODO: Merge the pre-provided variables before prompting and pass them to the collector to prepopulate the values.
-		contexts, err = s.collector.CollectTreeVariables(tree)
-		if err != nil {
-			return nil, fmt.Errorf("failed to collect variables: %w", err)
-		}
-	} else {
-		contexts = s.engine.BuildContext(tree, template.BuildOptions{
-			GlobalVars:       opts.Variables.Global,
-			NameSpecificVars: opts.Variables.NameSpecific,
-			NodeSpecificVars: opts.Variables.NodeSpecific,
-		})
-	}
-
-	// Validate contexts before rendering
-	if err := s.engine.ValidateContexts(tree, contexts); err != nil {
-		return nil, fmt.Errorf("context validation failed: %w", err)
-	}
-
-	return contexts, nil
+	pipeline := newVariablePipeline(tree, s.engine, s.promptEngine, opts)
+	return pipeline.Collect()
 }
 
 func (s *Scaffolder) determineOutputDir(opts Options) string {
