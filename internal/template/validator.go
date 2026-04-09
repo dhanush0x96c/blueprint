@@ -67,7 +67,7 @@ func (v *Validator) validateNodeFiles(node *TemplateNode) []error {
 	return errs
 }
 
-// ValidateTreeContexts recursively validates that all required variables are present
+// ValidateTreeContexts recursively validates that all template variables are present
 // in the provided contexts for the entire tree.
 func (v *Validator) ValidateTreeContexts(node *TemplateNode, contexts RenderContexts) error {
 	ctx, ok := contexts[node.ID]
@@ -88,12 +88,12 @@ func (v *Validator) ValidateTreeContexts(node *TemplateNode, contexts RenderCont
 	return nil
 }
 
-// ValidateContext validates that all required variables are present in the context.
+// ValidateContext validates that all template variables are present in the context.
 func (v *Validator) ValidateContext(tmpl *Template, ctx *Context) error {
 	for _, variable := range tmpl.Variables {
 		_, exists := ctx.Get(variable.Name)
-		if !exists && variable.Default == nil {
-			return fmt.Errorf("required variable %s is missing", variable.Name)
+		if !exists {
+			return fmt.Errorf("variable %s is missing", variable.Name)
 		}
 	}
 	return nil

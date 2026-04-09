@@ -446,6 +446,7 @@ func TestValidator_ValidateContext(t *testing.T) {
 	t.Run("valid context passes", func(t *testing.T) {
 		ctx := NewTemplateContext(map[string]any{
 			"required": "value",
+			"optional": "configured",
 		})
 		err := v.ValidateContext(tmpl, ctx)
 		require.NoError(t, err)
@@ -455,15 +456,16 @@ func TestValidator_ValidateContext(t *testing.T) {
 		ctx := NewTemplateContext(map[string]any{})
 		err := v.ValidateContext(tmpl, ctx)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "required variable required is missing")
+		assert.Contains(t, err.Error(), "variable required is missing")
 	})
 
-	t.Run("missing optional variable with default passes", func(t *testing.T) {
+	t.Run("missing variable with default still fails", func(t *testing.T) {
 		ctx := NewTemplateContext(map[string]any{
 			"required": "value",
 		})
 		err := v.ValidateContext(tmpl, ctx)
-		require.NoError(t, err)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "variable optional is missing")
 	})
 }
 
@@ -516,6 +518,6 @@ func TestValidator_ValidateTreeContexts(t *testing.T) {
 		}
 		err := v.ValidateTreeContexts(root, contexts)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "required variable var_child is missing")
+		assert.Contains(t, err.Error(), "variable var_child is missing")
 	})
 }
