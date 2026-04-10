@@ -57,9 +57,9 @@ func (e *Engine) PromptVariables(group VariableGroup) (*template.Context, error)
 }
 
 // PromptIncludes prompts the user to select which includes to enable
-func (e *Engine) PromptIncludes(includes []template.Include) (map[string]bool, error) {
+func (e *Engine) PromptIncludes(includes []template.Include) ([]template.Include, error) {
 	if len(includes) == 0 {
-		return make(map[string]bool), nil
+		return nil, nil
 	}
 
 	options := make([]huh.Option[string], len(includes))
@@ -87,10 +87,16 @@ func (e *Engine) PromptIncludes(includes []template.Include) (map[string]bool, e
 		return nil, fmt.Errorf("include selection failed: %w", err)
 	}
 
-	// Convert to map
-	enabledIncludes := make(map[string]bool)
+	selectedNames := make(map[string]bool, len(selected))
 	for _, incName := range selected {
-		enabledIncludes[incName] = true
+		selectedNames[incName] = true
+	}
+
+	enabledIncludes := make([]template.Include, 0, len(selected))
+	for _, inc := range includes {
+		if selectedNames[inc.Name] {
+			enabledIncludes = append(enabledIncludes, inc)
+		}
 	}
 
 	return enabledIncludes, nil

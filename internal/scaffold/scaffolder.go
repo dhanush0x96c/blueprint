@@ -79,7 +79,7 @@ func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 func (s *Scaffolder) resolveTemplateTree(opts Options) (*template.TemplateNode, error) {
 	var confirm template.ConfirmIncludes
 	if opts.Interactive {
-		confirm = s.collectIncludes
+		confirm = s.promptEngine.PromptIncludes
 	} else {
 		confirm = s.confirmIncludesFromOptions(opts.EnabledIncludes)
 	}
@@ -90,26 +90,6 @@ func (s *Scaffolder) resolveTemplateTree(opts Options) (*template.TemplateNode, 
 	}
 
 	return tree, nil
-}
-
-func (s *Scaffolder) collectIncludes(includes []template.Include) ([]template.Include, error) {
-	if len(includes) == 0 {
-		return nil, nil
-	}
-
-	enabledMap, err := s.promptEngine.PromptIncludes(includes)
-	if err != nil {
-		return nil, err
-	}
-
-	var enabled []template.Include
-	for _, inc := range includes {
-		if enabledMap[inc.Name] {
-			enabled = append(enabled, inc)
-		}
-	}
-
-	return enabled, nil
 }
 
 func (s *Scaffolder) confirmIncludesFromOptions(enabledIncludes map[string]bool) template.ConfirmIncludes {
