@@ -443,6 +443,108 @@ func TestValidator_ValidateTree(t *testing.T) {
 		err := v.ValidateTree(root)
 		require.NoError(t, err)
 	})
+
+	t.Run("duplicate features at same level fail", func(t *testing.T) {
+		root := &TemplateNode{
+			Template: &Template{
+				Name:    "project",
+				Type:    TypeProject,
+				Version: "1.0.0",
+				Variables: []Variable{
+					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				},
+			},
+			Children: []*TemplateNode{
+				{
+					Template: &Template{
+						Name:    "testing",
+						Type:    TypeFeature,
+						Version: "1.0.0",
+					},
+				},
+				{
+					Template: &Template{
+						Name:    "testing",
+						Type:    TypeFeature,
+						Version: "1.0.0",
+					},
+				},
+			},
+		}
+
+		err := v.ValidateTree(root)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "features and components cannot be included twice at the same level")
+		assert.Contains(t, err.Error(), "duplicate feature \"testing\" in \"project\"")
+	})
+
+	t.Run("duplicate components at same level fail", func(t *testing.T) {
+		root := &TemplateNode{
+			Template: &Template{
+				Name:    "project",
+				Type:    TypeProject,
+				Version: "1.0.0",
+				Variables: []Variable{
+					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				},
+			},
+			Children: []*TemplateNode{
+				{
+					Template: &Template{
+						Name:    "auth",
+						Type:    TypeComponent,
+						Version: "1.0.0",
+					},
+				},
+				{
+					Template: &Template{
+						Name:    "auth",
+						Type:    TypeComponent,
+						Version: "1.0.0",
+					},
+				},
+			},
+		}
+
+		err := v.ValidateTree(root)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "features and components cannot be included twice at the same level")
+		assert.Contains(t, err.Error(), "duplicate component \"auth\" in \"project\"")
+	})
+
+	t.Run("same feature at different levels passes", func(t *testing.T) {
+		root := &TemplateNode{
+			Template: &Template{
+				Name:    "project",
+				Type:    TypeProject,
+				Version: "1.0.0",
+				Variables: []Variable{
+					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				},
+			},
+			Children: []*TemplateNode{
+				{
+					Template: &Template{
+						Name:    "testing",
+						Type:    TypeFeature,
+						Version: "1.0.0",
+					},
+					Children: []*TemplateNode{
+						{
+							Template: &Template{
+								Name:    "testing",
+								Type:    TypeFeature,
+								Version: "1.0.0",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		err := v.ValidateTree(root)
+		require.NoError(t, err)
+	})
 }
 
 func TestValidator_ValidateFiles(t *testing.T) {

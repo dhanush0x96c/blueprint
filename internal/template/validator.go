@@ -278,13 +278,44 @@ func normalizeStringSlice(value any) ([]string, bool) {
 // validateIncludes validates that features and components do not include projects.
 func (v *Validator) validateIncludes(node *TemplateNode) error {
 	if node.Template.Type == TypeProject {
+		return v.validateDuplicateSameLevelIncludes(node)
+	}
+
+	var errs []error
+	for _, child := range node.Children {
+		if child.Template.Type == TypeProject {
+			errs = append(errs, fmt.Errorf("%s %q cannot include project %q", node.Template.Type, node.Template.Name, child.Template.Name))
+		}
+	}
+
+	if err := v.validateDuplicateSameLevelIncludes(node); err != nil {
+		errs = append(errs, err)
+	}
+
+	if len(errs) == 0 {
 		return nil
 	}
 
+	return errors.Join(errs...)
+}
+
+func (v *Validator) validateDuplicateSameLevelIncludes(node *TemplateNode) error {
+	seen := make(map[Type]map[string]bool)
+
 	for _, child := range node.Children {
-		if child.Template.Type == TypeProject {
-			return fmt.Errorf("%s %q cannot include project %q", node.Template.Type, node.Template.Name, child.Template.Name)
+		if child.Template.Type != TypeFeature && child.Template.Type != TypeComponent {
+			continue
 		}
+
+		if seen[child.Template.Type] == nil {
+			seen[child.Template.Type] = make(map[string]bool)
+		}
+
+		if seen[child.Template.Type][child.Template.Name] {
+			return fmt.Errorf("features and components cannot be included twice at the same level: duplicate %s %q in %q", child.Template.Type, child.Template.Name, node.Template.Name)
+		}
+
+		seen[child.Template.Type][child.Template.Name] = true
 	}
 
 	return nil
