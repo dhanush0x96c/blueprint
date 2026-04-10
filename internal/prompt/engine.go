@@ -2,7 +2,6 @@ package prompt
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/charmbracelet/huh"
 	"github.com/dhanush0x96c/blueprint/internal/template"
@@ -109,7 +108,8 @@ func (e *Engine) createFormField(variable Variable) (huh.Field, any) {
 		value := CastValue[string](variable.Value)
 		return huh.NewInput().
 			Title(variable.Prompt).
-			Value(&value), &value
+			Value(&value).
+			Validate(ValidateNonEmptyString), &value
 
 	case template.VariableTypeInt:
 		var value string
@@ -119,16 +119,7 @@ func (e *Engine) createFormField(variable Variable) (huh.Field, any) {
 		return huh.NewInput().
 			Title(variable.Prompt).
 			Value(&value).
-			Validate(func(s string) error {
-				if s == "" && variable.Value != nil {
-					return nil
-				}
-				_, err := strconv.Atoi(s)
-				if err != nil {
-					return fmt.Errorf("must be a valid integer")
-				}
-				return nil
-			}), &value
+			Validate(ValidateInteger), &value
 
 	case template.VariableTypeBool:
 		value := CastValue[bool](variable.Value)
