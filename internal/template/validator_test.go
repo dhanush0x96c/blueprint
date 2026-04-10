@@ -131,6 +131,53 @@ func TestValidator_ValidateVariables(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("empty select option fails", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "test",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
+				{Name: "choice", Prompt: "Choose?", Type: VariableTypeSelect, Options: []string{"a", ""}},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "must not be empty")
+	})
+
+	t.Run("duplicate select options fail", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "test",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
+				{Name: "choice", Prompt: "Choose?", Type: VariableTypeSelect, Options: []string{"a", "a"}},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "duplicate option")
+	})
+
+	t.Run("options on string variable fail", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "test",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName, Options: []string{"a"}},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "options are only allowed")
+	})
+
 	t.Run("multiple errors accumulated", func(t *testing.T) {
 		tmpl := &Template{
 			Name:    "test",
@@ -466,6 +513,237 @@ func TestValidator_ValidateContext(t *testing.T) {
 		err := v.ValidateContext(tmpl, ctx)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "variable optional is missing")
+	})
+
+	t.Run("invalid string type fails", func(t *testing.T) {
+		ctx := NewTemplateContext(map[string]any{
+			"required": 123,
+			"optional": "configured",
+		})
+		err := v.ValidateContext(tmpl, ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "variable required is invalid")
+		assert.Contains(t, err.Error(), "expected type string")
+	})
+
+	t.Run("int and bool pass", func(t *testing.T) {
+		typed := &Template{
+			Name: "typed",
+			Variables: []Variable{
+				{Name: "port", Prompt: "?", Type: VariableTypeInt},
+				{Name: "enabled", Prompt: "?", Type: VariableTypeBool},
+			},
+		}
+		ctx := NewTemplateContext(map[string]any{
+			"port":    8080,
+			"enabled": true,
+		})
+		err := v.ValidateContext(typed, ctx)
+		require.NoError(t, err)
+	})
+
+	t.Run("string int fails", func(t *testing.T) {
+		typed := &Template{
+			Name: "typed",
+			Variables: []Variable{
+				{Name: "port", Prompt: "?", Type: VariableTypeInt},
+			},
+		}
+		ctx := NewTemplateContext(map[string]any{
+			"port": "8080",
+		})
+		err := v.ValidateContext(typed, ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "expected type int")
+	})
+
+	t.Run("non-int value fails", func(t *testing.T) {
+		typed := &Template{
+			Name: "typed",
+			Variables: []Variable{
+				{Name: "port", Prompt: "?", Type: VariableTypeInt},
+			},
+		}
+		ctx := NewTemplateContext(map[string]any{
+			"port": 3.14,
+		})
+		err := v.ValidateContext(typed, ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "expected type int")
+	})
+
+	t.Run("non-bool bool fails", func(t *testing.T) {
+		typed := &Template{
+			Name: "typed",
+			Variables: []Variable{
+				{Name: "enabled", Prompt: "?", Type: VariableTypeBool},
+			},
+		}
+		ctx := NewTemplateContext(map[string]any{
+			"enabled": "true",
+		})
+		err := v.ValidateContext(typed, ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "expected type bool")
+	})
+
+	t.Run("select validates string values", func(t *testing.T) {
+		typed := &Template{
+			Name: "typed",
+			Variables: []Variable{
+				{Name: "color", Prompt: "?", Type: VariableTypeSelect, Options: []string{"red", "blue"}},
+			},
+		}
+		ctx := NewTemplateContext(map[string]any{
+			"color": "red",
+		})
+		err := v.ValidateContext(typed, ctx)
+		require.NoError(t, err)
+	})
+
+	t.Run("select value outside options fails", func(t *testing.T) {
+		typed := &Template{
+			Name: "typed",
+			Variables: []Variable{
+				{Name: "color", Prompt: "?", Type: VariableTypeSelect, Options: []string{"red", "blue"}},
+			},
+		}
+		ctx := NewTemplateContext(map[string]any{
+			"color": "green",
+		})
+		err := v.ValidateContext(typed, ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "contains invalid option \"green\"")
+	})
+
+	t.Run("select requires string values", func(t *testing.T) {
+		typed := &Template{
+			Name: "typed",
+			Variables: []Variable{
+				{Name: "color", Prompt: "?", Type: VariableTypeSelect, Options: []string{"red", "blue"}},
+			},
+		}
+		ctx := NewTemplateContext(map[string]any{
+			"color": []string{"red"},
+		})
+		err := v.ValidateContext(typed, ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "expected type select")
+	})
+
+	t.Run("multiselect validates slice values", func(t *testing.T) {
+		typed := &Template{
+			Name: "typed",
+			Variables: []Variable{
+				{Name: "features", Prompt: "?", Type: VariableTypeMultiSelect, Options: []string{"api", "db"}},
+			},
+		}
+		ctx := NewTemplateContext(map[string]any{
+			"features": []string{"api", "db"},
+		})
+		err := v.ValidateContext(typed, ctx)
+		require.NoError(t, err)
+	})
+
+	t.Run("multiselect with invalid option fails", func(t *testing.T) {
+		typed := &Template{
+			Name: "typed",
+			Variables: []Variable{
+				{Name: "features", Prompt: "?", Type: VariableTypeMultiSelect, Options: []string{"api", "db"}},
+			},
+		}
+		ctx := NewTemplateContext(map[string]any{
+			"features": []any{"api", "cache"},
+		})
+		err := v.ValidateContext(typed, ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "contains invalid option \"cache\"")
+	})
+}
+
+func TestValidator_Validate_DefaultTypes(t *testing.T) {
+	v := NewValidator()
+
+	t.Run("int default and bool default pass", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "typed",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				{Name: "port", Prompt: "?", Type: VariableTypeInt, Default: 8080},
+				{Name: "enabled", Prompt: "?", Type: VariableTypeBool, Default: true},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid default type fails", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "typed",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				{Name: "port", Prompt: "?", Type: VariableTypeInt, Default: "8080"},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid default value")
+		assert.Contains(t, err.Error(), "expected type int")
+	})
+
+	t.Run("string bool default fails", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "typed",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				{Name: "enabled", Prompt: "?", Type: VariableTypeBool, Default: "true"},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid default value")
+		assert.Contains(t, err.Error(), "expected type bool")
+	})
+
+	t.Run("select default must be string", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "typed",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				{Name: "color", Prompt: "?", Type: VariableTypeSelect, Options: []string{"red", "blue"}, Default: "red"},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid multiselect default option fails", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "typed",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				{Name: "features", Prompt: "?", Type: VariableTypeMultiSelect, Options: []string{"api", "db"}, Default: []any{"api", "cache"}},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid default value")
+		assert.Contains(t, err.Error(), "contains invalid option")
 	})
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path"
+	"reflect"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -91,9 +92,13 @@ func (v *Validator) ValidateTreeContexts(node *TemplateNode, contexts RenderCont
 // ValidateContext validates that all template variables are present in the context.
 func (v *Validator) ValidateContext(tmpl *Template, ctx *Context) error {
 	for _, variable := range tmpl.Variables {
-		_, exists := ctx.Get(variable.Name)
+		value, exists := ctx.Get(variable.Name)
 		if !exists {
 			return fmt.Errorf("variable %s is missing", variable.Name)
+		}
+
+		if err := v.validateVariableValue(variable, value); err != nil {
+			return fmt.Errorf("variable %s is invalid: %w", variable.Name, err)
 		}
 	}
 	return nil
@@ -140,15 +145,134 @@ func (v *Validator) validateVariables(vars []Variable) []error {
 		}
 		seen[variable.Name] = true
 
-		// Options must be non-empty for select/multiselect
-		if variable.Type == VariableTypeSelect || variable.Type == VariableTypeMultiSelect {
-			if len(variable.Options) == 0 {
-				errs = append(errs, fmt.Errorf("variable[%d] %q: options required for type %s", i, variable.Name, variable.Type))
+		if err := v.validateVariableOptions(i, variable); err != nil {
+			errs = append(errs, err)
+		}
+
+		if variable.Default != nil {
+			if err := v.validateVariableValue(variable, variable.Default); err != nil {
+				errs = append(errs, fmt.Errorf("variable[%d] %q: invalid default value: %w", i, variable.Name, err))
 			}
 		}
 	}
 
 	return errs
+}
+
+func (v *Validator) validateVariableOptions(index int, variable Variable) error {
+	if variable.Type != VariableTypeSelect && variable.Type != VariableTypeMultiSelect {
+		if len(variable.Options) > 0 {
+			return fmt.Errorf("variable[%d] %q: options are only allowed for select and multiselect types", index, variable.Name)
+		}
+		return nil
+	}
+
+	if len(variable.Options) == 0 {
+		return fmt.Errorf("variable[%d] %q: options required for type %s", index, variable.Name, variable.Type)
+	}
+
+	seen := make(map[string]struct{}, len(variable.Options))
+	for optionIndex, option := range variable.Options {
+		if option == "" {
+			return fmt.Errorf("variable[%d] %q: option[%d] must not be empty", index, variable.Name, optionIndex)
+		}
+
+		if _, ok := seen[option]; ok {
+			return fmt.Errorf("variable[%d] %q: duplicate option %q", index, variable.Name, option)
+		}
+		seen[option] = struct{}{}
+	}
+
+	return nil
+}
+
+func (v *Validator) validateVariableValue(variable Variable, value any) error {
+	switch variable.Type {
+	case VariableTypeString:
+		if _, ok := value.(string); !ok {
+			return fmt.Errorf("expected type %s, got %T", variable.Type, value)
+		}
+		return nil
+
+	case VariableTypeInt:
+		if !isIntegerValue(value) {
+			return fmt.Errorf("expected type %s, got %T", variable.Type, value)
+		}
+		return nil
+
+	case VariableTypeBool:
+		if _, ok := value.(bool); !ok {
+			return fmt.Errorf("expected type %s, got %T", variable.Type, value)
+		}
+		return nil
+
+	case VariableTypeSelect:
+		s, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("expected type %s, got %T", variable.Type, value)
+		}
+		if !containsOption(variable.Options, s) {
+			return fmt.Errorf("contains invalid option %q", s)
+		}
+		return nil
+
+	case VariableTypeMultiSelect:
+		values, ok := normalizeStringSlice(value)
+		if !ok {
+			return fmt.Errorf("expected type %s, got %T", variable.Type, value)
+		}
+		for _, item := range values {
+			if !containsOption(variable.Options, item) {
+				return fmt.Errorf("contains invalid option %q", item)
+			}
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("unsupported variable type %q", variable.Type)
+	}
+}
+
+func isIntegerValue(value any) bool {
+	if value == nil {
+		return false
+	}
+
+	switch reflect.TypeOf(value).Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return true
+	default:
+		return false
+	}
+}
+
+func containsOption(options []string, value string) bool {
+	for _, option := range options {
+		if option == value {
+			return true
+		}
+	}
+	return false
+}
+
+func normalizeStringSlice(value any) ([]string, bool) {
+	switch val := value.(type) {
+	case []string:
+		return val, true
+	case []any:
+		result := make([]string, len(val))
+		for i, item := range val {
+			s, ok := item.(string)
+			if !ok {
+				return nil, false
+			}
+			result[i] = s
+		}
+		return result, true
+	default:
+		return nil, false
+	}
 }
 
 // validateIncludes validates that features and components do not include projects.
