@@ -265,6 +265,22 @@ func TestValidator_ValidateProjectNameRole(t *testing.T) {
 		assert.Contains(t, err.Error(), "must have exactly one")
 	})
 
+	t.Run("project template with non-string project_name role fails", func(t *testing.T) {
+		tmpl := &Template{
+			Name:    "my-project",
+			Type:    TypeProject,
+			Version: "1.0.0",
+			Variables: []Variable{
+				{Name: "app_name", Prompt: "App name?", Type: VariableTypeBool, Role: RoleProjectName},
+			},
+		}
+
+		err := v.Validate(tmpl)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "must be of type")
+		assert.Contains(t, err.Error(), string(VariableTypeString))
+	})
+
 	t.Run("feature template without project_name role passes", func(t *testing.T) {
 		tmpl := &Template{
 			Name:    "testing-feature",

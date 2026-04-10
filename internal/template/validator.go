@@ -301,6 +301,9 @@ func (v *Validator) validateProjectNameRole(tmpl *Template) error {
 	count := 0
 	for _, variable := range tmpl.Variables {
 		if variable.Role == RoleProjectName {
+			if variable.Type != VariableTypeString {
+				return fmt.Errorf("project template %q variable %q with role %q must be of type %q", tmpl.Name, variable.Name, RoleProjectName, VariableTypeString)
+			}
 			count++
 		}
 	}
