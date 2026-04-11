@@ -56,7 +56,10 @@ func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 		return nil, err
 	}
 
-	outputDir := s.determineOutputDir(opts)
+	outputDir, err := s.determineOutputDir(tree, contexts, opts)
+	if err != nil {
+		return nil, err
+	}
 
 	renderResult, err := s.render(tree, contexts)
 	if err != nil {
@@ -115,12 +118,26 @@ func (s *Scaffolder) collectVariables(tree *template.TemplateNode, opts Options)
 	return pipeline.Collect()
 }
 
-func (s *Scaffolder) determineOutputDir(opts Options) string {
+func (s *Scaffolder) determineOutputDir(
+	tree *template.TemplateNode,
+	contexts template.RenderContexts,
+	opts Options,
+) (string, error) {
 	if opts.OutputDir != "" {
-		return opts.OutputDir
+		return opts.OutputDir, nil
 	}
 
-	return "."
+	ctx, ok := contexts[tree.ID]
+	if !ok {
+		return "", fmt.Errorf("no context found for template %s (ID: %s)", tree.Template.Name, tree.ID)
+	}
+
+	projectName, err := tree.Template.ProjectName(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return projectName, nil
 }
 
 func (s *Scaffolder) render(tree *template.TemplateNode, contexts template.RenderContexts) (*template.RenderResult, error) {
@@ -161,7 +178,10 @@ func (s *Scaffolder) writeNode(
 	written *[]string,
 	skipped *[]string,
 ) error {
-	nodeOutputDir := s.resolveNodeOutputDir(node, contexts, outputDir)
+	nodeOutputDir, err := s.resolveNodeOutputDir(node, contexts, outputDir)
+	if err != nil {
+		return err
+	}
 
 	files, ok := renderResult.Files[node.ID]
 	if ok {
@@ -185,19 +205,28 @@ func (s *Scaffolder) resolveNodeOutputDir(
 	node *template.TemplateNode,
 	contexts template.RenderContexts,
 	parentDir string,
-) string {
-	mount := node.Mount
-	if mount == "" && node.Template.Type == template.TypeProject {
-		ctx := contexts[node.ID]
-		projectName, err := node.Template.ProjectName(ctx)
-		if err == nil {
-			mount = projectName
-		}
+) (string, error) {
+	if node.IsRootNode() {
+		return parentDir, nil
 	}
 
-	if mount != "" {
-		return filepath.Join(parentDir, mount)
+	if node.Template.Type != template.TypeProject {
+		return parentDir, nil
 	}
 
-	return parentDir
+	if node.Mount != "" {
+		return filepath.Join(parentDir, node.Mount), nil
+	}
+
+	ctx, ok := contexts[node.ID]
+	if !ok {
+		return "", fmt.Errorf("no context found for template %s (ID: %s)", node.Template.Name, node.ID)
+	}
+
+	projectName, err := node.Template.ProjectName(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(parentDir, projectName), nil
 }

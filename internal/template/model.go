@@ -118,6 +118,13 @@ type TemplateNode struct {
 	Inherited map[string]string
 }
 
+const rootNodeID = "0"
+
+// IsRootNode reports whether this node is the root of the composed template tree.
+func (n *TemplateNode) IsRootNode() bool {
+	return n != nil && n.ID == rootNodeID
+}
+
 // RequiredVariables returns the variables that need input for this node.
 // Variables inherited from the parent are excluded.
 func (n *TemplateNode) RequiredVariables() []Variable {
