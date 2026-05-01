@@ -10,25 +10,26 @@ it, and how the major components interact.
 - [3. Package Responsibilities](#3-package-responsibilities)
   - [3.1 `cmd`](#31-cmd)
   - [3.2 `internal/app`](#32-internalapp)
-  - [3.3 `internal/template`](#33-internaltemplate)
-  - [3.4 `internal/prompt`](#34-internalprompt)
-  - [3.5 `internal/scaffold`](#35-internalscaffold)
-  - [3.6 `internal/config`](#36-internalconfig)
-  - [3.7 `internal/ui`](#37-internalui)
-  - [3.8 `internal/builtin/templates`](#38-internalbuiltintemplates)
-  - [3.9 `internal/version`](#39-internalversion)
+  - [3.3 `internal/resolver`](#33-internalresolver)
+  - [3.4 `internal/template`](#34-internaltemplate)
+  - [3.5 `internal/vars`](#35-internalvars)
+  - [3.6 `internal/prompt`](#36-internalprompt)
+  - [3.7 `internal/scaffold`](#37-internalscaffold)
+  - [3.8 `internal/config`](#38-internalconfig)
+  - [3.9 `internal/ui`](#39-internalui)
+  - [3.10 `internal/builtin/templates`](#310-internalbuiltintemplates)
 - [4. Core Data Flow](#4-core-data-flow)
   - [4.1 `blueprint init` Lifecycle](#41-blueprint-init-lifecycle)
   - [4.2 `blueprint list` Lifecycle](#42-blueprint-list-lifecycle)
 - [5. Template Resolution](#5-template-resolution)
-  - [5.1 Resolver Interface](#51-resolver-interface)
-  - [5.2 Chain Resolver](#52-chain-resolver)
-  - [5.3 FS Resolvers](#53-fs-resolvers)
+  - [5.1 Source Model](#51-source-model)
+  - [5.2 Resolver Interface](#52-resolver-interface)
+  - [5.3 Chain Resolver](#53-chain-resolver)
 - [6. Template Engine](#6-template-engine)
   - [6.1 Loading](#61-loading)
-  - [6.2 Composition](#62-composition)
+  - [6.2 Tree-based Composition](#62-tree-based-composition)
   - [6.3 Rendering](#63-rendering)
-- [7. Variable Context](#7-variable-context)
+- [7. Variable Context & Collection](#7-variable-context--collection)
 - [8. Error Handling](#8-error-handling)
 - [9. Design Principles](#9-design-principles)
 
@@ -36,31 +37,32 @@ it, and how the major components interact.
 
 ## 1. High-Level Overview
 
-Blueprint follows a pipeline architecture. A user command enters through the CLI layer, resolves a template from the
-filesystem, collects user input via interactive prompts, composes the template with selected includes, renders all files,
-and writes them to disk.
+Blueprint follows a pipeline architecture centered around a **Template Tree**. A user command enters through the CLI layer, resolves a template from a source, constructs a tree of templates (root + selected includes), collects variables through a multi-stage pipeline, renders all files in the tree, and writes them to disk.
 
 ```
 CLI Command
     │
     ▼
-App Context (config, resolvers)
+App Context (config, sources, resolver)
     │
     ▼
-Template Resolution (local → builtin)
+Template Resolution (Chain: User → Builtin)
     │
     ▼
-Scaffolder
-    ├── Prompt Collector (variables + includes)
-    ├── Template Engine (load → compose → render)
-    └── Writer (files to disk)
+Template Tree Construction (Composition + Include Selection)
     │
     ▼
-UI Output (result summary)
+Variable Collection Pipeline (CLI → Default → Inheritance → Prompt)
+    │
+    ▼
+Template Rendering (Recursive walk of the tree)
+    │
+    ▼
+Writer (Files to disk)
+    │
+    ▼
+UI Output (Result summary)
 ```
-
-Every template — project, feature, or component — is processed by the same engine. The `type` field is semantic only
-and does not change processing behavior.
 
 ---
 
@@ -69,48 +71,37 @@ and does not change processing behavior.
 ```
 blueprint/
 ├── main.go                          # Entry point → cmd.Execute()
-├── cmd/
-│   ├── root.go                      # Root command, global flags, context setup
-│   ├── init.go                      # Template initialization command
-│   ├── list.go                      # Template listing command
-│   └── version.go                   # Version display command
+├── cmd/                             # Cobra commands
+│   ├── root.go                      # Context setup & global flags
+│   ├── init.go                      # Scaffolding command
+│   └── list.go                      # Discovery command
 ├── internal/
-│   ├── app/                         # Runtime context & dependency injection
-│   │   ├── context.go               # App context (config, FS, resolver, options)
-│   │   └── errors.go                # App-level error types
-│   ├── template/                    # Template processing engine
-│   │   ├── engine.go                # Orchestrator (load + compose + render)
-│   │   ├── model.go                 # Data structures (Template, Variable, File, etc.)
-│   │   ├── loader.go                # YAML parsing, validation, discovery
-│   │   ├── composer.go              # Include resolution, merging, cycle detection
-│   │   ├── renderer.go              # Variable substitution via text/template
-│   │   ├── resolver.go              # Resolver interface and resolved template types
-│   │   ├── resolver_chain.go        # Chain-of-responsibility resolver
-│   │   ├── resolver_fs.go           # Filesystem-backed resolvers
-│   │   └── errors.go                # Template resolution errors
-│   ├── prompt/                      # Interactive input collection
-│   │   ├── engine.go                # TUI prompt rendering (charmbracelet/huh)
-│   │   └── collector.go             # Variable/include collection & validation
+│   ├── app/                         # Runtime context & DI
+│   │   └── context.go               # Context (Config, Sources, Resolver)
+│   ├── resolver/                    # Template source resolution
+│   │   ├── source.go                # Source model (FS + Metadata)
+│   │   ├── source_resolver.go       # FS-backed resolver & discovery
+│   │   └── chain.go                 # Chain-of-responsibility resolver
+│   ├── template/                    # Core processing engine
+│   │   ├── model.go                 # Data structures (Template, Node, Context)
+│   │   ├── engine.go                # Orchestrator
+│   │   ├── loader.go                # YAML parsing & validation
+│   │   ├── composer.go              # Tree construction & cycle detection
+│   │   └── renderer.go              # text/template processing
+│   ├── vars/                        # Variable collection pipeline
+│   │   ├── collector.go             # Collector interface
+│   │   ├── cli.go                   # CLI flag collector
+│   │   ├── default.go               # Default value collector
+│   │   ├── inheritance.go           # Parent -> Child variable mapping
+│   │   └── prompt.go                # Interactive TUI collector
+│   ├── prompt/                      # TUI rendering (bubbletea/huh)
+│   │   └── engine.go                # Input, Select, MultiSelect prompts
 │   ├── scaffold/                    # Scaffolding orchestration
 │   │   ├── scaffolder.go            # Workflow coordinator
-│   │   └── writer.go                # File writing & directory management
+│   │   └── writer.go                # Safe file writing
 │   ├── config/                      # Configuration management
-│   │   ├── config.go                # Config data model
-│   │   ├── loader.go                # Hierarchical config loading
-│   │   └── paths.go                 # Default config path resolution
-│   ├── ui/                          # Terminal output
-│   │   ├── errors.go                # Error rendering & dispatch
-│   │   ├── render_template.go       # Scaffolding result display
-│   │   ├── render_list.go           # Template list display
-│   │   ├── exit_codes.go            # Error → exit code mapping
-│   │   └── writer.go                # Output writing utilities
-│   ├── version/                     # Build version info
-│   │   └── version.go               # Version, commit, build date (ldflags)
-│   └── builtin/templates/           # Embedded templates
-│       ├── embed.go                 # go:embed directive
-│       ├── projects/                # Project templates (go-cli, go-api, etc.)
-│       └── features/                # Feature templates (go/testing, etc.)
-└── docs/                            # Documentation
+│   ├── ui/                          # Terminal output formatting
+│   └── builtin/templates/           # Embedded templates (go:embed)
 ```
 
 ---
@@ -119,102 +110,49 @@ blueprint/
 
 ### 3.1 `cmd`
 
-The CLI layer built on [Cobra](https://github.com/spf13/cobra). Each file defines a single command.
-
-- **root.go** — Creates the root command, initializes `app.Context` with config and resolvers, registers global flags
-  (`--config`, `--verbose`, `--dry-run`), and attaches all subcommands.
-- **init.go** — Resolves a template by name, constructs scaffolding options from flags (`--var`, `--include`,
-  `--exclude`, `--yes`, `--force`), invokes the `Scaffolder`, and renders the result.
-- **list.go** — Discovers templates from all sources and renders them as a table.
-- **version.go** — Displays build version information.
+The CLI layer built on Cobra. It translates flags and arguments into `app.Context` and `scaffold.Options`.
 
 ### 3.2 `internal/app`
 
-Runtime context and dependency injection. This package wires together configuration, filesystem access, and template
-resolution.
+Wires together configuration and template sources. It initializes the `ChainResolver` with user-defined and builtin sources.
 
-**Key types:**
+### 3.3 `internal/resolver`
 
-| Type               | Purpose                                                           |
-| ------------------ | ----------------------------------------------------------------- |
-| `Context`          | Holds Config, BuiltinFS, LocalFS, Resolver, and Options           |
-| `Options`          | Runtime flags such as verbose and dry-run                         |
+Handles the discovery and location of templates across different filesystems.
 
-### 3.3 `internal/template`
+- **Source:** Abstraction of a template repository (name, type, filesystem).
+- **SourceResolver:** Finds templates in a specific filesystem by walking directories for `template.yaml`.
+- **ChainResolver:** Implements `template.Resolver` by trying multiple sources in order.
 
-The core template processing engine. Handles resolution, loading, composition, and rendering.
+### 3.4 `internal/template`
 
-**Key types:**
+The heart of Blueprint. It manages the lifecycle of a template from YAML to rendered files.
 
-| Type         | Purpose                                                              |
-| ------------ | -------------------------------------------------------------------- |
-| `Resolver`   | Interface: `Resolve(ref) → (ResolvedTemplate, error)`                 |
-| `ChainResolver` | Tries resolvers in sequence until one succeeds                    |
-| `FSResolver` | Resolves from a provided filesystem                                  |
-| `ResolvedTemplate` | Result tuple: filesystem handle + path within that filesystem |
-| `TemplateRef` | Template reference: name + type                                     |
-| `Template`   | Full template definition (name, type, version, variables, includes, dependencies, files, post_init) |
-| `Variable`   | User-input variable (name, prompt, type, role, default, options)      |
-| `Include`    | Reference to another template with enabled_by_default flag           |
-| `File`       | Source/destination mapping for template files                        |
-| `PostInit`   | Post-scaffolding command (command string, optional workdir)          |
-| `Context`    | Variable map (`map[string]any`) for template rendering               |
-| `Engine`     | Orchestrator: wraps loader, composer, and renderer                   |
-| `FileLoader` | Parses template.yaml, validates, discovers templates                 |
-| `Composer`   | Resolves includes recursively, merges templates, detects cycles      |
-| `Renderer`   | Processes files using Go `text/template` with custom function map    |
+- **TemplateNode:** A tree structure representing the root template and all transitive includes.
+- **Composer:** Recursively resolves includes to build the `TemplateNode` tree. Supports `ConfirmIncludes` callback for interactive selection.
+- **Renderer:** Renders files using Go's `text/template` with a rich function map.
 
-### 3.4 `internal/prompt`
+### 3.5 `internal/vars`
 
-Interactive input collection using [charmbracelet/huh](https://github.com/charmbracelet/huh).
+A dedicated package for populating variable contexts.
 
-**Key types:**
+- **Collector:** Interface for mutation of `RenderContexts`.
+- **Inheritance:** Automatically propagates variables from parent nodes to child nodes based on `inherits` mappings in `template.yaml`.
+- **Pipeline:** Collects variables in a specific order: CLI flags → Template Defaults → Inheritance → Interactive Prompts.
 
-| Type        | Purpose                                                     |
-| ----------- | ----------------------------------------------------------- |
-| `Engine`    | Renders TUI prompts (Input, Confirm, Select, MultiSelect)   |
-| `Collector` | Orchestrates variable collection, context merging, validation |
+### 3.6 `internal/prompt`
 
-The `Collector` coordinates prompting for both template variables and include selection, skipping variables already
-present in the context.
+Low-level TUI interaction using [charmbracelet/huh](https://github.com/charmbracelet/huh). It is used by the `vars.PromptCollector` to interact with the user.
 
-### 3.5 `internal/scaffold`
+### 3.7 `internal/scaffold`
 
-Orchestrates the full scaffolding workflow.
+Orchestrates the high-level workflow:
 
-**Key types:**
-
-| Type        | Purpose                                                     |
-| ----------- | ----------------------------------------------------------- |
-| `Scaffolder`| Coordinates: Engine + Collector + Writer                     |
-| `Writer`    | File I/O with safe-write semantics (skip existing files)     |
-| `Options`   | Configuration: template path, output dir, variables, dry-run |
-| `Result`    | Output: files written/skipped, dependencies, post-init cmds  |
-
-### 3.6 `internal/config`
-
-Configuration loading with hierarchical precedence.
-
-```
-Defaults → Config File → Environment Variables → CLI Flags
-```
-
-- Default config path: `~/.config/blueprint/config.yaml`
-- Override via `$BLUEPRINT_CONFIG` or `--config` flag
-
-### 3.7 `internal/ui`
-
-Terminal output formatting. Handles result rendering (files written, dependencies, post-init commands), template list
-display, error presentation, and exit code mapping.
-
-### 3.8 `internal/builtin/templates`
-
-Embedded template resources using Go's `//go:embed` directive. Templates are compiled into the binary, requiring no
-external files at runtime. Organized into `projects/` and `features/` subdirectories.
-
-### 3.9 `internal/version`
-
-Build-time version information injected via `ldflags`: version string, git commit SHA, and build date.
+1. Load root template metadata.
+2. Construct template tree (composing includes).
+3. Run the variable collection pipeline.
+4. Render the tree into a list of files.
+5. Write files to the destination directory.
 
 ---
 
@@ -223,72 +161,39 @@ Build-time version information injected via `ldflags`: version string, git commi
 ### 4.1 `blueprint init` Lifecycle
 
 ```
-1. Parse CLI args & flags
-         │
-2. Load config (defaults → file → env → CLI)
-         │
-3. Build app.Context (config, BuiltinFS, LocalFS, template resolver)
-         │
-4. Resolve template reference
-   template.ChainResolver: local FS → builtin FS
-   Returns: ResolvedTemplate{FS, Path}
-         │
-5. Scaffolder.Scaffold(options)
-   │
-   ├─ 5a. Engine.LoadTemplate(path)
-   │       Parse template.yaml → validate → resolve file paths
-   │
-   ├─ 5b. Engine.GetAllIncludes(template)
-   │       Collect all transitive includes for prompting
-   │
-   ├─ 5c. Collector.CollectWithIncludes(template, includes)
-   │       ├─ PromptIncludes → Multi-select feature picker
-   │       └─ PromptVariables → Input/Confirm/Select forms
-   │
-   ├─ 5d. Engine.ComposeTemplateWithIncludes(template, enabledIncludes)
-   │       ├─ Filter includes by user selection + enabled_by_default
-   │       ├─ Recursively resolve and merge included templates
-   │       └─ Deduplicate variables, files, dependencies
-   │
-   ├─ 5e. Collector.CollectMissing(composedTemplate, context)
-   │       Prompt for variables introduced by selected includes
-   │
-   ├─ 5f. Collector.ValidateContext(template, context)
-   │       Ensure all required variables are present
-   │
-   ├─ 5g. Engine.RenderTemplate(template, context)
-   │       ├─ Process .tmpl files through text/template
-   │       ├─ Copy non-.tmpl files as-is
-   │       └─ Render destination paths with template variables
-   │
-   └─ 5h. Writer.SafeWriteFiles(renderedFiles)  [unless dry-run]
-           ├─ Create directories (0755)
-           ├─ Write files (0644)
-           └─ Skip files that already exist
-         │
-6. UI.RenderResult(result)
-   Display: files written ✓, skipped, dependencies, post-init commands
-```
-
-**Note:** Post-init commands are collected and displayed in the result but are NOT automatically executed.
-
-### 4.2 `blueprint list` Lifecycle
-
-```
-1. Build app.Context
-         │
-2. Discover templates from all sources (builtin + local)
-   FileLoader.DiscoverAll(fs) for each source
-         │
-3. UI.RenderTemplateList(templates)
-   Display grouped by source in table format
+1. Resolve template reference (Name → SourceResolver)
+2. Load root template (YAML parsing + validation)
+3. Compose Tree:
+   - Walk includes recursively
+   - If include is optional, call ConfirmIncludes (TUI Multi-select)
+   - Create TemplateNode tree
+4. Collect Variables (for each node in tree):
+   - Apply --var flags (CLICollector)
+   - Apply default values (DefaultCollector)
+   - Propagate from parents (Inheritance)
+   - Prompt for remaining missing values (PromptCollector)
+5. Render Tree:
+   - Walk tree recursively
+   - Render destination paths
+   - Render file content (.tmpl) or copy as-is
+6. Write Files:
+   - Create directories
+   - Write content with safe-write semantics (don't overwrite unless forced)
+7. Render Result Summary (UI)
 ```
 
 ---
 
 ## 5. Template Resolution
 
-### 5.1 Resolver Interface
+### 5.1 Source Model
+
+A `Source` represents a location where templates are stored.
+
+- **Builtin:** Templates embedded in the binary.
+- **User:** Local filesystem directory (e.g., `~/.config/blueprint/templates`).
+
+### 5.2 Resolver Interface
 
 ```go
 type Resolver interface {
@@ -296,184 +201,60 @@ type Resolver interface {
 }
 ```
 
-A `TemplateRef` contains a template name and type. A `ResolvedTemplate` contains an `fs.FS` handle and the path to the
-template directory within that filesystem.
+### 5.3 Chain Resolver
 
-### 5.2 Chain Resolver
+Templates are resolved by trying sources in sequence:
 
-The `ChainResolver` implements the chain-of-responsibility pattern. It holds an ordered list of resolvers and tries each
-in sequence. The first resolver to return a successful result wins. If all resolvers fail, `ErrTemplateNotFound` is
-returned.
-
-Default chain order:
-
-```
-local FSResolver → builtin FSResolver
-```
-
-This allows user templates to override builtin templates by name.
-
-### 5.3 FS Resolvers
-
-Each `FSResolver` uses the same resolution logic (`ResolveFromFS`):
-
-1. Construct path based on template type directories (`projects/`, `features/`)
-2. Look for `template.yaml` at that path in the given `fs.FS`
-3. Return the filesystem handle + resolved path
-
-The difference is the underlying filesystem instance passed in:
-
-- **Local FSResolver** — Uses `os.DirFS` pointing to the user's template directory
-- **Builtin FSResolver** — Uses the `embed.FS` compiled into the binary
+1. **User Source** (allows local overrides)
+2. **Builtin Source** (default templates)
 
 ---
 
 ## 6. Template Engine
 
-The `Engine` type is the unified orchestrator that wraps the loader, composer, and renderer behind a clean API.
-
 ### 6.1 Loading
 
-`FileLoader.Load(path)`:
+`FileLoader` parses `template.yaml` and validates it against a strict schema using `go-playground/validator`. It supports semantic types: `project`, `feature`, and `component`.
 
-1. Resolve path to `template.yaml` (handles both directory and file paths)
-2. Read YAML content from the filesystem
-3. Unmarshal into `Template` struct
-4. Validate required fields using `go-playground/validator` (name, type, version, files)
-5. Resolve file source paths relative to the template directory
+### 6.2 Tree-based Composition
 
-`FileLoader.Discover()` and `FileLoader.DiscoverAll()` walk the filesystem looking for `template.yaml` files and return
-discovered templates organized by path.
+Unlike many scaffolders that "flatten" templates, Blueprint preserves a tree structure. Each node in the tree (`TemplateNode`) has its own:
 
-### 6.2 Composition
-
-The `Composer` resolves template includes recursively and merges them into a single composed template.
-
-**Algorithm:**
-
-```
-Compose(template)
-  └─ composeWithPath(template, [template.Name])
-      ├─ Copy base template fields
-      └─ For each include:
-          ├─ Check for circular dependency (is name in path?)
-          ├─ Load included template via resolver
-          ├─ Recursively compose: composeWithPath(include, path + name)
-          └─ mergeTemplate(destination, source)
-```
-
-**Merge rules:**
-
-| Field          | Strategy                                                |
-| -------------- | ------------------------------------------------------- |
-| Variables      | Deduplicate by name — earliest definition wins          |
-| Dependencies   | Deduplicate by package name — explicit version overrides |
-| Files          | Deduplicate by destination path — earliest definition wins |
-| Post-init      | Append all — execution order is preserved               |
-
-**Selective composition:**
-
-`ComposeWithEnabledIncludes(template, enabledMap)` filters includes before composing. An include is composed if the user
-selected it OR it has `enabled_by_default: true`.
-
-**Circular dependency detection:**
-
-The composer tracks the resolution path as a list of template names. Before resolving an include, it checks whether that
-template's name already appears in the path. If it does, composition fails with `ErrCircularDependency`.
+- Metadata & Files
+- Isolated variable context
+- Mount point (relative path in the output)
+- Inheritance rules
 
 ### 6.3 Rendering
 
-The `Renderer` processes files using Go's `text/template` package.
+The `Renderer` processes the tree recursively.
 
-**Processing logic:**
-
-```
-RenderAll(template, context)
-  └─ For each file in template.Files:
-      ├─ Render destination path with template variables
-      ├─ If source is a directory:
-      │   └─ Recursively process all files within
-      ├─ If file has .tmpl extension:
-      │   ├─ Render content through text/template
-      │   └─ Strip .tmpl from destination filename
-      └─ Otherwise:
-          └─ Copy file content as-is
-```
-
-**Template functions:**
-
-| Category        | Functions                                             |
-| --------------- | ----------------------------------------------------- |
-| String          | `toLower`, `toUpper`, `title`, `trim`, `replace`, `contains`, `split`, `join` |
-| Path            | `base`, `dir`, `ext`, `joinPath`                      |
-| Type conversion | `toString`, `toInt`, `toBool`                         |
-| Logic           | `default`, `empty`, `coalesce`                        |
+- **Destination Rendering:** Paths themselves can contain variables (e.g., `cmd/{{.ProjectName}}/main.go`).
+- **Content Rendering:** Files ending in `.tmpl` are processed via `text/template`.
+- **Context Isolation:** Each node is rendered with its specific context, but can access inherited values.
 
 ---
 
-## 7. Variable Context
+## 7. Variable Context & Collection
 
-Variables are collected into a `map[string]any` context that flows through the entire pipeline.
-
-**Sources of variables (in merge order):**
-
-1. CLI `--var` flags (pre-provided values)
-2. Interactive prompts for base template variables
-3. Interactive prompts for variables from selected includes
-
-**Behavior:**
-
-- Variables already present in the context are not prompted for
-- `CollectMissing` fills gaps introduced by newly composed includes
-- `ValidateContext` ensures all required variables have values before rendering
-- The same context is shared across all rendered files and destination paths
+`RenderContexts` is a map of `NodeID` to `Context`. This allows the same variable name to have different values in different parts of the tree, while `Inheritance` provides a mechanism for sharing values (e.g., `project_name`) down the tree.
 
 ---
 
 ## 8. Error Handling
 
-Blueprint uses wrapped errors with context throughout the pipeline:
+Blueprint uses specialized error types:
 
-```go
-return fmt.Errorf("failed to load template: %w", err)
-```
-
-**App-level sentinel errors:**
-
-- `ErrTemplateNotFound` — No resolver could locate the template
-- `ErrCircularDependency` — Cycle detected during template composition
-
-**UI error dispatch:**
-
-The `ui.RenderError` function matches error types and renders appropriate messages. For example,
-`ErrTemplateNotFound` suggests running `blueprint list` to see available templates.
-
-**Exit codes:**
-
-| Code | Meaning             |
-| ---- | ------------------- |
-| 0    | Success             |
-| 1    | General error       |
-| 2    | Template not found  |
+- `TemplateNotFoundError`: When a reference cannot be resolved.
+- `CircularDependencyError`: When composition detects a loop in includes.
+- `ValidationError`: For invalid `template.yaml` files or missing required variables.
 
 ---
 
 ## 9. Design Principles
 
-**Everything is a template.** Projects, features, and components share the same structure and are processed by the
-same engine. The `type` field is semantic metadata — it does not change behavior.
-
-**Composition over configuration.** Templates are composed through includes rather than configured through flags.
-Features are injected by merging templates, not by toggling options.
-
-**Resolution is pluggable.** The chain resolver pattern allows adding new template sources (git, HTTP, registries)
-without changing the scaffolding pipeline.
-
-**No silent side effects.** Files are never silently overwritten. Post-init commands are reported but not
-automatically executed. Dry-run mode previews all operations.
-
-**Hierarchical configuration.** Settings follow a clear precedence: defaults → config file → environment variables →
-CLI flags. Each layer can override the previous one.
-
-**Minimal magic.** Template rendering uses standard Go `text/template` syntax. File processing is determined by
-extension (`.tmpl` or not). Directory structures are preserved as-is.
+- **Tree over Flat:** Preserving the hierarchy allows for more complex composition and cleaner variable scoping.
+- **Explicit over Implicit:** Variable inheritance must be explicitly defined in the template manifest.
+- **Safe by Default:** Never overwrite existing files unless `--force` is used.
+- **Pluggable Sources:** The resolver architecture allows for future addition of Git or Remote sources.
+- **Minimal Magic:** Standard Go templates and standard YAML.
