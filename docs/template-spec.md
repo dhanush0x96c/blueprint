@@ -65,7 +65,7 @@ name: go-cli
 type: project|feature|component
 version: 1.0.0
 description: "Short human-readable description"
-tags: ["web", "api", "cli"]  # optional
+tags: ["web", "api", "cli"] # optional
 ```
 
 ### 2.1 `name`
@@ -126,6 +126,7 @@ variables:
 | `type`    | Yes      | `string`, `int`, `bool`, `select`, `multiselect` |
 | `default` | No       | Default value                                    |
 | `role`    | No       | Special semantic meaning                         |
+| `options` | Cond.    | List of options for `select` and `multiselect`   |
 
 ### 3.2 Roles
 
@@ -137,28 +138,17 @@ Currently supported roles:
 
 This role defines the canonical name of the generated project.
 
-**STRICT RULE:**
+**STRICT RULES:**
 
-- Exactly ONE variable across the entire composed template tree MUST have `role: project_name`.
-- Zero is invalid.
-- More than one is invalid.
-- Validation MUST fail if the constraint is violated.
+- Only templates of type `project` MUST have exactly one variable with `role: project_name`.
+- Templates of type `feature` or `component` SHOULD NOT have a `project_name` role.
+- The variable with this role MUST be of type `string`.
 
 This guarantees:
 
 - Deterministic output directory naming
 - Predictable module name resolution
 - Clear ownership of the root project identity
-
-If a feature defines `project_name`, it MUST only be usable in isolation OR validation must fail during composition.
-
-Future roles may include:
-
-- `module_path`
-- `package_name`
-- `service_name`
-
-But only `project_name` is currently reserved and enforced.
 
 ---
 
@@ -174,10 +164,12 @@ includes:
 
 ### 4.1 Fields
 
-| Field                | Required | Description             |
-| -------------------- | -------- | ----------------------- |
-| `template`           | Yes      | Template name           |
-| `enabled_by_default` | No       | Default inclusion state |
+| Field                | Required | Description                                                 |
+| -------------------- | -------- | ----------------------------------------------------------- |
+| `template`           | Yes      | Template name                                               |
+| `enabled_by_default` | No       | Default inclusion state (default: `false`)                  |
+| `mount`              | No       | Subdirectory to place the included template (projects only) |
+| `inherits`           | No       | Mapping of parent variables to child variables              |
 
 ### 4.2 Resolution Rules
 
@@ -187,13 +179,24 @@ includes:
 - Dependency lists are merged and deduplicated.
 - File lists are concatenated.
 
-Composition order:
+### 4.3 Mount and Inheritance
 
-1. Load root template
-2. Resolve includes depth-first
-3. Merge results
+#### `mount`
 
-This enables infinite composition as described in the core design.
+When a `project` template includes another `project` template, the `mount` field specifies the subdirectory where the included project will be scaffolded. If `mount` is not provided, the included project's `project_name` variable is used as the directory name.
+
+`mount` has no effect when including `feature` or `component` templates.
+
+#### `inherits`
+
+The `inherits` field allows a parent template to pass its variable values to an included template. This is useful for sharing configuration (like `app_name`) without prompting the user twice.
+
+```yaml
+includes:
+  - template: go-api
+    inherits:
+      api_name: project_name # child variable 'api_name' takes value of parent 'project_name'
+```
 
 ---
 
@@ -232,20 +235,25 @@ files:
 
 ### 6.1 Fields
 
-| Field  | Required | Description                                        |
-| ------ | -------- | -------------------------------------------------- |
-| `src`  | Yes      | Source file or directory relative to template root |
-| `dest` | Yes      | Output path relative to project root               |
+| Field  | Required | Description                                                 |
+| ------ | -------- | ----------------------------------------------------------- |
+| `src`  | Yes      | Source file or directory relative to template root          |
+| `dest` | Yes      | Output path relative to project root (can be a Go template) |
 
 ### 6.2 File Processing
 
 Files are processed based on their extension:
 
-- **Template files (`.tmpl`)**: Rendered using Go `text/template` with all collected variables.
+- **Template files (`.tmpl`)**: Rendered using Go `text/template` with all collected variables. The `.tmpl` extension is stripped from the output.
 - **Non-template files**: Copied as-is without any processing.
 
-Although the `.tmpl` extension is stripped during rendering,
-explicitly listed files should specify the destination path directly (without `.tmpl`).
+The `dest` field itself is also processed as a template, allowing for dynamic file paths:
+
+```yaml
+files:
+  - src: "handler.go.tmpl"
+    dest: "internal/handlers/{{ .handler_name }}.go"
+```
 
 ### 6.3 Directory Processing
 
@@ -255,27 +263,24 @@ When `src` is a directory, Blueprint recursively processes all files within:
 - All other files are copied without modification.
 - The directory structure is preserved in the destination.
 
-Example directory structure:
-
-```
-src/
-  config.go.tmpl  → rendered and written as config.go
-  utils.go.tmpl   → rendered and written as utils.go
-  data.json       → copied as-is to data.json
-```
-
 ### 6.4 Rendering Context
 
 - Uses Go `text/template`.
 - All collected variables available in root context.
 - Includes share the same render context.
 
-Files are processed in composition order.
+#### Template Functions
 
-If multiple templates write to the same destination:
+Blueprint provides a set of built-in functions for use in templates:
 
-- Behavior MUST be explicitly defined (error or override strategy).
-- Silent overwrites are forbidden.
+- **Strings:** `toLower`, `toUpper`, `title`, `trim`, `trimLeft`, `trimRight`, `replace`, `contains`, `hasPrefix`, `hasSuffix`, `split`, `join`.
+- **Paths:** `base`, `dir`, `ext`, `joinPath`.
+- **Conversions:** `toString`, `toInt`, `toBool`.
+- **Utilities:** `default`, `empty`, `coalesce`.
+
+Example usage:
+`{{ .app_name | toLower }}`
+`{{ default "default_value" .optional_var }}`
 
 ---
 
@@ -286,13 +291,20 @@ Templates may define commands to execute after scaffolding.
 ```yaml
 post_init:
   - command: "go mod tidy"
-  - command: "go fmt ./..."
+    workdir: "./"
 ```
 
-Rules:
+### 7.1 Fields
+
+| Field     | Required | Description                                          |
+| --------- | -------- | ---------------------------------------------------- |
+| `command` | Yes      | Command to execute                                   |
+| `workdir` | No       | Working directory for the command (relative to root) |
+
+### 7.2 Execution Rules
 
 - Executed after all files are written.
-- Run in project root directory.
+- Run in project root directory (unless `workdir` is specified).
 - Executed sequentially.
 - Failure MUST stop execution and return error.
 
@@ -304,12 +316,16 @@ Post-init commands from composed templates are appended in resolution order.
 
 A valid template MUST satisfy:
 
-- Required top-level fields present
-- No duplicate variable names in composed tree
-- Exactly one `project_name` role in full composition
-- No cyclic includes
-- All referenced template paths exist
-- All referenced `src` files exist
+- Required top-level fields present (`name`, `type`, `version`).
+- `type` is one of `project`, `feature`, `component`.
+- `project` templates MUST have exactly one `project_name` role variable.
+- Features and components MUST NOT include project templates.
+- Features and components CANNOT be included twice at the same level.
+- No cyclic includes.
+- All referenced template paths exist.
+- All referenced `src` files exist.
+- Variable `options` are required for `select` and `multiselect` types.
+- Default values must match the variable `type`.
 
 Validation occurs before any filesystem writes.
 
