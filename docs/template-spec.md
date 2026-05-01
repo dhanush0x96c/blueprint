@@ -168,7 +168,7 @@ Templates may include other templates.
 
 ```yaml
 includes:
-  - template: features/go/testing
+  - template: go-testing
     enabled_by_default: true
 ```
 
@@ -176,7 +176,7 @@ includes:
 
 | Field                | Required | Description             |
 | -------------------- | -------- | ----------------------- |
-| `template`           | Yes      | Template path           |
+| `template`           | Yes      | Template name           |
 | `enabled_by_default` | No       | Default inclusion state |
 
 ### 4.2 Resolution Rules

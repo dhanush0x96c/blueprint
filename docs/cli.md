@@ -2,6 +2,8 @@
 
 Complete command-line reference for Blueprint, the universal project scaffolding tool.
 
+**Alias:** `bp`
+
 ## Table of Contents
 
 - [Global Options](#global-options)
@@ -13,7 +15,7 @@ Complete command-line reference for Blueprint, the universal project scaffolding
   - [blueprint version](#blueprint-version)
   - [blueprint completion](#blueprint-completion)
 - [Configuration](#configuration)
-- [Template Paths](#template-paths)
+- [Template Names](#template-names)
 - [Examples](#examples)
 
 ---
@@ -24,16 +26,15 @@ These flags are available for all commands:
 
 ```
 --config string         Config file path (default: ~/.config/blueprint/config.yaml)
---template-dir string   Override default template directory
 --dry-run               Preview actions without writing files
---verbose               Enable verbose logging
+--verbose, -v           Enable verbose logging
 --help, -h              Show help for any command
 ```
 
 **Environment Variables:**
 
 - `BLUEPRINT_CONFIG` - Path to configuration file
-- `BLUEPRINT_TEMPLATE_DIR` - Custom template directory location
+- `BLUEPRINT_TEMPLATE_DIR` - Custom template directory location (Planned)
 
 ---
 
@@ -55,12 +56,20 @@ blueprint init <template-name> [output-dir] [flags]
 **Flags:**
 
 ```
---var stringArray         Set template variable (format: key=value)
+--var stringArray         Set template variable. Supports scoping (see Scoped Variables).
 --yes, -y                 Skip interactive prompts, use defaults
 --include stringArray     Force-enable optional features
 --exclude stringArray     Force-disable default features
---force                   Overwrite existing files
+--force, -f               Overwrite existing files
 ```
+
+**Scoped Variables:**
+
+Variables can be targeted at different levels using the `--var` flag:
+
+- `key=value`: **Global scope**. Applies to all templates in the composition tree that use this variable.
+- `template-name:key=value`: **Template scope**. Only applies to the template with the matching name.
+- `#node-id:key=value`: **Node scope**. Targets a specific node in the composition tree by its unique ID.
 
 **Examples:**
 
@@ -68,16 +77,16 @@ blueprint init <template-name> [output-dir] [flags]
 # Interactive initialization
 blueprint init go-cli
 
-# Non-interactive with variables
+# Non-interactive with scoped variables
 blueprint init go-api --yes \
   --var app_name=my-service \
-  --var port=8080
+  --var go-database-postgres:port=5432
 
 # Custom output directory
 blueprint init python-api-fastapi ./backend
 
 # Force-enable specific features
-blueprint init go-api --include features/go/database/postgres
+blueprint init go-api --include go-database-postgres
 
 # Dry run to preview
 blueprint init node-api-express --dry-run
@@ -89,6 +98,7 @@ blueprint init go-cli existing-dir --force
 **Interactive Prompts:**
 
 When run without `--yes`, Blueprint will:
+
 1. Prompt for required variables
 2. Offer optional features (from `enabled_by_default: false` includes)
 3. Confirm before writing files
@@ -115,9 +125,9 @@ blueprint add <template-name> [flags]
 
 ```
 --target string          Target directory (default: current directory)
---var stringArray        Set template variable (format: key=value)
+--var stringArray        Set template variable (supports scoping)
 --yes, -y                Skip interactive prompts
---force                  Overwrite existing files
+--force, -f              Overwrite existing files
 --merge                  Attempt to merge conflicts intelligently
 ```
 
@@ -125,28 +135,29 @@ blueprint add <template-name> [flags]
 
 ```bash
 # Add testing to current project
-blueprint add features/go/testing
+blueprint add go-testing
 
 # Add Docker configuration
-blueprint add components/docker
+blueprint add docker
 
 # Add multiple features
-blueprint add features/go/logging
-blueprint add features/go/database/postgres
+blueprint add go-logging
+blueprint add go-database-postgres
 
 # Add to specific directory
-blueprint add features/node/linting --target ./backend
+blueprint add node-linting --target ./backend
 
 # Non-interactive mode
-blueprint add components/ci-cd/github-actions --yes
+blueprint add ci-github-actions --yes
 
 # Preview changes
-blueprint add features/go/config --dry-run
+blueprint add go-config --dry-run
 ```
 
 **Conflict Resolution:**
 
 When files already exist:
+
 - Blueprint will prompt for each conflict
 - Options: `[o]verwrite`, `[s]kip`, `[m]erge`, `[a]bort`
 - Use `--force` to overwrite all automatically
@@ -155,6 +166,7 @@ When files already exist:
 **Dependencies:**
 
 `blueprint add` will:
+
 1. Install new dependencies automatically
 2. Update existing dependency files (go.mod, package.json, etc.)
 3. Run post-init commands defined in the template
@@ -180,7 +192,7 @@ blueprint list [projects|features|components] [flags]
 ```
 --source, -s string      Filter by source: builtin, user (default: all)
 --quiet, -q              Show compact output (name only)
---tags, -t stringArray   Filter by tags (comma-separated). Matches templates that contain ANY of the specified tags.
+--tags, -t stringSlice    Filter by tags (comma-separated). Matches templates that contain ANY of the specified tags.
 ```
 
 **Examples:**
@@ -207,27 +219,19 @@ blueprint list components --source builtin --tags docker,ci-cd
 
 **Output Format:**
 
-Templates are grouped by source:
+Templates are grouped by source and display their type when listing all templates:
 
 ```
 BUILTIN
-  go-cli                   Command-line application
-  go-api                   HTTP API service
-  node-api-express         Express.js REST API
+  go-cli           project    Command-line application
+  go-api           project    HTTP API service
+  go-testing       feature    Testing framework setup
+  go-logging       feature    Structured logging setup
+  docker           component  Docker configuration
 
 USER
-  company-api              Company API template
-```
-
-For features:
-```
-BUILTIN
-  features/go/testing      Testing framework setup
-  features/go/logging      Structured logging setup
-  features/go/config       Configuration management
-
-USER
-  features/auth            Authentication module
+  company-api      project    Company API template
+  auth             feature    Authentication module
 ```
 
 **Quiet Output:**
@@ -317,11 +321,13 @@ blueprint version --verbose
 **Output:**
 
 Basic output:
+
 ```
 Blueprint v0.1.0
 ```
 
 Verbose output:
+
 ```
 Blueprint v0.1.0
 Git Commit: a1b2c3d
@@ -361,11 +367,13 @@ blueprint completion powershell > blueprint.ps1
 **Setup Instructions:**
 
 **Bash:**
+
 ```bash
 echo 'source <(blueprint completion bash)' >> ~/.bashrc
 ```
 
 **Zsh:**
+
 ```bash
 echo 'source <(blueprint completion zsh)' >> ~/.zshrc
 # Or for Oh My Zsh users:
@@ -374,6 +382,7 @@ blueprint completion zsh > ~/.oh-my-zsh/completions/_blueprint
 ```
 
 **Fish:**
+
 ```bash
 blueprint completion fish > ~/.config/fish/completions/blueprint.fish
 ```
@@ -389,54 +398,22 @@ Blueprint looks for configuration in the following locations (in order):
 3. `$HOME/.config/blueprint/config.yaml`
 4. Current directory `.blueprint.yaml` (project-specific overrides)
 
-**Configuration File Format:**
-
-```yaml
-# ~/.config/blueprint/config.yaml
-
-# Default template directory
-template_dir: ~/.config/blueprint/templates
-
-# Custom template sources
-sources:
-  - name: official
-    url: https://github.com/dhanush0x96c/blueprint-templates
-    branch: main
-  
-  - name: company
-    url: git@github.com:company/blueprint-templates.git
-    branch: main
-
-# Default variables (override in templates)
-defaults:
-  author: "Your Name"
-  license: mit
-  go_version: "1.22"
-
-# Prompt preferences
-prompts:
-  confirm_before_write: true
-  show_preview: true
-
-# Output preferences
-output:
-  verbose: false
-```
-
 **Template Sources:**
 
 Blueprint can pull templates from multiple sources:
+
 - Local filesystem (default)
 - Git repositories (coming soon)
 - HTTP endpoints (coming soon)
 
 ---
 
-## Template Paths
+## Template Names
 
-Templates are referenced using hierarchical paths:
+Templates are referenced using unique identifiers:
 
 **Projects:**
+
 ```
 go-cli
 node-api-express
@@ -444,26 +421,26 @@ python-api-fastapi
 ```
 
 **Features:**
+
 ```
-features/go/testing
-features/go/database/postgres
-features/node/linting
+go-testing
+go-database-postgres
+node-linting
 ```
 
 **Components:**
+
 ```
-components/docker
-components/ci-cd/github-actions
-components/monitoring/prometheus
+docker
+ci-github-actions
+prometheus
 ```
 
-**Path Resolution:**
+**Name Resolution:**
 
-1. Check `--template-dir` flag
-2. Check `template_dir` in config
-3. Check `$BLUEPRINT_TEMPLATE_DIR` environment variable
-4. Default to `~/.config/blueprint/templates`
-5. Fall back to embedded templates
+1. Templates are resolved by their `name` field in `template.yaml`.
+2. Resolution follows the source priority (User → Builtin).
+3. Names must be unique across all sources.
 
 ---
 
@@ -479,13 +456,13 @@ blueprint init go-cli
 
 # Add testing framework
 cd my-app
-blueprint add features/go/testing
+blueprint add go-testing
 
 # Add configuration management
-blueprint add features/go/config
+blueprint add go-config
 
 # Add logging
-blueprint add features/go/logging
+blueprint add go-logging
 ```
 
 **Create a Go API with database:**
@@ -498,16 +475,16 @@ blueprint init go-api user-service \
 cd user-service
 
 # Add PostgreSQL support
-blueprint add features/go/database/postgres
+blueprint add go-database-postgres
 
 # Add Docker configuration
-blueprint add components/docker
+blueprint add docker
 
 # Add GitHub Actions CI
-blueprint add components/ci-cd/github-actions
+blueprint add ci-github-actions
 
 # Add monitoring
-blueprint add components/monitoring/prometheus
+blueprint add prometheus
 ```
 
 **Non-interactive scripting:**
@@ -519,14 +496,14 @@ blueprint add components/monitoring/prometheus
 blueprint init go-api ./services/inventory \
   --yes \
   --var port=3000 \
-  --include features/go/testing \
-  --include features/go/logging
+  --include go-testing \
+  --include go-logging
 
 cd services/inventory
 
-blueprint add features/go/database/postgres --yes
-blueprint add components/docker --yes --force
-blueprint add components/ci-cd/github-actions --yes
+blueprint add go-database-postgres --yes
+blueprint add docker --yes --force
+blueprint add ci-github-actions --yes
 
 go mod tidy
 git init
@@ -623,9 +600,9 @@ done
 
 ```bash
 features=(
-    "features/go/testing"
-    "features/go/logging"
-    "features/go/config"
+    "go-testing"
+    "go-logging"
+    "go-config"
 )
 
 for feature in "${features[@]}"; do
@@ -633,11 +610,24 @@ for feature in "${features[@]}"; do
 done
 ```
 
+**Targeted Variables:**
+
+Use scoped variables to avoid name collisions or to target specific nodes in a complex composition:
+
+```bash
+# Target a specific template by name
+blueprint init go-api --var go-database-postgres:port=5432
+
+# Target a specific node ID (useful if the same template is included multiple times)
+blueprint init complex-project --var #node-1:port=8080 --var #node-2:port=9090
+```
+
 ---
 
 ## Troubleshooting
 
 **Template not found:**
+
 ```bash
 # List available project templates
 blueprint list projects
@@ -655,6 +645,7 @@ ls -la ~/.config/blueprint/templates/
 ```
 
 **Permission denied:**
+
 ```bash
 # Check output directory permissions
 ls -ld ./output-dir
@@ -664,18 +655,20 @@ sudo blueprint init go-cli /opt/my-app
 ```
 
 **Conflict resolution:**
+
 ```bash
 # Preview changes first
-blueprint add features/go/testing --dry-run
+blueprint add go-testing --dry-run
 
 # Force overwrite if confident
-blueprint add features/go/testing --force
+blueprint add go-testing --force
 
 # Or handle conflicts interactively
-blueprint add features/go/testing  # prompts for each conflict
+blueprint add go-testing  # prompts for each conflict
 ```
 
 **Variables not set:**
+
 ```bash
 # Use --var flag
 blueprint init go-cli --var app_name=myapp

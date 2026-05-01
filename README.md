@@ -55,7 +55,7 @@ blueprint init go-api --dry-run
 ### Include Optional Features
 
 ```bash
-blueprint init go-cli --include features/go/testing
+blueprint init go-cli --include go-testing
 ```
 
 ## Custom Templates
@@ -82,12 +82,12 @@ For the full template format, see the [Template Specification](docs/template-spe
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [CLI Reference](docs/cli.md) | Complete command-line reference and usage examples |
-| [Template Specification](docs/template-spec.md) | Authoritative spec for the template format |
-| [Template Naming Conventions](docs/template-naming.md) | Naming rules for templates |
-| [Architecture](docs/architecture.md) | Internal architecture and data flow |
+| Document                                               | Description                                        |
+| ------------------------------------------------------ | -------------------------------------------------- |
+| [CLI Reference](docs/cli.md)                           | Complete command-line reference and usage examples |
+| [Template Specification](docs/template-spec.md)        | Authoritative spec for the template format         |
+| [Template Naming Conventions](docs/template-naming.md) | Naming rules for templates                         |
+| [Architecture](docs/architecture.md)                   | Internal architecture and data flow                |
 
 ## Project Status
 

@@ -56,6 +56,14 @@ python-api-fastapi
 
 ---
 
+## Template Names vs Paths
+
+Blueprint uses a flat namespace for template resolution. While templates may be organized into directories (e.g., `projects/go-api`, `features/go/testing`), they are referenced in the CLI and in `includes` by their **name** (the `name` field in `template.yaml`), not their filesystem path.
+
+**Names MUST be unique across all sources.**
+
+---
+
 ## Archetypes
 
 Archetypes describe architectural intent. They must remain stable and limited in number.
