@@ -30,7 +30,16 @@ func NewWriter() *Writer {
 
 // WriteFile writes content to a file, creating parent directories if needed
 func (w *Writer) WriteFile(path string, content []byte) error {
-	return w.WriteFileWithPerm(path, content, w.defaultPerm)
+	dir := filepath.Dir(path)
+	if err := w.EnsureDir(dir); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dir, err)
+	}
+
+	if err := os.WriteFile(path, content, w.defaultPerm); err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+
+	return nil
 }
 
 // WriteFiles writes multiple rendered files into the given output directory.
@@ -56,20 +65,6 @@ func (w *Writer) WriteFiles(outputDir string, files []template.RenderedFile, ove
 	}
 
 	return result, nil
-}
-
-// WriteFileWithPerm writes content to a file with specific permissions
-func (w *Writer) WriteFileWithPerm(path string, content []byte, perm os.FileMode) error {
-	dir := filepath.Dir(path)
-	if err := w.EnsureDir(dir); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", dir, err)
-	}
-
-	if err := os.WriteFile(path, content, perm); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
-	}
-
-	return nil
 }
 
 // EnsureDir creates a directory and all parent directories if they don't exist
