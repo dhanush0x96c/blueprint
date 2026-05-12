@@ -2,6 +2,7 @@ package scaffold
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/dhanush0x96c/blueprint/internal/prompt"
@@ -61,6 +62,10 @@ func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 		return nil, err
 	}
 
+	if err := s.validateOutputDir(outputDir, opts); err != nil {
+		return nil, err
+	}
+
 	renderResult, err := s.render(tree, contexts)
 	if err != nil {
 		return nil, err
@@ -77,6 +82,37 @@ func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 		Dependencies: tree.AllDependencies(),
 		PostInitCmds: tree.AllPostInit(),
 	}, nil
+}
+
+func (s *Scaffolder) validateOutputDir(dir string, opts Options) error {
+	if opts.Overwrite || opts.DryRun {
+		return nil
+	}
+
+	info, err := os.Stat(dir)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to check output directory: %w", err)
+	}
+
+	if !info.IsDir() {
+		return fmt.Errorf("output path %s exists and is not a directory", dir)
+	}
+
+	f, err := os.Open(dir)
+	if err != nil {
+		return fmt.Errorf("failed to open output directory: %w", err)
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1)
+	if err == nil {
+		return fmt.Errorf("output directory %s is not empty", dir)
+	}
+
+	return nil
 }
 
 func (s *Scaffolder) resolveTemplateTree(opts Options) (*template.TemplateNode, error) {
