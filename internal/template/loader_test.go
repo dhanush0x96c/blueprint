@@ -19,7 +19,8 @@ func writeTemplate(t *testing.T, dir string, content string) {
 	require.NoError(t, err)
 }
 
-const validProjectTemplate = `
+func TestLoader_Load(t *testing.T) {
+	const validProjectTemplate = `
 name: go-cli
 type: project
 version: "1.0.0"
@@ -31,19 +32,11 @@ variables:
     role: project_name
 `
 
-const validFeatureTemplate = `
-name: testing
-type: feature
-version: "1.0.0"
-description: "Testing support"
-`
-
-const invalidTemplate = `
+	const invalidTemplate = `
 name:
 type: project
 `
 
-func TestLoader_Load(t *testing.T) {
 	base := t.TempDir()
 	fsys := os.DirFS(base)
 	loader := NewLoader()
