@@ -97,15 +97,6 @@ type RenderResult struct {
 	Files map[string][]RenderedFile
 }
 
-// AllFiles returns a flat slice of all rendered files.
-func (r *RenderResult) AllFiles() []RenderedFile {
-	var all []RenderedFile
-	for _, files := range r.Files {
-		all = append(all, files...)
-	}
-	return all
-}
-
 // TemplateNode represents a resolved node in the template tree.
 // It carries a guarantee that its full subtree is present and confirmed.
 type TemplateNode struct {
