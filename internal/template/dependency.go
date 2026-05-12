@@ -1,7 +1,7 @@
 package template
 
 // AllDependencies recursively collects and merges all dependencies from the tree.
-func (n *TemplateNode) AllDependencies() []string {
+func (n *Node) AllDependencies() []string {
 	depMap := make(map[string]string)
 	n.collectDependencies(depMap)
 
@@ -16,7 +16,7 @@ func (n *TemplateNode) AllDependencies() []string {
 	return result
 }
 
-func (n *TemplateNode) collectDependencies(depMap map[string]string) {
+func (n *Node) collectDependencies(depMap map[string]string) {
 	for _, dep := range n.Template.Dependencies {
 		pkg, version := parseDependency(dep)
 		if existing, ok := depMap[pkg]; !ok || existing == "" {

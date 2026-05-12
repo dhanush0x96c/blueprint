@@ -115,7 +115,7 @@ func (s *Scaffolder) validateOutputDir(dir string, opts Options) error {
 	return nil
 }
 
-func (s *Scaffolder) resolveTemplateTree(opts Options) (*template.TemplateNode, error) {
+func (s *Scaffolder) resolveTemplateTree(opts Options) (*template.Node, error) {
 	var confirm template.ConfirmIncludes
 	if opts.Interactive {
 		confirm = s.promptEngine.PromptIncludes
@@ -149,13 +149,13 @@ func (s *Scaffolder) confirmIncludesFromOptions(enabledIncludes map[string]bool)
 	}
 }
 
-func (s *Scaffolder) collectVariables(tree *template.TemplateNode, opts Options) (template.RenderContexts, error) {
+func (s *Scaffolder) collectVariables(tree *template.Node, opts Options) (template.RenderContexts, error) {
 	pipeline := newVariablePipeline(tree, s.engine, s.promptEngine, opts)
 	return pipeline.Collect()
 }
 
 func (s *Scaffolder) determineOutputDir(
-	tree *template.TemplateNode,
+	tree *template.Node,
 	contexts template.RenderContexts,
 	opts Options,
 ) (string, error) {
@@ -176,7 +176,7 @@ func (s *Scaffolder) determineOutputDir(
 	return projectName, nil
 }
 
-func (s *Scaffolder) render(tree *template.TemplateNode, contexts template.RenderContexts) (*template.RenderResult, error) {
+func (s *Scaffolder) render(tree *template.Node, contexts template.RenderContexts) (*template.RenderResult, error) {
 	renderResult, err := s.engine.RenderNode(tree, contexts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render template tree: %w", err)
@@ -185,7 +185,7 @@ func (s *Scaffolder) render(tree *template.TemplateNode, contexts template.Rende
 }
 
 func (s *Scaffolder) writeFiles(
-	tree *template.TemplateNode,
+	tree *template.Node,
 	renderResult *template.RenderResult,
 	contexts template.RenderContexts,
 	outputDir string,
@@ -206,7 +206,7 @@ func (s *Scaffolder) writeFiles(
 }
 
 func (s *Scaffolder) writeNode(
-	node *template.TemplateNode,
+	node *template.Node,
 	renderResult *template.RenderResult,
 	contexts template.RenderContexts,
 	outputDir string,
@@ -238,7 +238,7 @@ func (s *Scaffolder) writeNode(
 }
 
 func (s *Scaffolder) resolveNodeOutputDir(
-	node *template.TemplateNode,
+	node *template.Node,
 	contexts template.RenderContexts,
 	parentDir string,
 ) (string, error) {

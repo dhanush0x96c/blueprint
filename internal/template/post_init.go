@@ -7,13 +7,13 @@ type PostInit struct {
 }
 
 // AllPostInit recursively collects all post-init commands from the tree.
-func (n *TemplateNode) AllPostInit() []PostInit {
+func (n *Node) AllPostInit() []PostInit {
 	var cmds []PostInit
 	n.collectPostInit(&cmds)
 	return cmds
 }
 
-func (n *TemplateNode) collectPostInit(cmds *[]PostInit) {
+func (n *Node) collectPostInit(cmds *[]PostInit) {
 	*cmds = append(*cmds, n.Template.PostInit...)
 	for _, child := range n.Children {
 		child.collectPostInit(cmds)

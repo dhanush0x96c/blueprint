@@ -23,7 +23,7 @@ func NewValidator() *Validator {
 }
 
 // ValidateTree recursively validates a template tree.
-func (v *Validator) ValidateTree(node *TemplateNode) error {
+func (v *Validator) ValidateTree(node *Node) error {
 	var errs []error
 
 	if err := v.Validate(node.Template); err != nil {
@@ -50,7 +50,7 @@ func (v *Validator) ValidateTree(node *TemplateNode) error {
 }
 
 // validateNodeFiles validates that all source files exist for a node.
-func (v *Validator) validateNodeFiles(node *TemplateNode) []error {
+func (v *Validator) validateNodeFiles(node *Node) []error {
 	var errs []error
 
 	for i, file := range node.Template.Files {
@@ -70,7 +70,7 @@ func (v *Validator) validateNodeFiles(node *TemplateNode) []error {
 
 // ValidateTreeContexts recursively validates that all template variables are present
 // in the provided contexts for the entire tree.
-func (v *Validator) ValidateTreeContexts(node *TemplateNode, contexts RenderContexts) error {
+func (v *Validator) ValidateTreeContexts(node *Node, contexts RenderContexts) error {
 	ctx, ok := contexts[node.ID]
 	if !ok {
 		return fmt.Errorf("no context found for template %s (ID: %s)", node.Template.Name, node.ID)
@@ -276,7 +276,7 @@ func normalizeStringSlice(value any) ([]string, bool) {
 }
 
 // validateIncludes validates that features and components do not include projects.
-func (v *Validator) validateIncludes(node *TemplateNode) error {
+func (v *Validator) validateIncludes(node *Node) error {
 	if node.Template.Type == TypeProject {
 		return v.validateDuplicateSameLevelIncludes(node)
 	}
@@ -299,7 +299,7 @@ func (v *Validator) validateIncludes(node *TemplateNode) error {
 	return errors.Join(errs...)
 }
 
-func (v *Validator) validateDuplicateSameLevelIncludes(node *TemplateNode) error {
+func (v *Validator) validateDuplicateSameLevelIncludes(node *Node) error {
 	seen := make(map[Type]map[string]bool)
 
 	for _, child := range node.Children {

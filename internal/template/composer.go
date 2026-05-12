@@ -5,7 +5,7 @@ import (
 	"slices"
 )
 
-// Composer handles building the TemplateNode tree from a root Template.
+// Composer handles building the Node tree from a root Template.
 type Composer struct {
 	resolver Resolver
 	loader   Loader
@@ -19,21 +19,21 @@ func NewComposer(resolver Resolver, loader Loader) *Composer {
 	}
 }
 
-// Compose resolves all includes for a template recursively and builds a TemplateNode tree.
+// Compose resolves all includes for a template recursively and builds a Node tree.
 // It calls confirm for all includes of a template to decide which ones should be loaded.
-func (c *Composer) Compose(loaded *LoadedTemplate, confirm ConfirmIncludes) (*TemplateNode, error) {
+func (c *Composer) Compose(loaded *LoadedTemplate, confirm ConfirmIncludes) (*Node, error) {
 	return c.doCompose(loaded, []string{loaded.Template.Name}, confirm, "0")
 }
 
 // doCompose is the internal recursive composition function that tracks the stack
-// to detect circular dependencies and builds the TemplateNode tree.
-func (c *Composer) doCompose(loaded *LoadedTemplate, stack []string, confirm ConfirmIncludes, id string) (*TemplateNode, error) {
-	node := &TemplateNode{
+// to detect circular dependencies and builds the Node tree.
+func (c *Composer) doCompose(loaded *LoadedTemplate, stack []string, confirm ConfirmIncludes, id string) (*Node, error) {
+	node := &Node{
 		ID:       id,
 		Template: loaded.Template,
 		FS:       loaded.FS,
 		Path:     loaded.Path,
-		Children: make([]*TemplateNode, 0),
+		Children: make([]*Node, 0),
 	}
 
 	if len(loaded.Template.Includes) == 0 {

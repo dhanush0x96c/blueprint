@@ -128,8 +128,8 @@ Handles the discovery and location of templates across different filesystems.
 
 The heart of Blueprint. It manages the lifecycle of a template from YAML to rendered files.
 
-- **TemplateNode:** A tree structure representing the root template and all transitive includes.
-- **Composer:** Recursively resolves includes to build the `TemplateNode` tree. Supports `ConfirmIncludes` callback for interactive selection.
+- **Node:** A tree structure representing the root template and all transitive includes.
+- **Composer:** Recursively resolves includes to build the `Node` tree. Supports `ConfirmIncludes` callback for interactive selection.
 - **Renderer:** Renders files using Go's `text/template` with a rich function map.
 
 ### 3.5 `internal/vars`
@@ -166,7 +166,7 @@ Orchestrates the high-level workflow:
 3. Compose Tree:
    - Walk includes recursively
    - If include is optional, call ConfirmIncludes (TUI Multi-select)
-   - Create TemplateNode tree
+   - Create Node tree
 4. Collect Variables (for each node in tree):
    - Apply --var flags (CLICollector)
    - Apply default values (DefaultCollector)
@@ -218,7 +218,7 @@ Templates are resolved by trying sources in sequence:
 
 ### 6.2 Tree-based Composition
 
-Unlike many scaffolders that "flatten" templates, Blueprint preserves a tree structure. Each node in the tree (`TemplateNode`) has its own:
+Unlike many scaffolders that "flatten" templates, Blueprint preserves a tree structure. Each node in the tree (`Node`) has its own:
 
 - Metadata & Files
 - Isolated variable context

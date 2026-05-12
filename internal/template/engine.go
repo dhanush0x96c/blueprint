@@ -44,20 +44,20 @@ func (e *Engine) LoadTemplateByPath(fsys fs.FS, path string) (*LoadedTemplate, e
 	return e.loader.Load(fsys, path)
 }
 
-// Compose resolves all includes for a template recursively and builds a TemplateNode tree.
+// Compose resolves all includes for a template recursively and builds a Node tree.
 // It calls confirm for all includes of a template to decide which ones should be loaded.
-func (e *Engine) Compose(loaded *LoadedTemplate, confirm ConfirmIncludes) (*TemplateNode, error) {
+func (e *Engine) Compose(loaded *LoadedTemplate, confirm ConfirmIncludes) (*Node, error) {
 	return e.composer.Compose(loaded, confirm)
 }
 
 // RenderNode renders all files from a template tree with the given contexts.
-func (e *Engine) RenderNode(node *TemplateNode, contexts RenderContexts) (*RenderResult, error) {
+func (e *Engine) RenderNode(node *Node, contexts RenderContexts) (*RenderResult, error) {
 	return e.renderer.RenderAll(node, contexts)
 }
 
 // GetFullTree loads a template, resolves all includes using the provided confirm function,
 // and validates the resulting tree.
-func (e *Engine) GetFullTree(ref TemplateRef, confirm ConfirmIncludes) (*TemplateNode, error) {
+func (e *Engine) GetFullTree(ref TemplateRef, confirm ConfirmIncludes) (*Node, error) {
 	loaded, err := e.LoadTemplate(ref)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template: %w", err)
@@ -76,13 +76,13 @@ func (e *Engine) GetFullTree(ref TemplateRef, confirm ConfirmIncludes) (*Templat
 }
 
 // ValidateTree recursively validates a template tree.
-func (e *Engine) ValidateTree(node *TemplateNode) error {
+func (e *Engine) ValidateTree(node *Node) error {
 	return e.validator.ValidateTree(node)
 }
 
 // ValidateContexts recursively validates that all required variables are present
 // in the provided contexts for the entire tree.
-func (e *Engine) ValidateContexts(node *TemplateNode, contexts RenderContexts) error {
+func (e *Engine) ValidateContexts(node *Node, contexts RenderContexts) error {
 	return e.validator.ValidateTreeContexts(node, contexts)
 }
 

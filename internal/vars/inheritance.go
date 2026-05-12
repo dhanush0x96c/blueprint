@@ -2,11 +2,11 @@ package vars
 
 import "github.com/dhanush0x96c/blueprint/internal/template"
 
-func ApplyInheritance(tree *template.TemplateNode, contexts template.RenderContexts) {
+func ApplyInheritance(tree *template.Node, contexts template.RenderContexts) {
 	applyInheritance(tree, "", contexts)
 }
 
-func applyInheritance(node *template.TemplateNode, parentID string, contexts template.RenderContexts) {
+func applyInheritance(node *template.Node, parentID string, contexts template.RenderContexts) {
 	ctx := ensureContext(contexts, node.ID)
 	if parentID != "" && len(node.Inherited) > 0 {
 		if parentCtx, ok := contexts[parentID]; ok {

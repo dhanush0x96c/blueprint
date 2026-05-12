@@ -8,11 +8,11 @@ import (
 )
 
 type PromptCollector struct {
-	tree   *template.TemplateNode
+	tree   *template.Node
 	engine *prompt.Engine
 }
 
-func NewPromptCollector(tree *template.TemplateNode, engine *prompt.Engine) *PromptCollector {
+func NewPromptCollector(tree *template.Node, engine *prompt.Engine) *PromptCollector {
 	return &PromptCollector{
 		tree:   tree,
 		engine: engine,
@@ -20,7 +20,7 @@ func NewPromptCollector(tree *template.TemplateNode, engine *prompt.Engine) *Pro
 }
 
 func (c *PromptCollector) Collect(contexts template.RenderContexts) error {
-	return walk(c.tree, func(node *template.TemplateNode) error {
+	return walk(c.tree, func(node *template.Node) error {
 		ctx := ensureContext(contexts, node.ID)
 		group := c.variableGroup(node, ctx)
 		if len(group.Variables) == 0 {
@@ -37,7 +37,7 @@ func (c *PromptCollector) Collect(contexts template.RenderContexts) error {
 	})
 }
 
-func (c *PromptCollector) variableGroup(node *template.TemplateNode, ctx *template.Context) prompt.VariableGroup {
+func (c *PromptCollector) variableGroup(node *template.Node, ctx *template.Context) prompt.VariableGroup {
 	variables := node.RequiredVariables()
 	group := prompt.VariableGroup{
 		Title:     fmt.Sprintf("Variables for %s (ID: %s)", node.Template.Name, node.ID),

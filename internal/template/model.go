@@ -97,14 +97,14 @@ type RenderResult struct {
 	Files map[string][]RenderedFile
 }
 
-// TemplateNode represents a resolved node in the template tree.
+// Node represents a resolved node in the template tree.
 // It carries a guarantee that its full subtree is present and confirmed.
-type TemplateNode struct {
+type Node struct {
 	ID        string
 	Template  *Template
 	FS        fs.FS
 	Path      string
-	Children  []*TemplateNode
+	Children  []*Node
 	Mount     string
 	Inherited map[string]string
 }
@@ -112,13 +112,13 @@ type TemplateNode struct {
 const rootNodeID = "0"
 
 // IsRootNode reports whether this node is the root of the composed template tree.
-func (n *TemplateNode) IsRootNode() bool {
+func (n *Node) IsRootNode() bool {
 	return n != nil && n.ID == rootNodeID
 }
 
 // RequiredVariables returns the variables that need input for this node.
 // Variables inherited from the parent are excluded.
-func (n *TemplateNode) RequiredVariables() []Variable {
+func (n *Node) RequiredVariables() []Variable {
 	if n == nil || n.Template == nil || len(n.Template.Variables) == 0 {
 		return nil
 	}

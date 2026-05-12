@@ -185,7 +185,7 @@ func TestRenderAll(t *testing.T) {
 		},
 	}
 
-	node := &TemplateNode{
+	node := &Node{
 		ID:       "0",
 		Template: tmpl,
 		FS:       fsys,

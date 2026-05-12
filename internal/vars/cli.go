@@ -3,11 +3,11 @@ package vars
 import "github.com/dhanush0x96c/blueprint/internal/template"
 
 type CLICollector struct {
-	tree *template.TemplateNode
+	tree *template.Node
 	args Variables
 }
 
-func NewCLICollector(tree *template.TemplateNode, args Variables) *CLICollector {
+func NewCLICollector(tree *template.Node, args Variables) *CLICollector {
 	return &CLICollector{
 		tree: tree,
 		args: args,
@@ -15,7 +15,7 @@ func NewCLICollector(tree *template.TemplateNode, args Variables) *CLICollector 
 }
 
 func (c *CLICollector) Collect(contexts template.RenderContexts) error {
-	walk(c.tree, func(node *template.TemplateNode) error {
+	walk(c.tree, func(node *template.Node) error {
 		ctx := ensureContext(contexts, node.ID)
 
 		for key, value := range c.args.Global {

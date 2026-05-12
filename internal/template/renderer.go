@@ -67,7 +67,7 @@ func (r *Renderer) Copy(fsys fs.FS, filePath string) ([]byte, error) {
 
 // RenderAll renders all files from a template tree with the given contexts.
 // It walks the tree and renders files for each node with its corresponding context.
-func (r *Renderer) RenderAll(node *TemplateNode, contexts RenderContexts) (*RenderResult, error) {
+func (r *Renderer) RenderAll(node *Node, contexts RenderContexts) (*RenderResult, error) {
 	result := &RenderResult{
 		Files: make(map[string][]RenderedFile),
 	}
@@ -79,7 +79,7 @@ func (r *Renderer) RenderAll(node *TemplateNode, contexts RenderContexts) (*Rend
 }
 
 // renderNode recursively renders a node and its children.
-func (r *Renderer) renderNode(node *TemplateNode, contexts RenderContexts, result *RenderResult) error {
+func (r *Renderer) renderNode(node *Node, contexts RenderContexts, result *RenderResult) error {
 	ctx, ok := contexts[node.ID]
 	if !ok {
 		return fmt.Errorf("no context found for template %s (ID: %s)", node.Template.Name, node.ID)

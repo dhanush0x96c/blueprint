@@ -314,7 +314,7 @@ func TestValidator_ValidateTree(t *testing.T) {
 	v := NewValidator()
 
 	t.Run("valid tree passes", func(t *testing.T) {
-		root := &TemplateNode{
+		root := &Node{
 			Template: &Template{
 				Name:    "project",
 				Type:    TypeProject,
@@ -323,7 +323,7 @@ func TestValidator_ValidateTree(t *testing.T) {
 					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
 				},
 			},
-			Children: []*TemplateNode{
+			Children: []*Node{
 				{
 					Template: &Template{
 						Name:    "feature",
@@ -339,7 +339,7 @@ func TestValidator_ValidateTree(t *testing.T) {
 	})
 
 	t.Run("invalid node in tree fails", func(t *testing.T) {
-		root := &TemplateNode{
+		root := &Node{
 			Template: &Template{
 				Name:    "project",
 				Type:    TypeProject,
@@ -348,7 +348,7 @@ func TestValidator_ValidateTree(t *testing.T) {
 					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
 				},
 			},
-			Children: []*TemplateNode{
+			Children: []*Node{
 				{
 					Template: &Template{
 						Name:    "", // invalid
@@ -365,13 +365,13 @@ func TestValidator_ValidateTree(t *testing.T) {
 	})
 
 	t.Run("feature including project fails", func(t *testing.T) {
-		root := &TemplateNode{
+		root := &Node{
 			Template: &Template{
 				Name:    "feature",
 				Type:    TypeFeature,
 				Version: "1.0.0",
 			},
-			Children: []*TemplateNode{
+			Children: []*Node{
 				{
 					Template: &Template{
 						Name:    "project",
@@ -391,13 +391,13 @@ func TestValidator_ValidateTree(t *testing.T) {
 	})
 
 	t.Run("component including project fails", func(t *testing.T) {
-		root := &TemplateNode{
+		root := &Node{
 			Template: &Template{
 				Name:    "component",
 				Type:    TypeComponent,
 				Version: "1.0.0",
 			},
-			Children: []*TemplateNode{
+			Children: []*Node{
 				{
 					Template: &Template{
 						Name:    "project",
@@ -417,7 +417,7 @@ func TestValidator_ValidateTree(t *testing.T) {
 	})
 
 	t.Run("project including project passes", func(t *testing.T) {
-		root := &TemplateNode{
+		root := &Node{
 			Template: &Template{
 				Name:    "project1",
 				Type:    TypeProject,
@@ -426,7 +426,7 @@ func TestValidator_ValidateTree(t *testing.T) {
 					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
 				},
 			},
-			Children: []*TemplateNode{
+			Children: []*Node{
 				{
 					Template: &Template{
 						Name:    "project2",
@@ -445,7 +445,7 @@ func TestValidator_ValidateTree(t *testing.T) {
 	})
 
 	t.Run("duplicate features at same level fail", func(t *testing.T) {
-		root := &TemplateNode{
+		root := &Node{
 			Template: &Template{
 				Name:    "project",
 				Type:    TypeProject,
@@ -454,7 +454,7 @@ func TestValidator_ValidateTree(t *testing.T) {
 					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
 				},
 			},
-			Children: []*TemplateNode{
+			Children: []*Node{
 				{
 					Template: &Template{
 						Name:    "testing",
@@ -479,7 +479,7 @@ func TestValidator_ValidateTree(t *testing.T) {
 	})
 
 	t.Run("duplicate components at same level fail", func(t *testing.T) {
-		root := &TemplateNode{
+		root := &Node{
 			Template: &Template{
 				Name:    "project",
 				Type:    TypeProject,
@@ -488,7 +488,7 @@ func TestValidator_ValidateTree(t *testing.T) {
 					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
 				},
 			},
-			Children: []*TemplateNode{
+			Children: []*Node{
 				{
 					Template: &Template{
 						Name:    "auth",
@@ -513,7 +513,7 @@ func TestValidator_ValidateTree(t *testing.T) {
 	})
 
 	t.Run("same feature at different levels passes", func(t *testing.T) {
-		root := &TemplateNode{
+		root := &Node{
 			Template: &Template{
 				Name:    "project",
 				Type:    TypeProject,
@@ -522,14 +522,14 @@ func TestValidator_ValidateTree(t *testing.T) {
 					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
 				},
 			},
-			Children: []*TemplateNode{
+			Children: []*Node{
 				{
 					Template: &Template{
 						Name:    "testing",
 						Type:    TypeFeature,
 						Version: "1.0.0",
 					},
-					Children: []*TemplateNode{
+					Children: []*Node{
 						{
 							Template: &Template{
 								Name:    "testing",
@@ -554,7 +554,7 @@ func TestValidator_ValidateFiles(t *testing.T) {
 	}
 
 	t.Run("existing file passes", func(t *testing.T) {
-		node := &TemplateNode{
+		node := &Node{
 			Template: &Template{
 				Name:    "test",
 				Type:    TypeProject,
@@ -575,7 +575,7 @@ func TestValidator_ValidateFiles(t *testing.T) {
 	})
 
 	t.Run("missing file fails", func(t *testing.T) {
-		node := &TemplateNode{
+		node := &Node{
 			Template: &Template{
 				Name:    "test",
 				Type:    TypeProject,
@@ -868,7 +868,7 @@ func TestValidator_Validate_DefaultTypes(t *testing.T) {
 func TestValidator_ValidateTreeContexts(t *testing.T) {
 	v := NewValidator()
 
-	root := &TemplateNode{
+	root := &Node{
 		ID: "0",
 		Template: &Template{
 			Name: "root",
@@ -876,7 +876,7 @@ func TestValidator_ValidateTreeContexts(t *testing.T) {
 				{Name: "var_root", Prompt: "?", Type: VariableTypeString},
 			},
 		},
-		Children: []*TemplateNode{
+		Children: []*Node{
 			{
 				ID: "0.0",
 				Template: &Template{

@@ -9,14 +9,14 @@ import (
 )
 
 type variablePipeline struct {
-	tree         *template.TemplateNode
+	tree         *template.Node
 	engine       *template.Engine
 	promptEngine *prompt.Engine
 	opts         Options
 }
 
 func newVariablePipeline(
-	tree *template.TemplateNode,
+	tree *template.Node,
 	engine *template.Engine,
 	promptEngine *prompt.Engine,
 	opts Options,

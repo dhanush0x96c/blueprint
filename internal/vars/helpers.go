@@ -12,7 +12,7 @@ func ensureContext(contexts template.RenderContexts, nodeID string) *template.Co
 	return ctx
 }
 
-func walk(node *template.TemplateNode, fn func(*template.TemplateNode) error) error {
+func walk(node *template.Node, fn func(*template.Node) error) error {
 	if err := fn(node); err != nil {
 		return err
 	}
