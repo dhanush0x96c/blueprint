@@ -1,23 +1,24 @@
-package template
+package template_test
 
 import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/dhanush0x96c/blueprint/internal/template"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestValidator_Validate(t *testing.T) {
-	v := NewValidator()
+	v := template.NewValidator()
 
 	t.Run("valid template passes", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "test",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
+			Variables: []template.Variable{
+				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 			},
 		}
 
@@ -26,9 +27,9 @@ func TestValidator_Validate(t *testing.T) {
 	})
 
 	t.Run("missing required fields fails", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name: "", // missing
-			Type: TypeProject,
+			Type: template.TypeProject,
 			// Version missing
 		}
 
@@ -39,7 +40,7 @@ func TestValidator_Validate(t *testing.T) {
 	})
 
 	t.Run("invalid type fails", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "test",
 			Type:    "invalid",
 			Version: "1.0.0",
@@ -52,16 +53,16 @@ func TestValidator_Validate(t *testing.T) {
 }
 
 func TestValidator_ValidateVariables(t *testing.T) {
-	v := NewValidator()
+	v := template.NewValidator()
 
 	t.Run("duplicate variable names fails", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "test",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
-				{Name: "app_name", Prompt: "Another?", Type: VariableTypeString},
+			Variables: []template.Variable{
+				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+				{Name: "app_name", Prompt: "Another?", Type: template.VariableTypeString},
 			},
 		}
 
@@ -72,12 +73,12 @@ func TestValidator_ValidateVariables(t *testing.T) {
 	})
 
 	t.Run("missing prompt fails", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "test",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app_name", Prompt: "", Type: VariableTypeString},
+			Variables: []template.Variable{
+				{Name: "app_name", Prompt: "", Type: template.VariableTypeString},
 			},
 		}
 
@@ -87,12 +88,12 @@ func TestValidator_ValidateVariables(t *testing.T) {
 	})
 
 	t.Run("select without options fails", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "test",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "choice", Prompt: "Choose?", Type: VariableTypeSelect, Options: []string{}},
+			Variables: []template.Variable{
+				{Name: "choice", Prompt: "Choose?", Type: template.VariableTypeSelect, Options: []string{}},
 			},
 		}
 
@@ -102,12 +103,12 @@ func TestValidator_ValidateVariables(t *testing.T) {
 	})
 
 	t.Run("multiselect without options fails", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "test",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "choices", Prompt: "Choose?", Type: VariableTypeMultiSelect, Options: nil},
+			Variables: []template.Variable{
+				{Name: "choices", Prompt: "Choose?", Type: template.VariableTypeMultiSelect, Options: nil},
 			},
 		}
 
@@ -117,13 +118,13 @@ func TestValidator_ValidateVariables(t *testing.T) {
 	})
 
 	t.Run("select with options passes", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "test",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
-				{Name: "choice", Prompt: "Choose?", Type: VariableTypeSelect, Options: []string{"a", "b"}},
+			Variables: []template.Variable{
+				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+				{Name: "choice", Prompt: "Choose?", Type: template.VariableTypeSelect, Options: []string{"a", "b"}},
 			},
 		}
 
@@ -132,13 +133,13 @@ func TestValidator_ValidateVariables(t *testing.T) {
 	})
 
 	t.Run("empty select option fails", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "test",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
-				{Name: "choice", Prompt: "Choose?", Type: VariableTypeSelect, Options: []string{"a", ""}},
+			Variables: []template.Variable{
+				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+				{Name: "choice", Prompt: "Choose?", Type: template.VariableTypeSelect, Options: []string{"a", ""}},
 			},
 		}
 
@@ -148,13 +149,13 @@ func TestValidator_ValidateVariables(t *testing.T) {
 	})
 
 	t.Run("duplicate select options fail", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "test",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
-				{Name: "choice", Prompt: "Choose?", Type: VariableTypeSelect, Options: []string{"a", "a"}},
+			Variables: []template.Variable{
+				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+				{Name: "choice", Prompt: "Choose?", Type: template.VariableTypeSelect, Options: []string{"a", "a"}},
 			},
 		}
 
@@ -164,12 +165,12 @@ func TestValidator_ValidateVariables(t *testing.T) {
 	})
 
 	t.Run("options on string variable fail", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "test",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName, Options: []string{"a"}},
+			Variables: []template.Variable{
+				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName, Options: []string{"a"}},
 			},
 		}
 
@@ -179,14 +180,14 @@ func TestValidator_ValidateVariables(t *testing.T) {
 	})
 
 	t.Run("multiple errors accumulated", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "test",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "var1", Prompt: "", Type: VariableTypeString, Role: RoleProjectName},
-				{Name: "var2", Prompt: "Pick?", Type: VariableTypeSelect},  // missing options
-				{Name: "var2", Prompt: "Again?", Type: VariableTypeString}, // duplicate
+			Variables: []template.Variable{
+				{Name: "var1", Prompt: "", Type: template.VariableTypeString, Role: template.RoleProjectName},
+				{Name: "var2", Prompt: "Pick?", Type: template.VariableTypeSelect},  // missing options
+				{Name: "var2", Prompt: "Again?", Type: template.VariableTypeString}, // duplicate
 			},
 		}
 
@@ -200,16 +201,16 @@ func TestValidator_ValidateVariables(t *testing.T) {
 }
 
 func TestValidator_ValidateProjectNameRole(t *testing.T) {
-	v := NewValidator()
+	v := template.NewValidator()
 
 	t.Run("project template with valid project_name role passes", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "my-project",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
-				{Name: "description", Prompt: "Description?", Type: VariableTypeString},
+			Variables: []template.Variable{
+				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+				{Name: "description", Prompt: "Description?", Type: template.VariableTypeString},
 			},
 		}
 
@@ -218,13 +219,13 @@ func TestValidator_ValidateProjectNameRole(t *testing.T) {
 	})
 
 	t.Run("project template with zero project_name roles fails", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "my-project",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString},
-				{Name: "description", Prompt: "Description?", Type: VariableTypeString},
+			Variables: []template.Variable{
+				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString},
+				{Name: "description", Prompt: "Description?", Type: template.VariableTypeString},
 			},
 		}
 
@@ -235,11 +236,11 @@ func TestValidator_ValidateProjectNameRole(t *testing.T) {
 	})
 
 	t.Run("project template with no variables fails", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:      "my-project",
-			Type:      TypeProject,
+			Type:      template.TypeProject,
 			Version:   "1.0.0",
-			Variables: []Variable{},
+			Variables: []template.Variable{},
 		}
 
 		err := v.Validate(tmpl)
@@ -249,13 +250,13 @@ func TestValidator_ValidateProjectNameRole(t *testing.T) {
 	})
 
 	t.Run("project template with multiple project_name roles fails", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "my-project",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app_name", Prompt: "App name?", Type: VariableTypeString, Role: RoleProjectName},
-				{Name: "project", Prompt: "Project?", Type: VariableTypeString, Role: RoleProjectName},
+			Variables: []template.Variable{
+				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+				{Name: "project", Prompt: "Project?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 			},
 		}
 
@@ -266,28 +267,28 @@ func TestValidator_ValidateProjectNameRole(t *testing.T) {
 	})
 
 	t.Run("project template with non-string project_name role fails", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "my-project",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app_name", Prompt: "App name?", Type: VariableTypeBool, Role: RoleProjectName},
+			Variables: []template.Variable{
+				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeBool, Role: template.RoleProjectName},
 			},
 		}
 
 		err := v.Validate(tmpl)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "must be of type")
-		assert.Contains(t, err.Error(), string(VariableTypeString))
+		assert.Contains(t, err.Error(), string(template.VariableTypeString))
 	})
 
 	t.Run("feature template without project_name role passes", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "testing-feature",
-			Type:    TypeFeature,
+			Type:    template.TypeFeature,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "use_testify", Prompt: "Use testify?", Type: VariableTypeBool},
+			Variables: []template.Variable{
+				{Name: "use_testify", Prompt: "Use testify?", Type: template.VariableTypeBool},
 			},
 		}
 
@@ -296,12 +297,12 @@ func TestValidator_ValidateProjectNameRole(t *testing.T) {
 	})
 
 	t.Run("component template without project_name role passes", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "auth-component",
-			Type:    TypeComponent,
+			Type:    template.TypeComponent,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "provider", Prompt: "Auth provider?", Type: VariableTypeString},
+			Variables: []template.Variable{
+				{Name: "provider", Prompt: "Auth provider?", Type: template.VariableTypeString},
 			},
 		}
 
@@ -311,23 +312,23 @@ func TestValidator_ValidateProjectNameRole(t *testing.T) {
 }
 
 func TestValidator_ValidateTree(t *testing.T) {
-	v := NewValidator()
+	v := template.NewValidator()
 
 	t.Run("valid tree passes", func(t *testing.T) {
-		root := &Node{
-			Template: &Template{
+		root := &template.Node{
+			Template: &template.Template{
 				Name:    "project",
-				Type:    TypeProject,
+				Type:    template.TypeProject,
 				Version: "1.0.0",
-				Variables: []Variable{
-					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				Variables: []template.Variable{
+					{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				},
 			},
-			Children: []*Node{
+			Children: []*template.Node{
 				{
-					Template: &Template{
+					Template: &template.Template{
 						Name:    "feature",
-						Type:    TypeFeature,
+						Type:    template.TypeFeature,
 						Version: "1.0.0",
 					},
 				},
@@ -339,20 +340,20 @@ func TestValidator_ValidateTree(t *testing.T) {
 	})
 
 	t.Run("invalid node in tree fails", func(t *testing.T) {
-		root := &Node{
-			Template: &Template{
+		root := &template.Node{
+			Template: &template.Template{
 				Name:    "project",
-				Type:    TypeProject,
+				Type:    template.TypeProject,
 				Version: "1.0.0",
-				Variables: []Variable{
-					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				Variables: []template.Variable{
+					{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				},
 			},
-			Children: []*Node{
+			Children: []*template.Node{
 				{
-					Template: &Template{
+					Template: &template.Template{
 						Name:    "", // invalid
-						Type:    TypeFeature,
+						Type:    template.TypeFeature,
 						Version: "1.0.0",
 					},
 				},
@@ -365,20 +366,20 @@ func TestValidator_ValidateTree(t *testing.T) {
 	})
 
 	t.Run("feature including project fails", func(t *testing.T) {
-		root := &Node{
-			Template: &Template{
+		root := &template.Node{
+			Template: &template.Template{
 				Name:    "feature",
-				Type:    TypeFeature,
+				Type:    template.TypeFeature,
 				Version: "1.0.0",
 			},
-			Children: []*Node{
+			Children: []*template.Node{
 				{
-					Template: &Template{
+					Template: &template.Template{
 						Name:    "project",
-						Type:    TypeProject,
+						Type:    template.TypeProject,
 						Version: "1.0.0",
-						Variables: []Variable{
-							{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+						Variables: []template.Variable{
+							{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 						},
 					},
 				},
@@ -391,20 +392,20 @@ func TestValidator_ValidateTree(t *testing.T) {
 	})
 
 	t.Run("component including project fails", func(t *testing.T) {
-		root := &Node{
-			Template: &Template{
+		root := &template.Node{
+			Template: &template.Template{
 				Name:    "component",
-				Type:    TypeComponent,
+				Type:    template.TypeComponent,
 				Version: "1.0.0",
 			},
-			Children: []*Node{
+			Children: []*template.Node{
 				{
-					Template: &Template{
+					Template: &template.Template{
 						Name:    "project",
-						Type:    TypeProject,
+						Type:    template.TypeProject,
 						Version: "1.0.0",
-						Variables: []Variable{
-							{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+						Variables: []template.Variable{
+							{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 						},
 					},
 				},
@@ -417,23 +418,23 @@ func TestValidator_ValidateTree(t *testing.T) {
 	})
 
 	t.Run("project including project passes", func(t *testing.T) {
-		root := &Node{
-			Template: &Template{
+		root := &template.Node{
+			Template: &template.Template{
 				Name:    "project1",
-				Type:    TypeProject,
+				Type:    template.TypeProject,
 				Version: "1.0.0",
-				Variables: []Variable{
-					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				Variables: []template.Variable{
+					{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				},
 			},
-			Children: []*Node{
+			Children: []*template.Node{
 				{
-					Template: &Template{
+					Template: &template.Template{
 						Name:    "project2",
-						Type:    TypeProject,
+						Type:    template.TypeProject,
 						Version: "1.0.0",
-						Variables: []Variable{
-							{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+						Variables: []template.Variable{
+							{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 						},
 					},
 				},
@@ -445,27 +446,27 @@ func TestValidator_ValidateTree(t *testing.T) {
 	})
 
 	t.Run("duplicate features at same level fail", func(t *testing.T) {
-		root := &Node{
-			Template: &Template{
+		root := &template.Node{
+			Template: &template.Template{
 				Name:    "project",
-				Type:    TypeProject,
+				Type:    template.TypeProject,
 				Version: "1.0.0",
-				Variables: []Variable{
-					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				Variables: []template.Variable{
+					{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				},
 			},
-			Children: []*Node{
+			Children: []*template.Node{
 				{
-					Template: &Template{
+					Template: &template.Template{
 						Name:    "testing",
-						Type:    TypeFeature,
+						Type:    template.TypeFeature,
 						Version: "1.0.0",
 					},
 				},
 				{
-					Template: &Template{
+					Template: &template.Template{
 						Name:    "testing",
-						Type:    TypeFeature,
+						Type:    template.TypeFeature,
 						Version: "1.0.0",
 					},
 				},
@@ -479,27 +480,27 @@ func TestValidator_ValidateTree(t *testing.T) {
 	})
 
 	t.Run("duplicate components at same level fail", func(t *testing.T) {
-		root := &Node{
-			Template: &Template{
+		root := &template.Node{
+			Template: &template.Template{
 				Name:    "project",
-				Type:    TypeProject,
+				Type:    template.TypeProject,
 				Version: "1.0.0",
-				Variables: []Variable{
-					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				Variables: []template.Variable{
+					{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				},
 			},
-			Children: []*Node{
+			Children: []*template.Node{
 				{
-					Template: &Template{
+					Template: &template.Template{
 						Name:    "auth",
-						Type:    TypeComponent,
+						Type:    template.TypeComponent,
 						Version: "1.0.0",
 					},
 				},
 				{
-					Template: &Template{
+					Template: &template.Template{
 						Name:    "auth",
-						Type:    TypeComponent,
+						Type:    template.TypeComponent,
 						Version: "1.0.0",
 					},
 				},
@@ -513,27 +514,27 @@ func TestValidator_ValidateTree(t *testing.T) {
 	})
 
 	t.Run("same feature at different levels passes", func(t *testing.T) {
-		root := &Node{
-			Template: &Template{
+		root := &template.Node{
+			Template: &template.Template{
 				Name:    "project",
-				Type:    TypeProject,
+				Type:    template.TypeProject,
 				Version: "1.0.0",
-				Variables: []Variable{
-					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				Variables: []template.Variable{
+					{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				},
 			},
-			Children: []*Node{
+			Children: []*template.Node{
 				{
-					Template: &Template{
+					Template: &template.Template{
 						Name:    "testing",
-						Type:    TypeFeature,
+						Type:    template.TypeFeature,
 						Version: "1.0.0",
 					},
-					Children: []*Node{
+					Children: []*template.Node{
 						{
-							Template: &Template{
+							Template: &template.Template{
 								Name:    "testing",
-								Type:    TypeFeature,
+								Type:    template.TypeFeature,
 								Version: "1.0.0",
 							},
 						},
@@ -548,21 +549,21 @@ func TestValidator_ValidateTree(t *testing.T) {
 }
 
 func TestValidator_ValidateFiles(t *testing.T) {
-	v := NewValidator()
+	v := template.NewValidator()
 	fsys := fstest.MapFS{
 		"existing.txt": &fstest.MapFile{Data: []byte("content")},
 	}
 
 	t.Run("existing file passes", func(t *testing.T) {
-		node := &Node{
-			Template: &Template{
+		node := &template.Node{
+			Template: &template.Template{
 				Name:    "test",
-				Type:    TypeProject,
+				Type:    template.TypeProject,
 				Version: "1.0.0",
-				Variables: []Variable{
-					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				Variables: []template.Variable{
+					{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				},
-				Files: []File{
+				Files: []template.File{
 					{Src: "existing.txt", Dest: "dest.txt"},
 				},
 			},
@@ -575,15 +576,15 @@ func TestValidator_ValidateFiles(t *testing.T) {
 	})
 
 	t.Run("missing file fails", func(t *testing.T) {
-		node := &Node{
-			Template: &Template{
+		node := &template.Node{
+			Template: &template.Template{
 				Name:    "test",
-				Type:    TypeProject,
+				Type:    template.TypeProject,
 				Version: "1.0.0",
-				Variables: []Variable{
-					{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
+				Variables: []template.Variable{
+					{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				},
-				Files: []File{
+				Files: []template.File{
 					{Src: "missing.txt", Dest: "dest.txt"},
 				},
 			},
@@ -598,18 +599,18 @@ func TestValidator_ValidateFiles(t *testing.T) {
 }
 
 func TestValidator_ValidateContext(t *testing.T) {
-	v := NewValidator()
+	v := template.NewValidator()
 
-	tmpl := &Template{
+	tmpl := &template.Template{
 		Name: "test",
-		Variables: []Variable{
-			{Name: "required", Prompt: "?", Type: VariableTypeString},
-			{Name: "optional", Prompt: "?", Type: VariableTypeString, Default: "default"},
+		Variables: []template.Variable{
+			{Name: "required", Prompt: "?", Type: template.VariableTypeString},
+			{Name: "optional", Prompt: "?", Type: template.VariableTypeString, Default: "default"},
 		},
 	}
 
 	t.Run("valid context passes", func(t *testing.T) {
-		ctx := NewTemplateContext(map[string]any{
+		ctx := template.NewTemplateContext(map[string]any{
 			"required": "value",
 			"optional": "configured",
 		})
@@ -618,14 +619,14 @@ func TestValidator_ValidateContext(t *testing.T) {
 	})
 
 	t.Run("missing required variable fails", func(t *testing.T) {
-		ctx := NewTemplateContext(map[string]any{})
+		ctx := template.NewTemplateContext(map[string]any{})
 		err := v.ValidateContext(tmpl, ctx)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "variable required is missing")
 	})
 
 	t.Run("missing variable with default still fails", func(t *testing.T) {
-		ctx := NewTemplateContext(map[string]any{
+		ctx := template.NewTemplateContext(map[string]any{
 			"required": "value",
 		})
 		err := v.ValidateContext(tmpl, ctx)
@@ -634,7 +635,7 @@ func TestValidator_ValidateContext(t *testing.T) {
 	})
 
 	t.Run("invalid string type fails", func(t *testing.T) {
-		ctx := NewTemplateContext(map[string]any{
+		ctx := template.NewTemplateContext(map[string]any{
 			"required": 123,
 			"optional": "configured",
 		})
@@ -645,14 +646,14 @@ func TestValidator_ValidateContext(t *testing.T) {
 	})
 
 	t.Run("int and bool pass", func(t *testing.T) {
-		typed := &Template{
+		typed := &template.Template{
 			Name: "typed",
-			Variables: []Variable{
-				{Name: "port", Prompt: "?", Type: VariableTypeInt},
-				{Name: "enabled", Prompt: "?", Type: VariableTypeBool},
+			Variables: []template.Variable{
+				{Name: "port", Prompt: "?", Type: template.VariableTypeInt},
+				{Name: "enabled", Prompt: "?", Type: template.VariableTypeBool},
 			},
 		}
-		ctx := NewTemplateContext(map[string]any{
+		ctx := template.NewTemplateContext(map[string]any{
 			"port":    8080,
 			"enabled": true,
 		})
@@ -661,13 +662,13 @@ func TestValidator_ValidateContext(t *testing.T) {
 	})
 
 	t.Run("string int fails", func(t *testing.T) {
-		typed := &Template{
+		typed := &template.Template{
 			Name: "typed",
-			Variables: []Variable{
-				{Name: "port", Prompt: "?", Type: VariableTypeInt},
+			Variables: []template.Variable{
+				{Name: "port", Prompt: "?", Type: template.VariableTypeInt},
 			},
 		}
-		ctx := NewTemplateContext(map[string]any{
+		ctx := template.NewTemplateContext(map[string]any{
 			"port": "8080",
 		})
 		err := v.ValidateContext(typed, ctx)
@@ -676,13 +677,13 @@ func TestValidator_ValidateContext(t *testing.T) {
 	})
 
 	t.Run("non-int value fails", func(t *testing.T) {
-		typed := &Template{
+		typed := &template.Template{
 			Name: "typed",
-			Variables: []Variable{
-				{Name: "port", Prompt: "?", Type: VariableTypeInt},
+			Variables: []template.Variable{
+				{Name: "port", Prompt: "?", Type: template.VariableTypeInt},
 			},
 		}
-		ctx := NewTemplateContext(map[string]any{
+		ctx := template.NewTemplateContext(map[string]any{
 			"port": 3.14,
 		})
 		err := v.ValidateContext(typed, ctx)
@@ -691,13 +692,13 @@ func TestValidator_ValidateContext(t *testing.T) {
 	})
 
 	t.Run("non-bool bool fails", func(t *testing.T) {
-		typed := &Template{
+		typed := &template.Template{
 			Name: "typed",
-			Variables: []Variable{
-				{Name: "enabled", Prompt: "?", Type: VariableTypeBool},
+			Variables: []template.Variable{
+				{Name: "enabled", Prompt: "?", Type: template.VariableTypeBool},
 			},
 		}
-		ctx := NewTemplateContext(map[string]any{
+		ctx := template.NewTemplateContext(map[string]any{
 			"enabled": "true",
 		})
 		err := v.ValidateContext(typed, ctx)
@@ -706,13 +707,13 @@ func TestValidator_ValidateContext(t *testing.T) {
 	})
 
 	t.Run("select validates string values", func(t *testing.T) {
-		typed := &Template{
+		typed := &template.Template{
 			Name: "typed",
-			Variables: []Variable{
-				{Name: "color", Prompt: "?", Type: VariableTypeSelect, Options: []string{"red", "blue"}},
+			Variables: []template.Variable{
+				{Name: "color", Prompt: "?", Type: template.VariableTypeSelect, Options: []string{"red", "blue"}},
 			},
 		}
-		ctx := NewTemplateContext(map[string]any{
+		ctx := template.NewTemplateContext(map[string]any{
 			"color": "red",
 		})
 		err := v.ValidateContext(typed, ctx)
@@ -720,13 +721,13 @@ func TestValidator_ValidateContext(t *testing.T) {
 	})
 
 	t.Run("select value outside options fails", func(t *testing.T) {
-		typed := &Template{
+		typed := &template.Template{
 			Name: "typed",
-			Variables: []Variable{
-				{Name: "color", Prompt: "?", Type: VariableTypeSelect, Options: []string{"red", "blue"}},
+			Variables: []template.Variable{
+				{Name: "color", Prompt: "?", Type: template.VariableTypeSelect, Options: []string{"red", "blue"}},
 			},
 		}
-		ctx := NewTemplateContext(map[string]any{
+		ctx := template.NewTemplateContext(map[string]any{
 			"color": "green",
 		})
 		err := v.ValidateContext(typed, ctx)
@@ -735,13 +736,13 @@ func TestValidator_ValidateContext(t *testing.T) {
 	})
 
 	t.Run("select requires string values", func(t *testing.T) {
-		typed := &Template{
+		typed := &template.Template{
 			Name: "typed",
-			Variables: []Variable{
-				{Name: "color", Prompt: "?", Type: VariableTypeSelect, Options: []string{"red", "blue"}},
+			Variables: []template.Variable{
+				{Name: "color", Prompt: "?", Type: template.VariableTypeSelect, Options: []string{"red", "blue"}},
 			},
 		}
-		ctx := NewTemplateContext(map[string]any{
+		ctx := template.NewTemplateContext(map[string]any{
 			"color": []string{"red"},
 		})
 		err := v.ValidateContext(typed, ctx)
@@ -750,13 +751,13 @@ func TestValidator_ValidateContext(t *testing.T) {
 	})
 
 	t.Run("multiselect validates slice values", func(t *testing.T) {
-		typed := &Template{
+		typed := &template.Template{
 			Name: "typed",
-			Variables: []Variable{
-				{Name: "features", Prompt: "?", Type: VariableTypeMultiSelect, Options: []string{"api", "db"}},
+			Variables: []template.Variable{
+				{Name: "features", Prompt: "?", Type: template.VariableTypeMultiSelect, Options: []string{"api", "db"}},
 			},
 		}
-		ctx := NewTemplateContext(map[string]any{
+		ctx := template.NewTemplateContext(map[string]any{
 			"features": []string{"api", "db"},
 		})
 		err := v.ValidateContext(typed, ctx)
@@ -764,13 +765,13 @@ func TestValidator_ValidateContext(t *testing.T) {
 	})
 
 	t.Run("multiselect with invalid option fails", func(t *testing.T) {
-		typed := &Template{
+		typed := &template.Template{
 			Name: "typed",
-			Variables: []Variable{
-				{Name: "features", Prompt: "?", Type: VariableTypeMultiSelect, Options: []string{"api", "db"}},
+			Variables: []template.Variable{
+				{Name: "features", Prompt: "?", Type: template.VariableTypeMultiSelect, Options: []string{"api", "db"}},
 			},
 		}
-		ctx := NewTemplateContext(map[string]any{
+		ctx := template.NewTemplateContext(map[string]any{
 			"features": []any{"api", "cache"},
 		})
 		err := v.ValidateContext(typed, ctx)
@@ -780,17 +781,17 @@ func TestValidator_ValidateContext(t *testing.T) {
 }
 
 func TestValidator_Validate_DefaultTypes(t *testing.T) {
-	v := NewValidator()
+	v := template.NewValidator()
 
 	t.Run("int default and bool default pass", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "typed",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
-				{Name: "port", Prompt: "?", Type: VariableTypeInt, Default: 8080},
-				{Name: "enabled", Prompt: "?", Type: VariableTypeBool, Default: true},
+			Variables: []template.Variable{
+				{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+				{Name: "port", Prompt: "?", Type: template.VariableTypeInt, Default: 8080},
+				{Name: "enabled", Prompt: "?", Type: template.VariableTypeBool, Default: true},
 			},
 		}
 
@@ -799,13 +800,13 @@ func TestValidator_Validate_DefaultTypes(t *testing.T) {
 	})
 
 	t.Run("invalid default type fails", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "typed",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
-				{Name: "port", Prompt: "?", Type: VariableTypeInt, Default: "8080"},
+			Variables: []template.Variable{
+				{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+				{Name: "port", Prompt: "?", Type: template.VariableTypeInt, Default: "8080"},
 			},
 		}
 
@@ -816,13 +817,13 @@ func TestValidator_Validate_DefaultTypes(t *testing.T) {
 	})
 
 	t.Run("string bool default fails", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "typed",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
-				{Name: "enabled", Prompt: "?", Type: VariableTypeBool, Default: "true"},
+			Variables: []template.Variable{
+				{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+				{Name: "enabled", Prompt: "?", Type: template.VariableTypeBool, Default: "true"},
 			},
 		}
 
@@ -833,13 +834,13 @@ func TestValidator_Validate_DefaultTypes(t *testing.T) {
 	})
 
 	t.Run("select default must be string", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "typed",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
-				{Name: "color", Prompt: "?", Type: VariableTypeSelect, Options: []string{"red", "blue"}, Default: "red"},
+			Variables: []template.Variable{
+				{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+				{Name: "color", Prompt: "?", Type: template.VariableTypeSelect, Options: []string{"red", "blue"}, Default: "red"},
 			},
 		}
 
@@ -848,13 +849,13 @@ func TestValidator_Validate_DefaultTypes(t *testing.T) {
 	})
 
 	t.Run("invalid multiselect default option fails", func(t *testing.T) {
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name:    "typed",
-			Type:    TypeProject,
+			Type:    template.TypeProject,
 			Version: "1.0.0",
-			Variables: []Variable{
-				{Name: "app", Prompt: "?", Type: VariableTypeString, Role: RoleProjectName},
-				{Name: "features", Prompt: "?", Type: VariableTypeMultiSelect, Options: []string{"api", "db"}, Default: []any{"api", "cache"}},
+			Variables: []template.Variable{
+				{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+				{Name: "features", Prompt: "?", Type: template.VariableTypeMultiSelect, Options: []string{"api", "db"}, Default: []any{"api", "cache"}},
 			},
 		}
 
@@ -866,23 +867,23 @@ func TestValidator_Validate_DefaultTypes(t *testing.T) {
 }
 
 func TestValidator_ValidateTreeContexts(t *testing.T) {
-	v := NewValidator()
+	v := template.NewValidator()
 
-	root := &Node{
+	root := &template.Node{
 		ID: "0",
-		Template: &Template{
+		Template: &template.Template{
 			Name: "root",
-			Variables: []Variable{
-				{Name: "var_root", Prompt: "?", Type: VariableTypeString},
+			Variables: []template.Variable{
+				{Name: "var_root", Prompt: "?", Type: template.VariableTypeString},
 			},
 		},
-		Children: []*Node{
+		Children: []*template.Node{
 			{
 				ID: "0.0",
-				Template: &Template{
+				Template: &template.Template{
 					Name: "child",
-					Variables: []Variable{
-						{Name: "var_child", Prompt: "?", Type: VariableTypeString},
+					Variables: []template.Variable{
+						{Name: "var_child", Prompt: "?", Type: template.VariableTypeString},
 					},
 				},
 			},
@@ -890,17 +891,17 @@ func TestValidator_ValidateTreeContexts(t *testing.T) {
 	}
 
 	t.Run("valid contexts pass", func(t *testing.T) {
-		contexts := RenderContexts{
-			"0":   NewTemplateContext(map[string]any{"var_root": "val"}),
-			"0.0": NewTemplateContext(map[string]any{"var_child": "val"}),
+		contexts := template.RenderContexts{
+			"0":   template.NewTemplateContext(map[string]any{"var_root": "val"}),
+			"0.0": template.NewTemplateContext(map[string]any{"var_child": "val"}),
 		}
 		err := v.ValidateTreeContexts(root, contexts)
 		require.NoError(t, err)
 	})
 
 	t.Run("missing context for a node fails", func(t *testing.T) {
-		contexts := RenderContexts{
-			"0": NewTemplateContext(map[string]any{"var_root": "val"}),
+		contexts := template.RenderContexts{
+			"0": template.NewTemplateContext(map[string]any{"var_root": "val"}),
 		}
 		err := v.ValidateTreeContexts(root, contexts)
 		require.Error(t, err)
@@ -908,9 +909,9 @@ func TestValidator_ValidateTreeContexts(t *testing.T) {
 	})
 
 	t.Run("missing variable in one of the contexts fails", func(t *testing.T) {
-		contexts := RenderContexts{
-			"0":   NewTemplateContext(map[string]any{"var_root": "val"}),
-			"0.0": NewTemplateContext(map[string]any{}), // missing var_child
+		contexts := template.RenderContexts{
+			"0":   template.NewTemplateContext(map[string]any{"var_root": "val"}),
+			"0.0": template.NewTemplateContext(map[string]any{}), // missing var_child
 		}
 		err := v.ValidateTreeContexts(root, contexts)
 		require.Error(t, err)

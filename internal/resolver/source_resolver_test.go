@@ -1,10 +1,11 @@
-package resolver
+package resolver_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/dhanush0x96c/blueprint/internal/resolver"
 	"github.com/dhanush0x96c/blueprint/internal/template"
 	"github.com/stretchr/testify/require"
 )
@@ -46,9 +47,9 @@ type: project
 
 func TestSourceResolver_Exists(t *testing.T) {
 	base := t.TempDir()
-	r := NewSourceResolver(Source{
+	r := resolver.NewSourceResolver(resolver.Source{
 		Name:       "test",
-		Type:       SourceTypeUser,
+		Type:       resolver.SourceTypeUser,
 		Filesystem: os.DirFS(base),
 	})
 
@@ -84,9 +85,9 @@ tags: ["auth", "security"]
 
 func TestSourceResolver_Discover(t *testing.T) {
 	base := t.TempDir()
-	r := NewSourceResolver(Source{
+	r := resolver.NewSourceResolver(resolver.Source{
 		Name:       "test",
-		Type:       SourceTypeUser,
+		Type:       resolver.SourceTypeUser,
 		Filesystem: os.DirFS(base),
 	})
 

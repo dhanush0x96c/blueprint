@@ -1,10 +1,11 @@
-package template
+package template_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/dhanush0x96c/blueprint/internal/template"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,7 +15,7 @@ func writeTemplate(t *testing.T, dir string, content string) {
 	err := os.MkdirAll(dir, 0o755)
 	require.NoError(t, err)
 
-	path := filepath.Join(dir, FileName)
+	path := filepath.Join(dir, template.FileName)
 	err = os.WriteFile(path, []byte(content), 0o644)
 	require.NoError(t, err)
 }
@@ -39,7 +40,7 @@ type: project
 
 	base := t.TempDir()
 	fsys := os.DirFS(base)
-	loader := NewLoader()
+	loader := template.NewLoader()
 
 	t.Run("load from relative directory", func(t *testing.T) {
 		dir := filepath.Join(base, "projects", "go-cli")
@@ -54,7 +55,7 @@ type: project
 		dir := filepath.Join(base, "direct")
 		writeTemplate(t, dir, validProjectTemplate)
 
-		path := filepath.Join("direct", FileName)
+		path := filepath.Join("direct", template.FileName)
 		tmpl, err := loader.Load(fsys, path)
 		require.NoError(t, err)
 		require.Equal(t, "go-cli", tmpl.Template.Name)
@@ -73,7 +74,7 @@ type: project
 func TestLoader_LoadTags(t *testing.T) {
 	base := t.TempDir()
 	fsys := os.DirFS(base)
-	loader := NewLoader()
+	loader := template.NewLoader()
 
 	const templateWithTags = `
 name: tagged-template

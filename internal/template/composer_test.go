@@ -1,34 +1,35 @@
-package template
+package template_test
 
 import (
 	"errors"
 	"io/fs"
 	"testing"
 
+	"github.com/dhanush0x96c/blueprint/internal/template"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 type fakeResolver struct {
-	templates map[string]*Template
+	templates map[string]*template.Template
 }
 
-func (f *fakeResolver) Resolve(ref TemplateRef) (*ResolvedTemplate, error) {
+func (f *fakeResolver) Resolve(ref template.TemplateRef) (*template.ResolvedTemplate, error) {
 	if _, ok := f.templates[ref.Name]; !ok {
 		return nil, errors.New("template not found")
 	}
-	return &ResolvedTemplate{
+	return &template.ResolvedTemplate{
 		Path: ref.Name,
 		FS:   nil, // Not used in fakeLoader
 	}, nil
 }
 
 type fakeLoader struct {
-	templates map[string]*Template
+	templates map[string]*template.Template
 	err       error
 }
 
-func (f *fakeLoader) Load(fsys fs.FS, pth string) (*LoadedTemplate, error) {
+func (f *fakeLoader) Load(fsys fs.FS, pth string) (*template.LoadedTemplate, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -38,7 +39,7 @@ func (f *fakeLoader) Load(fsys fs.FS, pth string) (*LoadedTemplate, error) {
 		return nil, errors.New("template not found")
 	}
 
-	return &LoadedTemplate{
+	return &template.LoadedTemplate{
 		Template: t,
 		FS:       fsys,
 		Path:     pth,
@@ -49,24 +50,24 @@ func TestCompose(t *testing.T) {
 	t.Run("single template no includes", func(t *testing.T) {
 		loader := &fakeLoader{}
 		resolver := &fakeResolver{}
-		composer := NewComposer(resolver, loader)
+		composer := template.NewComposer(resolver, loader)
 
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name: "base",
 			Tags: []string{"backend", "api"},
-			Variables: []Variable{
+			Variables: []template.Variable{
 				{Name: "project_name"},
 			},
 			Dependencies: []string{"go@1.22"},
 		}
 
-		loaded := &LoadedTemplate{
+		loaded := &template.LoadedTemplate{
 			Template: tmpl,
 			FS:       nil,
 			Path:     "base",
 		}
 
-		out, err := composer.Compose(loaded, func(includes []Include) ([]Include, error) {
+		out, err := composer.Compose(loaded, func(includes []template.Include) ([]template.Include, error) {
 			return nil, nil
 		})
 		require.NoError(t, err)
@@ -77,29 +78,29 @@ func TestCompose(t *testing.T) {
 	})
 
 	t.Run("with includes builds tree", func(t *testing.T) {
-		base := &Template{
+		base := &template.Template{
 			Name: "base",
-			Includes: []Include{
+			Includes: []template.Include{
 				{Name: "logging", EnabledByDefault: true},
 			},
-			Variables: []Variable{
+			Variables: []template.Variable{
 				{Name: "project_name"},
 			},
 			Dependencies: []string{"go"},
 		}
 
-		logging := &Template{
+		logging := &template.Template{
 			Name: "logging",
-			Variables: []Variable{
+			Variables: []template.Variable{
 				{Name: "log_level"},
 			},
 			Dependencies: []string{"zap@1.26.0"},
-			Files: []File{
+			Files: []template.File{
 				{Dest: "logger.go"},
 			},
 		}
 
-		templates := map[string]*Template{
+		templates := map[string]*template.Template{
 			"logging": logging,
 		}
 
@@ -110,15 +111,15 @@ func TestCompose(t *testing.T) {
 			templates: templates,
 		}
 
-		composer := NewComposer(resolver, loader)
+		composer := template.NewComposer(resolver, loader)
 
-		loaded := &LoadedTemplate{
+		loaded := &template.LoadedTemplate{
 			Template: base,
 			FS:       nil,
 			Path:     "base",
 		}
 
-		out, err := composer.Compose(loaded, func(includes []Include) ([]Include, error) {
+		out, err := composer.Compose(loaded, func(includes []template.Include) ([]template.Include, error) {
 			return includes, nil
 		})
 		require.NoError(t, err)
@@ -134,21 +135,21 @@ func TestCompose(t *testing.T) {
 	})
 
 	t.Run("circular dependency detected", func(t *testing.T) {
-		a := &Template{
+		a := &template.Template{
 			Name: "a",
-			Includes: []Include{
+			Includes: []template.Include{
 				{Name: "b", EnabledByDefault: true},
 			},
 		}
 
-		b := &Template{
+		b := &template.Template{
 			Name: "b",
-			Includes: []Include{
+			Includes: []template.Include{
 				{Name: "a", EnabledByDefault: true},
 			},
 		}
 
-		templates := map[string]*Template{
+		templates := map[string]*template.Template{
 			"a": a,
 			"b": b,
 		}
@@ -160,15 +161,15 @@ func TestCompose(t *testing.T) {
 			templates: templates,
 		}
 
-		composer := NewComposer(resolver, loader)
+		composer := template.NewComposer(resolver, loader)
 
-		loaded := &LoadedTemplate{
+		loaded := &template.LoadedTemplate{
 			Template: a,
 			FS:       nil,
 			Path:     "a",
 		}
 
-		_, err := composer.Compose(loaded, func(includes []Include) ([]Include, error) {
+		_, err := composer.Compose(loaded, func(includes []template.Include) ([]template.Include, error) {
 			return includes, nil
 		})
 		require.Error(t, err)
@@ -176,22 +177,22 @@ func TestCompose(t *testing.T) {
 	})
 
 	t.Run("optional includes confirm called", func(t *testing.T) {
-		base := &Template{
+		base := &template.Template{
 			Name: "base",
-			Includes: []Include{
+			Includes: []template.Include{
 				{Name: "logging", EnabledByDefault: false},
 				{Name: "metrics", EnabledByDefault: false},
 			},
 		}
 
-		logging := &Template{
+		logging := &template.Template{
 			Name: "logging",
 		}
-		metrics := &Template{
+		metrics := &template.Template{
 			Name: "metrics",
 		}
 
-		templates := map[string]*Template{
+		templates := map[string]*template.Template{
 			"logging": logging,
 			"metrics": metrics,
 		}
@@ -203,17 +204,17 @@ func TestCompose(t *testing.T) {
 			templates: templates,
 		}
 
-		composer := NewComposer(resolver, loader)
+		composer := template.NewComposer(resolver, loader)
 
-		loaded := &LoadedTemplate{
+		loaded := &template.LoadedTemplate{
 			Template: base,
 			FS:       nil,
 			Path:     "base",
 		}
 
 		// Enable only logging
-		confirm := func(includes []Include) ([]Include, error) {
-			var enabled []Include
+		confirm := func(includes []template.Include) ([]template.Include, error) {
+			var enabled []template.Include
 			for _, inc := range includes {
 				if inc.Name == "logging" {
 					enabled = append(enabled, inc)
@@ -231,35 +232,35 @@ func TestCompose(t *testing.T) {
 	})
 
 	t.Run("assigns IDs", func(t *testing.T) {
-		root := &Template{
+		root := &template.Template{
 			Name: "root",
-			Includes: []Include{
+			Includes: []template.Include{
 				{Name: "child0", EnabledByDefault: true},
 				{Name: "child1", EnabledByDefault: true},
 			},
 		}
 
-		child0 := &Template{
+		child0 := &template.Template{
 			Name: "child0",
 		}
 
-		child1 := &Template{
+		child1 := &template.Template{
 			Name: "child1",
-			Includes: []Include{
+			Includes: []template.Include{
 				{Name: "grandchild0", EnabledByDefault: true},
 				{Name: "grandchild1", EnabledByDefault: true},
 			},
 		}
 
-		grandchild0 := &Template{
+		grandchild0 := &template.Template{
 			Name: "grandchild0",
 		}
 
-		grandchild1 := &Template{
+		grandchild1 := &template.Template{
 			Name: "grandchild1",
 		}
 
-		templates := map[string]*Template{
+		templates := map[string]*template.Template{
 			"child0":      child0,
 			"child1":      child1,
 			"grandchild0": grandchild0,
@@ -273,15 +274,15 @@ func TestCompose(t *testing.T) {
 			templates: templates,
 		}
 
-		composer := NewComposer(resolver, loader)
+		composer := template.NewComposer(resolver, loader)
 
-		loaded := &LoadedTemplate{
+		loaded := &template.LoadedTemplate{
 			Template: root,
 			FS:       nil,
 			Path:     "root",
 		}
 
-		out, err := composer.Compose(loaded, func(includes []Include) ([]Include, error) {
+		out, err := composer.Compose(loaded, func(includes []template.Include) ([]template.Include, error) {
 			return includes, nil
 		})
 		require.NoError(t, err)

@@ -1,27 +1,28 @@
-package template
+package template_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/dhanush0x96c/blueprint/internal/template"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // helper to create a renderer
-func newTestRenderer(t *testing.T) (*Renderer, string) {
+func newTestRenderer(t *testing.T) (*template.Renderer, string) {
 	t.Helper()
 
 	dir := t.TempDir()
-	r := NewRenderer()
+	r := template.NewRenderer()
 
 	return r, dir
 }
 
 // helper context
-func testContext(vars map[string]any) *Context {
-	return &Context{
+func testContext(vars map[string]any) *template.Context {
+	return &template.Context{
 		Variables: vars,
 	}
 }
@@ -170,9 +171,9 @@ func TestRenderer_RenderAll(t *testing.T) {
 		require.NoError(t, err)
 
 		fsys := os.DirFS(dir)
-		tmpl := &Template{
+		tmpl := &template.Template{
 			Name: "root",
-			Files: []File{
+			Files: []template.File{
 				{
 					Src:  "a.tmpl",
 					Dest: "{{ .name }}/a.txt",
@@ -184,7 +185,7 @@ func TestRenderer_RenderAll(t *testing.T) {
 			},
 		}
 
-		node := &Node{
+		node := &template.Node{
 			ID:       "0",
 			Template: tmpl,
 			FS:       fsys,
@@ -193,7 +194,7 @@ func TestRenderer_RenderAll(t *testing.T) {
 
 		out, err := r.RenderAll(
 			node,
-			RenderContexts{
+			template.RenderContexts{
 				"0": testContext(map[string]any{
 					"name": "output",
 					"a":    1,
