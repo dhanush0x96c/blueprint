@@ -6,45 +6,18 @@ import (
 	"testing"
 
 	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/testutil"
 	"github.com/stretchr/testify/require"
 )
 
-func writeTemplate(t *testing.T, dir string, content string) {
-	t.Helper()
-
-	err := os.MkdirAll(dir, 0o755)
-	require.NoError(t, err)
-
-	path := filepath.Join(dir, template.FileName)
-	err = os.WriteFile(path, []byte(content), 0o644)
-	require.NoError(t, err)
-}
-
 func TestLoader_Load(t *testing.T) {
-	const validProjectTemplate = `
-name: go-cli
-type: project
-version: "1.0.0"
-description: "Go CLI project"
-variables:
-  - name: app_name
-    prompt: "App name?"
-    type: string
-    role: project_name
-`
-
-	const invalidTemplate = `
-name:
-type: project
-`
-
 	base := t.TempDir()
 	fsys := os.DirFS(base)
 	loader := template.NewLoader()
 
 	t.Run("load from relative directory", func(t *testing.T) {
 		dir := filepath.Join(base, "projects", "go-cli")
-		writeTemplate(t, dir, validProjectTemplate)
+		testutil.WriteTemplate(t, dir, testutil.ValidProjectTemplate)
 
 		tmpl, err := loader.Load(fsys, "projects/go-cli")
 		require.NoError(t, err)
@@ -53,7 +26,7 @@ type: project
 
 	t.Run("load from template.yaml path", func(t *testing.T) {
 		dir := filepath.Join(base, "direct")
-		writeTemplate(t, dir, validProjectTemplate)
+		testutil.WriteTemplate(t, dir, testutil.ValidProjectTemplate)
 
 		path := filepath.Join("direct", template.FileName)
 		tmpl, err := loader.Load(fsys, path)
@@ -64,7 +37,7 @@ type: project
 	t.Run("invalid template fails validation", func(t *testing.T) {
 		templateName := "invalid"
 		dir := filepath.Join(base, templateName)
-		writeTemplate(t, dir, invalidTemplate)
+		testutil.WriteTemplate(t, dir, testutil.InvalidTemplate)
 
 		_, err := loader.Load(fsys, templateName)
 		require.Error(t, err)
@@ -76,29 +49,9 @@ func TestLoader_LoadTags(t *testing.T) {
 	fsys := os.DirFS(base)
 	loader := template.NewLoader()
 
-	const templateWithTags = `
-name: tagged-template
-type: project
-version: "1.0.0"
-description: "Template with tags"
-tags: ["go", "cli", "testing"]
-variables:
-  - name: app_name
-    prompt: "App name?"
-    type: string
-    role: project_name
-`
-
-	const templateWithoutTags = `
-name: no-tags
-type: feature
-version: "1.0.0"
-description: "Template without tags"
-`
-
 	t.Run("loads tags when present", func(t *testing.T) {
 		dir := filepath.Join(base, "with-tags")
-		writeTemplate(t, dir, templateWithTags)
+		testutil.WriteTemplate(t, dir, testutil.TemplateWithTags)
 
 		tmpl, err := loader.Load(fsys, "with-tags")
 		require.NoError(t, err)
@@ -109,7 +62,7 @@ description: "Template without tags"
 
 	t.Run("handles missing tags", func(t *testing.T) {
 		dir := filepath.Join(base, "without-tags")
-		writeTemplate(t, dir, templateWithoutTags)
+		testutil.WriteTemplate(t, dir, testutil.TemplateWithoutTags)
 
 		tmpl, err := loader.Load(fsys, "without-tags")
 		require.NoError(t, err)

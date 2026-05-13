@@ -1,55 +1,18 @@
 package template_test
 
 import (
-	"errors"
-	"io/fs"
 	"testing"
 
 	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type fakeResolver struct {
-	templates map[string]*template.Template
-}
-
-func (f *fakeResolver) Resolve(ref template.TemplateRef) (*template.ResolvedTemplate, error) {
-	if _, ok := f.templates[ref.Name]; !ok {
-		return nil, errors.New("template not found")
-	}
-	return &template.ResolvedTemplate{
-		Path: ref.Name,
-		FS:   nil, // Not used in fakeLoader
-	}, nil
-}
-
-type fakeLoader struct {
-	templates map[string]*template.Template
-	err       error
-}
-
-func (f *fakeLoader) Load(fsys fs.FS, pth string) (*template.LoadedTemplate, error) {
-	if f.err != nil {
-		return nil, f.err
-	}
-
-	t, ok := f.templates[pth]
-	if !ok {
-		return nil, errors.New("template not found")
-	}
-
-	return &template.LoadedTemplate{
-		Template: t,
-		FS:       fsys,
-		Path:     pth,
-	}, nil
-}
-
 func TestCompose(t *testing.T) {
 	t.Run("single template no includes", func(t *testing.T) {
-		loader := &fakeLoader{}
-		resolver := &fakeResolver{}
+		loader := &testutil.FakeLoader{}
+		resolver := &testutil.FakeResolver{}
 		composer := template.NewComposer(resolver, loader)
 
 		tmpl := &template.Template{
@@ -104,11 +67,11 @@ func TestCompose(t *testing.T) {
 			"logging": logging,
 		}
 
-		loader := &fakeLoader{
-			templates: templates,
+		loader := &testutil.FakeLoader{
+			Templates: templates,
 		}
-		resolver := &fakeResolver{
-			templates: templates,
+		resolver := &testutil.FakeResolver{
+			Templates: templates,
 		}
 
 		composer := template.NewComposer(resolver, loader)
@@ -154,11 +117,11 @@ func TestCompose(t *testing.T) {
 			"b": b,
 		}
 
-		loader := &fakeLoader{
-			templates: templates,
+		loader := &testutil.FakeLoader{
+			Templates: templates,
 		}
-		resolver := &fakeResolver{
-			templates: templates,
+		resolver := &testutil.FakeResolver{
+			Templates: templates,
 		}
 
 		composer := template.NewComposer(resolver, loader)
@@ -197,11 +160,11 @@ func TestCompose(t *testing.T) {
 			"metrics": metrics,
 		}
 
-		loader := &fakeLoader{
-			templates: templates,
+		loader := &testutil.FakeLoader{
+			Templates: templates,
 		}
-		resolver := &fakeResolver{
-			templates: templates,
+		resolver := &testutil.FakeResolver{
+			Templates: templates,
 		}
 
 		composer := template.NewComposer(resolver, loader)
@@ -267,11 +230,11 @@ func TestCompose(t *testing.T) {
 			"grandchild1": grandchild1,
 		}
 
-		loader := &fakeLoader{
-			templates: templates,
+		loader := &testutil.FakeLoader{
+			Templates: templates,
 		}
-		resolver := &fakeResolver{
-			templates: templates,
+		resolver := &testutil.FakeResolver{
+			Templates: templates,
 		}
 
 		composer := template.NewComposer(resolver, loader)

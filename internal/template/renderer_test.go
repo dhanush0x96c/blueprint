@@ -6,34 +6,18 @@ import (
 	"testing"
 
 	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// helper to create a renderer
-func newTestRenderer(t *testing.T) (*template.Renderer, string) {
-	t.Helper()
-
-	dir := t.TempDir()
-	r := template.NewRenderer()
-
-	return r, dir
-}
-
-// helper context
-func testContext(vars map[string]any) *template.Context {
-	return &template.Context{
-		Variables: vars,
-	}
-}
-
 func TestRenderer_RenderString(t *testing.T) {
-	r, _ := newTestRenderer(t)
+	r, _ := testutil.NewRenderer(t)
 
 	t.Run("simple interpolates variables", func(t *testing.T) {
 		out, err := r.RenderString(
 			"Hello {{ .name }}",
-			testContext(map[string]any{
+			testutil.Context(map[string]any{
 				"name": "Blueprint",
 			}),
 			"test",
@@ -46,7 +30,7 @@ func TestRenderer_RenderString(t *testing.T) {
 	t.Run("applies default template funcs", func(t *testing.T) {
 		out, err := r.RenderString(
 			"{{ .name | toUpper }}",
-			testContext(map[string]any{
+			testutil.Context(map[string]any{
 				"name": "blueprint",
 			}),
 			"test",
@@ -59,7 +43,7 @@ func TestRenderer_RenderString(t *testing.T) {
 	t.Run("parse error", func(t *testing.T) {
 		_, err := r.RenderString(
 			"{{ .name ",
-			testContext(map[string]any{
+			testutil.Context(map[string]any{
 				"name": "oops",
 			}),
 			"broken",
@@ -72,7 +56,7 @@ func TestRenderer_RenderString(t *testing.T) {
 	t.Run("execution error", func(t *testing.T) {
 		_, err := r.RenderString(
 			"{{ toInt .value }}",
-			testContext(map[string]any{
+			testutil.Context(map[string]any{
 				"value": "not-a-number",
 			}),
 			"exec-error",
@@ -84,7 +68,7 @@ func TestRenderer_RenderString(t *testing.T) {
 }
 
 func TestRenderer_Render(t *testing.T) {
-	r, dir := newTestRenderer(t)
+	r, dir := testutil.NewRenderer(t)
 
 	t.Run("renders .tmpl file", func(t *testing.T) {
 		path := filepath.Join(dir, "hello.tmpl")
@@ -94,7 +78,7 @@ func TestRenderer_Render(t *testing.T) {
 		out, err := r.Render(
 			os.DirFS(dir),
 			"hello.tmpl",
-			testContext(map[string]any{
+			testutil.Context(map[string]any{
 				"name": "World",
 			}),
 		)
@@ -107,7 +91,7 @@ func TestRenderer_Render(t *testing.T) {
 		_, err := r.Render(
 			os.DirFS(dir),
 			"missing.tmpl",
-			testContext(map[string]any{}),
+			testutil.Context(map[string]any{}),
 		)
 
 		require.Error(t, err)
@@ -116,12 +100,12 @@ func TestRenderer_Render(t *testing.T) {
 }
 
 func TestRenderer_RenderPath(t *testing.T) {
-	r, _ := newTestRenderer(t)
+	r, _ := testutil.NewRenderer(t)
 
 	t.Run("renders path with variables", func(t *testing.T) {
 		out, err := r.RenderPath(
 			"{{ .pkg }}/main.go",
-			testContext(map[string]any{
+			testutil.Context(map[string]any{
 				"pkg": "myapp",
 			}),
 		)
@@ -132,7 +116,7 @@ func TestRenderer_RenderPath(t *testing.T) {
 }
 
 func TestRenderer_AddFunc(t *testing.T) {
-	r, _ := newTestRenderer(t)
+	r, _ := testutil.NewRenderer(t)
 
 	t.Run("custom function", func(t *testing.T) {
 		r.AddFunc("shout", func(s string) string {
@@ -141,7 +125,7 @@ func TestRenderer_AddFunc(t *testing.T) {
 
 		out, err := r.RenderString(
 			"{{ shout .msg }}",
-			testContext(map[string]any{
+			testutil.Context(map[string]any{
 				"msg": "hey",
 			}),
 			"custom-func",
@@ -153,7 +137,7 @@ func TestRenderer_AddFunc(t *testing.T) {
 }
 
 func TestRenderer_RenderAll(t *testing.T) {
-	r, dir := newTestRenderer(t)
+	r, dir := testutil.NewRenderer(t)
 
 	t.Run("renders all files with contexts", func(t *testing.T) {
 		err := os.WriteFile(
@@ -195,7 +179,7 @@ func TestRenderer_RenderAll(t *testing.T) {
 		out, err := r.RenderAll(
 			node,
 			template.RenderContexts{
-				"0": testContext(map[string]any{
+				"0": testutil.Context(map[string]any{
 					"name": "output",
 					"a":    1,
 					"b":    2,
