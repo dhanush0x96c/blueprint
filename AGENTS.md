@@ -22,6 +22,7 @@ Module: `github.com/dhanush0x96c/blueprint` | Go 1.26.3
 | `internal/resolver/`          | Template resolution: User source → Builtin source (chain)                                        |
 | `internal/config/`            | Config loader (env prefix: `BLUEPRINT`), default path `~/.config/blueprint/templates`            |
 | `internal/builtin/templates/` | `//go:embed all:*` — embedded project/feature templates                                          |
+| `internal/testutil/`          | Shared test fakes, helpers, and YAML fixtures reused across package tests                        |
 
 ## Commands
 
@@ -37,10 +38,10 @@ No Makefile / Taskfile / Justfile — use raw Go commands.
 
 ## Test Conventions
 
-- Tests live in the **same package** (not `_test` external package)
+- Package tests use external `_test` packages (`template_test`, `resolver_test`) for black-box coverage
 - testify helpers: `require.NoError` / `assert.Equal` etc.
 - Tests use `t.TempDir()` + `os.DirFS` for temp filesystem
-- Fakes in test files (`fakeResolver`, `fakeLoader`) for mocking
+- Shared fakes/helpers/fixtures live in `internal/testutil` (instead of being duplicated per test file)
 
 ## Template Format
 
@@ -73,3 +74,4 @@ No Makefile / Taskfile / Justfile — use raw Go commands.
 - User templates in `~/.config/blueprint/templates` override builtins
 - Version injected at build via ldflags (`-X github.com/dhanush0x96c/blueprint/internal/version.Version=...`)
 - Config file at `~/.config/blueprint/config.yaml` (optional)
+- Test architecture (latest): package tests were moved to external `_test` packages and now share common test infrastructure from `internal/testutil`
