@@ -12,540 +12,422 @@ import (
 func TestValidator_Validate(t *testing.T) {
 	v := template.NewValidator()
 
-	t.Run("valid template passes", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "test",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
-				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+	testCases := []struct {
+		name        string
+		tmpl        *template.Template
+		wantErr     bool
+		errContains []string
+	}{
+		{
+			name: "valid template passes",
+			tmpl: &template.Template{
+				Name:    "test",
+				Type:    template.TypeProject,
+				Version: "1.0.0",
+				Variables: []template.Variable{
+					{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+				},
 			},
-		}
+			wantErr: false,
+		},
+		{
+			name: "missing required fields fails",
+			tmpl: &template.Template{
+				Name: "",
+				Type: template.TypeProject,
+			},
+			wantErr:     true,
+			errContains: []string{"Name", "Version"},
+		},
+		{
+			name: "invalid type fails",
+			tmpl: &template.Template{
+				Name:    "test",
+				Type:    "invalid",
+				Version: "1.0.0",
+			},
+			wantErr:     true,
+			errContains: []string{"Type"},
+		},
+	}
 
-		err := v.Validate(tmpl)
-		require.NoError(t, err)
-	})
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := v.Validate(tc.tmpl)
+			if tc.wantErr {
+				require.Error(t, err)
+				for _, msg := range tc.errContains {
+					assert.Contains(t, err.Error(), msg)
+				}
+				return
+			}
 
-	t.Run("missing required fields fails", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name: "", // missing
-			Type: template.TypeProject,
-			// Version missing
-		}
-
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "Name")
-		assert.Contains(t, err.Error(), "Version")
-	})
-
-	t.Run("invalid type fails", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "test",
-			Type:    "invalid",
-			Version: "1.0.0",
-		}
-
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "Type")
-	})
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestValidator_ValidateVariables(t *testing.T) {
 	v := template.NewValidator()
 
-	t.Run("duplicate variable names fails", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "test",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
+	testCases := []struct {
+		name        string
+		variables   []template.Variable
+		wantErr     bool
+		errContains []string
+	}{
+		{
+			name: "duplicate variable names fails",
+			variables: []template.Variable{
 				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				{Name: "app_name", Prompt: "Another?", Type: template.VariableTypeString},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "duplicate variable name")
-		assert.Contains(t, err.Error(), "app_name")
-	})
-
-	t.Run("missing prompt fails", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "test",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
+			wantErr:     true,
+			errContains: []string{"duplicate variable name", "app_name"},
+		},
+		{
+			name: "missing prompt fails",
+			variables: []template.Variable{
 				{Name: "app_name", Prompt: "", Type: template.VariableTypeString},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "Prompt")
-	})
-
-	t.Run("select without options fails", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "test",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
+			wantErr:     true,
+			errContains: []string{"Prompt"},
+		},
+		{
+			name: "select without options fails",
+			variables: []template.Variable{
 				{Name: "choice", Prompt: "Choose?", Type: template.VariableTypeSelect, Options: []string{}},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "options required")
-	})
-
-	t.Run("multiselect without options fails", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "test",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
+			wantErr:     true,
+			errContains: []string{"options required"},
+		},
+		{
+			name: "multiselect without options fails",
+			variables: []template.Variable{
 				{Name: "choices", Prompt: "Choose?", Type: template.VariableTypeMultiSelect, Options: nil},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "options required")
-	})
-
-	t.Run("select with options passes", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "test",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
+			wantErr:     true,
+			errContains: []string{"options required"},
+		},
+		{
+			name: "select with options passes",
+			variables: []template.Variable{
 				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				{Name: "choice", Prompt: "Choose?", Type: template.VariableTypeSelect, Options: []string{"a", "b"}},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.NoError(t, err)
-	})
-
-	t.Run("empty select option fails", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "test",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
+			wantErr: false,
+		},
+		{
+			name: "empty select option fails",
+			variables: []template.Variable{
 				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				{Name: "choice", Prompt: "Choose?", Type: template.VariableTypeSelect, Options: []string{"a", ""}},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "must not be empty")
-	})
-
-	t.Run("duplicate select options fail", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "test",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
+			wantErr:     true,
+			errContains: []string{"must not be empty"},
+		},
+		{
+			name: "duplicate select options fail",
+			variables: []template.Variable{
 				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				{Name: "choice", Prompt: "Choose?", Type: template.VariableTypeSelect, Options: []string{"a", "a"}},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "duplicate option")
-	})
-
-	t.Run("options on string variable fail", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "test",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
+			wantErr:     true,
+			errContains: []string{"duplicate option"},
+		},
+		{
+			name: "options on string variable fail",
+			variables: []template.Variable{
 				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName, Options: []string{"a"}},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "options are only allowed")
-	})
-
-	t.Run("multiple errors accumulated", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "test",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
+			wantErr:     true,
+			errContains: []string{"options are only allowed"},
+		},
+		{
+			name: "multiple errors accumulated",
+			variables: []template.Variable{
 				{Name: "var1", Prompt: "", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				{Name: "var2", Prompt: "Pick?", Type: template.VariableTypeSelect},  // missing options
 				{Name: "var2", Prompt: "Again?", Type: template.VariableTypeString}, // duplicate
 			},
-		}
+			wantErr:     true,
+			errContains: []string{"Prompt", "options required", "duplicate variable name"},
+		},
+	}
 
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		// All three errors should be present
-		assert.Contains(t, err.Error(), "Prompt")
-		assert.Contains(t, err.Error(), "options required")
-		assert.Contains(t, err.Error(), "duplicate variable name")
-	})
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			tmpl := &template.Template{
+				Name:      "test",
+				Type:      template.TypeProject,
+				Version:   "1.0.0",
+				Variables: tc.variables,
+			}
+
+			err := v.Validate(tmpl)
+			if tc.wantErr {
+				require.Error(t, err)
+				for _, msg := range tc.errContains {
+					assert.Contains(t, err.Error(), msg)
+				}
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestValidator_ValidateProjectNameRole(t *testing.T) {
 	v := template.NewValidator()
 
-	t.Run("project template with valid project_name role passes", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "my-project",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
-				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
-				{Name: "description", Prompt: "Description?", Type: template.VariableTypeString},
+	testCases := []struct {
+		name        string
+		tmpl        *template.Template
+		wantErr     bool
+		errContains []string
+	}{
+		{
+			name: "project template with valid project_name role passes",
+			tmpl: &template.Template{
+				Name:    "my-project",
+				Type:    template.TypeProject,
+				Version: "1.0.0",
+				Variables: []template.Variable{
+					{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+					{Name: "description", Prompt: "Description?", Type: template.VariableTypeString},
+				},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.NoError(t, err)
-	})
-
-	t.Run("project template with zero project_name roles fails", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "my-project",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
-				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString},
-				{Name: "description", Prompt: "Description?", Type: template.VariableTypeString},
+			wantErr: false,
+		},
+		{
+			name: "project template with zero project_name roles fails",
+			tmpl: &template.Template{
+				Name:    "my-project",
+				Type:    template.TypeProject,
+				Version: "1.0.0",
+				Variables: []template.Variable{
+					{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString},
+					{Name: "description", Prompt: "Description?", Type: template.VariableTypeString},
+				},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "must have exactly one variable with role")
-		assert.Contains(t, err.Error(), "project_name")
-	})
-
-	t.Run("project template with no variables fails", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:      "my-project",
-			Type:      template.TypeProject,
-			Version:   "1.0.0",
-			Variables: []template.Variable{},
-		}
-
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "must have exactly one variable with role")
-		assert.Contains(t, err.Error(), "project_name")
-	})
-
-	t.Run("project template with multiple project_name roles fails", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "my-project",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
-				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
-				{Name: "project", Prompt: "Project?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+			wantErr:     true,
+			errContains: []string{"must have exactly one variable with role", "project_name"},
+		},
+		{
+			name: "project template with no variables fails",
+			tmpl: &template.Template{
+				Name:      "my-project",
+				Type:      template.TypeProject,
+				Version:   "1.0.0",
+				Variables: []template.Variable{},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "has 2 variables with role")
-		assert.Contains(t, err.Error(), "must have exactly one")
-	})
-
-	t.Run("project template with non-string project_name role fails", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "my-project",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
-				{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeBool, Role: template.RoleProjectName},
+			wantErr:     true,
+			errContains: []string{"must have exactly one variable with role", "project_name"},
+		},
+		{
+			name: "project template with multiple project_name roles fails",
+			tmpl: &template.Template{
+				Name:    "my-project",
+				Type:    template.TypeProject,
+				Version: "1.0.0",
+				Variables: []template.Variable{
+					{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+					{Name: "project", Prompt: "Project?", Type: template.VariableTypeString, Role: template.RoleProjectName},
+				},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "must be of type")
-		assert.Contains(t, err.Error(), string(template.VariableTypeString))
-	})
-
-	t.Run("feature template without project_name role passes", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "testing-feature",
-			Type:    template.TypeFeature,
-			Version: "1.0.0",
-			Variables: []template.Variable{
-				{Name: "use_testify", Prompt: "Use testify?", Type: template.VariableTypeBool},
+			wantErr:     true,
+			errContains: []string{"has 2 variables with role", "must have exactly one"},
+		},
+		{
+			name: "project template with non-string project_name role fails",
+			tmpl: &template.Template{
+				Name:    "my-project",
+				Type:    template.TypeProject,
+				Version: "1.0.0",
+				Variables: []template.Variable{
+					{Name: "app_name", Prompt: "App name?", Type: template.VariableTypeBool, Role: template.RoleProjectName},
+				},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.NoError(t, err)
-	})
-
-	t.Run("component template without project_name role passes", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "auth-component",
-			Type:    template.TypeComponent,
-			Version: "1.0.0",
-			Variables: []template.Variable{
-				{Name: "provider", Prompt: "Auth provider?", Type: template.VariableTypeString},
+			wantErr:     true,
+			errContains: []string{"must be of type", string(template.VariableTypeString)},
+		},
+		{
+			name: "feature template without project_name role passes",
+			tmpl: &template.Template{
+				Name:    "testing-feature",
+				Type:    template.TypeFeature,
+				Version: "1.0.0",
+				Variables: []template.Variable{
+					{Name: "use_testify", Prompt: "Use testify?", Type: template.VariableTypeBool},
+				},
 			},
-		}
+			wantErr: false,
+		},
+		{
+			name: "component template without project_name role passes",
+			tmpl: &template.Template{
+				Name:    "auth-component",
+				Type:    template.TypeComponent,
+				Version: "1.0.0",
+				Variables: []template.Variable{
+					{Name: "provider", Prompt: "Auth provider?", Type: template.VariableTypeString},
+				},
+			},
+			wantErr: false,
+		},
+	}
 
-		err := v.Validate(tmpl)
-		require.NoError(t, err)
-	})
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := v.Validate(tc.tmpl)
+			if tc.wantErr {
+				require.Error(t, err)
+				for _, msg := range tc.errContains {
+					assert.Contains(t, err.Error(), msg)
+				}
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestValidator_ValidateTree(t *testing.T) {
 	v := template.NewValidator()
-
-	t.Run("valid tree passes", func(t *testing.T) {
-		root := &template.Node{
-			Template: &template.Template{
-				Name:    "project",
-				Type:    template.TypeProject,
-				Version: "1.0.0",
-				Variables: []template.Variable{
-					{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
-				},
-			},
-			Children: []*template.Node{
-				{
-					Template: &template.Template{
-						Name:    "feature",
-						Type:    template.TypeFeature,
-						Version: "1.0.0",
-					},
-				},
+	projectWithNameVar := func(name string) *template.Template {
+		return &template.Template{
+			Name:    name,
+			Type:    template.TypeProject,
+			Version: "1.0.0",
+			Variables: []template.Variable{
+				{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 			},
 		}
-
-		err := v.ValidateTree(root)
-		require.NoError(t, err)
-	})
-
-	t.Run("invalid node in tree fails", func(t *testing.T) {
-		root := &template.Node{
-			Template: &template.Template{
-				Name:    "project",
-				Type:    template.TypeProject,
-				Version: "1.0.0",
-				Variables: []template.Variable{
-					{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
-				},
-			},
-			Children: []*template.Node{
-				{
-					Template: &template.Template{
-						Name:    "", // invalid
-						Type:    template.TypeFeature,
-						Version: "1.0.0",
-					},
-				},
-			},
+	}
+	feature := func(name string) *template.Template {
+		return &template.Template{
+			Name:    name,
+			Type:    template.TypeFeature,
+			Version: "1.0.0",
 		}
-
-		err := v.ValidateTree(root)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "Name")
-	})
-
-	t.Run("feature including project fails", func(t *testing.T) {
-		root := &template.Node{
-			Template: &template.Template{
-				Name:    "feature",
-				Type:    template.TypeFeature,
-				Version: "1.0.0",
-			},
-			Children: []*template.Node{
-				{
-					Template: &template.Template{
-						Name:    "project",
-						Type:    template.TypeProject,
-						Version: "1.0.0",
-						Variables: []template.Variable{
-							{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
-						},
-					},
-				},
-			},
+	}
+	component := func(name string) *template.Template {
+		return &template.Template{
+			Name:    name,
+			Type:    template.TypeComponent,
+			Version: "1.0.0",
 		}
-
-		err := v.ValidateTree(root)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "feature \"feature\" cannot include project \"project\"")
-	})
-
-	t.Run("component including project fails", func(t *testing.T) {
-		root := &template.Node{
-			Template: &template.Template{
-				Name:    "component",
-				Type:    template.TypeComponent,
-				Version: "1.0.0",
-			},
-			Children: []*template.Node{
-				{
-					Template: &template.Template{
-						Name:    "project",
-						Type:    template.TypeProject,
-						Version: "1.0.0",
-						Variables: []template.Variable{
-							{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
-						},
-					},
-				},
-			},
+	}
+	node := func(tmpl *template.Template, children ...*template.Node) *template.Node {
+		return &template.Node{
+			Template: tmpl,
+			Children: children,
 		}
+	}
 
-		err := v.ValidateTree(root)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "component \"component\" cannot include project \"project\"")
-	})
+	testCases := []struct {
+		name        string
+		root        *template.Node
+		wantErr     bool
+		errContains []string
+	}{
+		{
+			name: "valid tree passes",
+			root: node(
+				projectWithNameVar("project"),
+				node(feature("feature")),
+			),
+			wantErr: false,
+		},
+		{
+			name: "invalid node in tree fails",
+			root: node(
+				projectWithNameVar("project"),
+				node(feature("")),
+			),
+			wantErr:     true,
+			errContains: []string{"Name"},
+		},
+		{
+			name: "feature including project fails",
+			root: node(
+				feature("feature"),
+				node(projectWithNameVar("project")),
+			),
+			wantErr:     true,
+			errContains: []string{"feature \"feature\" cannot include project \"project\""},
+		},
+		{
+			name: "component including project fails",
+			root: node(
+				component("component"),
+				node(projectWithNameVar("project")),
+			),
+			wantErr:     true,
+			errContains: []string{"component \"component\" cannot include project \"project\""},
+		},
+		{
+			name: "project including project passes",
+			root: node(
+				projectWithNameVar("project1"),
+				node(projectWithNameVar("project2")),
+			),
+			wantErr: false,
+		},
+		{
+			name: "duplicate features at same level fail",
+			root: node(
+				projectWithNameVar("project"),
+				node(feature("testing")),
+				node(feature("testing")),
+			),
+			wantErr:     true,
+			errContains: []string{"features and components cannot be included twice at the same level", "duplicate feature \"testing\" in \"project\""},
+		},
+		{
+			name: "duplicate components at same level fail",
+			root: node(
+				projectWithNameVar("project"),
+				node(component("auth")),
+				node(component("auth")),
+			),
+			wantErr:     true,
+			errContains: []string{"features and components cannot be included twice at the same level", "duplicate component \"auth\" in \"project\""},
+		},
+		{
+			name: "same feature at different levels passes",
+			root: node(
+				projectWithNameVar("project"),
+				node(
+					feature("testing"),
+					node(feature("testing")),
+				),
+			),
+			wantErr: false,
+		},
+	}
 
-	t.Run("project including project passes", func(t *testing.T) {
-		root := &template.Node{
-			Template: &template.Template{
-				Name:    "project1",
-				Type:    template.TypeProject,
-				Version: "1.0.0",
-				Variables: []template.Variable{
-					{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
-				},
-			},
-			Children: []*template.Node{
-				{
-					Template: &template.Template{
-						Name:    "project2",
-						Type:    template.TypeProject,
-						Version: "1.0.0",
-						Variables: []template.Variable{
-							{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
-						},
-					},
-				},
-			},
-		}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := v.ValidateTree(tc.root)
+			if tc.wantErr {
+				require.Error(t, err)
+				for _, msg := range tc.errContains {
+					assert.Contains(t, err.Error(), msg)
+				}
+				return
+			}
 
-		err := v.ValidateTree(root)
-		require.NoError(t, err)
-	})
-
-	t.Run("duplicate features at same level fail", func(t *testing.T) {
-		root := &template.Node{
-			Template: &template.Template{
-				Name:    "project",
-				Type:    template.TypeProject,
-				Version: "1.0.0",
-				Variables: []template.Variable{
-					{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
-				},
-			},
-			Children: []*template.Node{
-				{
-					Template: &template.Template{
-						Name:    "testing",
-						Type:    template.TypeFeature,
-						Version: "1.0.0",
-					},
-				},
-				{
-					Template: &template.Template{
-						Name:    "testing",
-						Type:    template.TypeFeature,
-						Version: "1.0.0",
-					},
-				},
-			},
-		}
-
-		err := v.ValidateTree(root)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "features and components cannot be included twice at the same level")
-		assert.Contains(t, err.Error(), "duplicate feature \"testing\" in \"project\"")
-	})
-
-	t.Run("duplicate components at same level fail", func(t *testing.T) {
-		root := &template.Node{
-			Template: &template.Template{
-				Name:    "project",
-				Type:    template.TypeProject,
-				Version: "1.0.0",
-				Variables: []template.Variable{
-					{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
-				},
-			},
-			Children: []*template.Node{
-				{
-					Template: &template.Template{
-						Name:    "auth",
-						Type:    template.TypeComponent,
-						Version: "1.0.0",
-					},
-				},
-				{
-					Template: &template.Template{
-						Name:    "auth",
-						Type:    template.TypeComponent,
-						Version: "1.0.0",
-					},
-				},
-			},
-		}
-
-		err := v.ValidateTree(root)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "features and components cannot be included twice at the same level")
-		assert.Contains(t, err.Error(), "duplicate component \"auth\" in \"project\"")
-	})
-
-	t.Run("same feature at different levels passes", func(t *testing.T) {
-		root := &template.Node{
-			Template: &template.Template{
-				Name:    "project",
-				Type:    template.TypeProject,
-				Version: "1.0.0",
-				Variables: []template.Variable{
-					{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
-				},
-			},
-			Children: []*template.Node{
-				{
-					Template: &template.Template{
-						Name:    "testing",
-						Type:    template.TypeFeature,
-						Version: "1.0.0",
-					},
-					Children: []*template.Node{
-						{
-							Template: &template.Template{
-								Name:    "testing",
-								Type:    template.TypeFeature,
-								Version: "1.0.0",
-							},
-						},
-					},
-				},
-			},
-		}
-
-		err := v.ValidateTree(root)
-		require.NoError(t, err)
-	})
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestValidator_ValidateFiles(t *testing.T) {
@@ -601,269 +483,257 @@ func TestValidator_ValidateFiles(t *testing.T) {
 func TestValidator_ValidateContext(t *testing.T) {
 	v := template.NewValidator()
 
-	tmpl := &template.Template{
+	baseTemplate := &template.Template{
 		Name: "test",
 		Variables: []template.Variable{
 			{Name: "required", Prompt: "?", Type: template.VariableTypeString},
 			{Name: "optional", Prompt: "?", Type: template.VariableTypeString, Default: "default"},
 		},
 	}
+	typedTemplate := func(vars []template.Variable) *template.Template {
+		return &template.Template{
+			Name:      "typed",
+			Variables: vars,
+		}
+	}
 
-	t.Run("valid context passes", func(t *testing.T) {
-		ctx := template.NewTemplateContext(map[string]any{
-			"required": "value",
-			"optional": "configured",
-		})
-		err := v.ValidateContext(tmpl, ctx)
-		require.NoError(t, err)
-	})
-
-	t.Run("missing required variable fails", func(t *testing.T) {
-		ctx := template.NewTemplateContext(map[string]any{})
-		err := v.ValidateContext(tmpl, ctx)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "variable required is missing")
-	})
-
-	t.Run("missing variable with default still fails", func(t *testing.T) {
-		ctx := template.NewTemplateContext(map[string]any{
-			"required": "value",
-		})
-		err := v.ValidateContext(tmpl, ctx)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "variable optional is missing")
-	})
-
-	t.Run("invalid string type fails", func(t *testing.T) {
-		ctx := template.NewTemplateContext(map[string]any{
-			"required": 123,
-			"optional": "configured",
-		})
-		err := v.ValidateContext(tmpl, ctx)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "variable required is invalid")
-		assert.Contains(t, err.Error(), "expected type string")
-	})
-
-	t.Run("int and bool pass", func(t *testing.T) {
-		typed := &template.Template{
-			Name: "typed",
-			Variables: []template.Variable{
+	testCases := []struct {
+		name        string
+		tmpl        *template.Template
+		values      map[string]any
+		wantErr     bool
+		errContains []string
+	}{
+		{
+			name: "valid context passes",
+			tmpl: baseTemplate,
+			values: map[string]any{
+				"required": "value",
+				"optional": "configured",
+			},
+			wantErr: false,
+		},
+		{
+			name:        "missing required variable fails",
+			tmpl:        baseTemplate,
+			values:      map[string]any{},
+			wantErr:     true,
+			errContains: []string{"variable required is missing"},
+		},
+		{
+			name: "missing variable with default still fails",
+			tmpl: baseTemplate,
+			values: map[string]any{
+				"required": "value",
+			},
+			wantErr:     true,
+			errContains: []string{"variable optional is missing"},
+		},
+		{
+			name: "invalid string type fails",
+			tmpl: baseTemplate,
+			values: map[string]any{
+				"required": 123,
+				"optional": "configured",
+			},
+			wantErr:     true,
+			errContains: []string{"variable required is invalid", "expected type string"},
+		},
+		{
+			name: "int and bool pass",
+			tmpl: typedTemplate([]template.Variable{
 				{Name: "port", Prompt: "?", Type: template.VariableTypeInt},
 				{Name: "enabled", Prompt: "?", Type: template.VariableTypeBool},
+			}),
+			values: map[string]any{
+				"port":    8080,
+				"enabled": true,
 			},
-		}
-		ctx := template.NewTemplateContext(map[string]any{
-			"port":    8080,
-			"enabled": true,
-		})
-		err := v.ValidateContext(typed, ctx)
-		require.NoError(t, err)
-	})
-
-	t.Run("string int fails", func(t *testing.T) {
-		typed := &template.Template{
-			Name: "typed",
-			Variables: []template.Variable{
+			wantErr: false,
+		},
+		{
+			name: "string int fails",
+			tmpl: typedTemplate([]template.Variable{
 				{Name: "port", Prompt: "?", Type: template.VariableTypeInt},
+			}),
+			values: map[string]any{
+				"port": "8080",
 			},
-		}
-		ctx := template.NewTemplateContext(map[string]any{
-			"port": "8080",
-		})
-		err := v.ValidateContext(typed, ctx)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "expected type int")
-	})
-
-	t.Run("non-int value fails", func(t *testing.T) {
-		typed := &template.Template{
-			Name: "typed",
-			Variables: []template.Variable{
+			wantErr:     true,
+			errContains: []string{"expected type int"},
+		},
+		{
+			name: "non-int value fails",
+			tmpl: typedTemplate([]template.Variable{
 				{Name: "port", Prompt: "?", Type: template.VariableTypeInt},
+			}),
+			values: map[string]any{
+				"port": 3.14,
 			},
-		}
-		ctx := template.NewTemplateContext(map[string]any{
-			"port": 3.14,
-		})
-		err := v.ValidateContext(typed, ctx)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "expected type int")
-	})
-
-	t.Run("non-bool bool fails", func(t *testing.T) {
-		typed := &template.Template{
-			Name: "typed",
-			Variables: []template.Variable{
+			wantErr:     true,
+			errContains: []string{"expected type int"},
+		},
+		{
+			name: "non-bool bool fails",
+			tmpl: typedTemplate([]template.Variable{
 				{Name: "enabled", Prompt: "?", Type: template.VariableTypeBool},
+			}),
+			values: map[string]any{
+				"enabled": "true",
 			},
-		}
-		ctx := template.NewTemplateContext(map[string]any{
-			"enabled": "true",
-		})
-		err := v.ValidateContext(typed, ctx)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "expected type bool")
-	})
-
-	t.Run("select validates string values", func(t *testing.T) {
-		typed := &template.Template{
-			Name: "typed",
-			Variables: []template.Variable{
+			wantErr:     true,
+			errContains: []string{"expected type bool"},
+		},
+		{
+			name: "select validates string values",
+			tmpl: typedTemplate([]template.Variable{
 				{Name: "color", Prompt: "?", Type: template.VariableTypeSelect, Options: []string{"red", "blue"}},
+			}),
+			values: map[string]any{
+				"color": "red",
 			},
-		}
-		ctx := template.NewTemplateContext(map[string]any{
-			"color": "red",
-		})
-		err := v.ValidateContext(typed, ctx)
-		require.NoError(t, err)
-	})
-
-	t.Run("select value outside options fails", func(t *testing.T) {
-		typed := &template.Template{
-			Name: "typed",
-			Variables: []template.Variable{
+			wantErr: false,
+		},
+		{
+			name: "select value outside options fails",
+			tmpl: typedTemplate([]template.Variable{
 				{Name: "color", Prompt: "?", Type: template.VariableTypeSelect, Options: []string{"red", "blue"}},
+			}),
+			values: map[string]any{
+				"color": "green",
 			},
-		}
-		ctx := template.NewTemplateContext(map[string]any{
-			"color": "green",
-		})
-		err := v.ValidateContext(typed, ctx)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "contains invalid option \"green\"")
-	})
-
-	t.Run("select requires string values", func(t *testing.T) {
-		typed := &template.Template{
-			Name: "typed",
-			Variables: []template.Variable{
+			wantErr:     true,
+			errContains: []string{"contains invalid option \"green\""},
+		},
+		{
+			name: "select requires string values",
+			tmpl: typedTemplate([]template.Variable{
 				{Name: "color", Prompt: "?", Type: template.VariableTypeSelect, Options: []string{"red", "blue"}},
+			}),
+			values: map[string]any{
+				"color": []string{"red"},
 			},
-		}
-		ctx := template.NewTemplateContext(map[string]any{
-			"color": []string{"red"},
-		})
-		err := v.ValidateContext(typed, ctx)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "expected type select")
-	})
-
-	t.Run("multiselect validates slice values", func(t *testing.T) {
-		typed := &template.Template{
-			Name: "typed",
-			Variables: []template.Variable{
+			wantErr:     true,
+			errContains: []string{"expected type select"},
+		},
+		{
+			name: "multiselect validates slice values",
+			tmpl: typedTemplate([]template.Variable{
 				{Name: "features", Prompt: "?", Type: template.VariableTypeMultiSelect, Options: []string{"api", "db"}},
+			}),
+			values: map[string]any{
+				"features": []string{"api", "db"},
 			},
-		}
-		ctx := template.NewTemplateContext(map[string]any{
-			"features": []string{"api", "db"},
-		})
-		err := v.ValidateContext(typed, ctx)
-		require.NoError(t, err)
-	})
-
-	t.Run("multiselect with invalid option fails", func(t *testing.T) {
-		typed := &template.Template{
-			Name: "typed",
-			Variables: []template.Variable{
+			wantErr: false,
+		},
+		{
+			name: "multiselect with invalid option fails",
+			tmpl: typedTemplate([]template.Variable{
 				{Name: "features", Prompt: "?", Type: template.VariableTypeMultiSelect, Options: []string{"api", "db"}},
+			}),
+			values: map[string]any{
+				"features": []any{"api", "cache"},
 			},
-		}
-		ctx := template.NewTemplateContext(map[string]any{
-			"features": []any{"api", "cache"},
+			wantErr:     true,
+			errContains: []string{"contains invalid option \"cache\""},
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := template.NewTemplateContext(tc.values)
+			err := v.ValidateContext(tc.tmpl, ctx)
+			if tc.wantErr {
+				require.Error(t, err)
+				for _, msg := range tc.errContains {
+					assert.Contains(t, err.Error(), msg)
+				}
+				return
+			}
+
+			require.NoError(t, err)
 		})
-		err := v.ValidateContext(typed, ctx)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "contains invalid option \"cache\"")
-	})
+	}
 }
 
 func TestValidator_Validate_DefaultTypes(t *testing.T) {
 	v := template.NewValidator()
 
-	t.Run("int default and bool default pass", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "typed",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
+	testCases := []struct {
+		name        string
+		variables   []template.Variable
+		wantErr     bool
+		errContains []string
+	}{
+		{
+			name: "int default and bool default pass",
+			variables: []template.Variable{
 				{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				{Name: "port", Prompt: "?", Type: template.VariableTypeInt, Default: 8080},
 				{Name: "enabled", Prompt: "?", Type: template.VariableTypeBool, Default: true},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.NoError(t, err)
-	})
-
-	t.Run("invalid default type fails", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "typed",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
+			wantErr: false,
+		},
+		{
+			name: "invalid default type fails",
+			variables: []template.Variable{
 				{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				{Name: "port", Prompt: "?", Type: template.VariableTypeInt, Default: "8080"},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "invalid default value")
-		assert.Contains(t, err.Error(), "expected type int")
-	})
-
-	t.Run("string bool default fails", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "typed",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
+			wantErr:     true,
+			errContains: []string{"invalid default value", "expected type int"},
+		},
+		{
+			name: "string bool default fails",
+			variables: []template.Variable{
 				{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				{Name: "enabled", Prompt: "?", Type: template.VariableTypeBool, Default: "true"},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "invalid default value")
-		assert.Contains(t, err.Error(), "expected type bool")
-	})
-
-	t.Run("select default must be string", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "typed",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
+			wantErr:     true,
+			errContains: []string{"invalid default value", "expected type bool"},
+		},
+		{
+			name: "select default must be string",
+			variables: []template.Variable{
 				{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				{Name: "color", Prompt: "?", Type: template.VariableTypeSelect, Options: []string{"red", "blue"}, Default: "red"},
 			},
-		}
-
-		err := v.Validate(tmpl)
-		require.NoError(t, err)
-	})
-
-	t.Run("invalid multiselect default option fails", func(t *testing.T) {
-		tmpl := &template.Template{
-			Name:    "typed",
-			Type:    template.TypeProject,
-			Version: "1.0.0",
-			Variables: []template.Variable{
+			wantErr: false,
+		},
+		{
+			name: "invalid multiselect default option fails",
+			variables: []template.Variable{
 				{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName},
 				{Name: "features", Prompt: "?", Type: template.VariableTypeMultiSelect, Options: []string{"api", "db"}, Default: []any{"api", "cache"}},
 			},
-		}
+			wantErr:     true,
+			errContains: []string{"invalid default value", "contains invalid option"},
+		},
+	}
 
-		err := v.Validate(tmpl)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "invalid default value")
-		assert.Contains(t, err.Error(), "contains invalid option")
-	})
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			tmpl := &template.Template{
+				Name:      "typed",
+				Type:      template.TypeProject,
+				Version:   "1.0.0",
+				Variables: tc.variables,
+			}
+
+			err := v.Validate(tmpl)
+			if tc.wantErr {
+				require.Error(t, err)
+				for _, msg := range tc.errContains {
+					assert.Contains(t, err.Error(), msg)
+				}
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestValidator_ValidateTreeContexts(t *testing.T) {
@@ -890,31 +760,52 @@ func TestValidator_ValidateTreeContexts(t *testing.T) {
 		},
 	}
 
-	t.Run("valid contexts pass", func(t *testing.T) {
-		contexts := template.RenderContexts{
-			"0":   template.NewTemplateContext(map[string]any{"var_root": "val"}),
-			"0.0": template.NewTemplateContext(map[string]any{"var_child": "val"}),
-		}
-		err := v.ValidateTreeContexts(root, contexts)
-		require.NoError(t, err)
-	})
+	testCases := []struct {
+		name        string
+		contexts    template.RenderContexts
+		wantErr     bool
+		errContains []string
+	}{
+		{
+			name: "valid contexts pass",
+			contexts: template.RenderContexts{
+				"0":   template.NewTemplateContext(map[string]any{"var_root": "val"}),
+				"0.0": template.NewTemplateContext(map[string]any{"var_child": "val"}),
+			},
+			wantErr: false,
+		},
+		{
+			name: "missing context for a node fails",
+			contexts: template.RenderContexts{
+				"0": template.NewTemplateContext(map[string]any{"var_root": "val"}),
+			},
+			wantErr:     true,
+			errContains: []string{"no context found for template child (ID: 0.0)"},
+		},
+		{
+			name: "missing variable in one of the contexts fails",
+			contexts: template.RenderContexts{
+				"0":   template.NewTemplateContext(map[string]any{"var_root": "val"}),
+				"0.0": template.NewTemplateContext(map[string]any{}),
+			},
+			wantErr:     true,
+			errContains: []string{"variable var_child is missing"},
+		},
+	}
 
-	t.Run("missing context for a node fails", func(t *testing.T) {
-		contexts := template.RenderContexts{
-			"0": template.NewTemplateContext(map[string]any{"var_root": "val"}),
-		}
-		err := v.ValidateTreeContexts(root, contexts)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "no context found for template child (ID: 0.0)")
-	})
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := v.ValidateTreeContexts(root, tc.contexts)
+			if tc.wantErr {
+				require.Error(t, err)
+				for _, msg := range tc.errContains {
+					assert.Contains(t, err.Error(), msg)
+				}
+				return
+			}
 
-	t.Run("missing variable in one of the contexts fails", func(t *testing.T) {
-		contexts := template.RenderContexts{
-			"0":   template.NewTemplateContext(map[string]any{"var_root": "val"}),
-			"0.0": template.NewTemplateContext(map[string]any{}), // missing var_child
-		}
-		err := v.ValidateTreeContexts(root, contexts)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "variable var_child is missing")
-	})
+			require.NoError(t, err)
+		})
+	}
 }
