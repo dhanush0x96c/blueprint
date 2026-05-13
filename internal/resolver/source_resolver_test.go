@@ -19,13 +19,23 @@ func TestSourceResolver_Exists(t *testing.T) {
 		Filesystem: os.DirFS(base),
 	})
 
-	templatePath := "exists"
-	dir := filepath.Join(base, templatePath)
+	// Directory name differs from template metadata name.
+	// Exists() is name-based, not path-based.
+	dir := filepath.Join(base, "exists")
 	testutil.WriteTemplate(t, dir, testutil.ValidProjectTemplate)
 
-	require.True(t, r.Exists("go-cli"))
-	require.False(t, r.Exists("exists"))
-	require.False(t, r.Exists("missing"))
+	t.Run("returns true when template metadata name exists", func(t *testing.T) {
+		require.True(t, r.Exists("go-cli"))
+	})
+
+	t.Run("returns false for directory path or directory name lookups", func(t *testing.T) {
+		require.False(t, r.Exists("exists"))
+		require.False(t, r.Exists("projects/go-cli"))
+	})
+
+	t.Run("returns false when template name does not exist", func(t *testing.T) {
+		require.False(t, r.Exists("missing"))
+	})
 }
 
 func TestSourceResolver_Discover(t *testing.T) {
