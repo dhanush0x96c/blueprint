@@ -5,6 +5,14 @@
 Go CLI tool for universal project scaffolding via composable YAML templates.  
 Module: `github.com/dhanush0x96c/blueprint` | Go 1.26.3
 
+## Documentation
+
+- Start with `README.md` for setup and quick usage.
+- See `docs/cli.md` for command and flag behavior.
+- See `docs/template-spec.md` for template schema and semantics.
+- See `docs/architecture.md` for system design and flow.
+- See `docs/template-naming.md` for naming conventions.
+
 ## Entrypoint
 
 `main.go` → `cmd.Execute()` → `cmd.NewRootCmd()` (Cobra)
