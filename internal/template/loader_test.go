@@ -17,7 +17,8 @@ func TestLoader_Load(t *testing.T) {
 
 	t.Run("load from relative directory", func(t *testing.T) {
 		dir := filepath.Join(base, "projects", "go-cli")
-		testutil.WriteTemplate(t, dir, testutil.ValidProjectTemplate)
+		testutil.WriteTemplateStruct(t, dir, testutil.NewTemplate("go-cli",
+			testutil.WithVariable(template.Variable{Name: "app", Role: template.RoleProjectName, Prompt: "?", Type: template.VariableTypeString})))
 
 		tmpl, err := loader.Load(fsys, "projects/go-cli")
 		require.NoError(t, err)
@@ -26,7 +27,8 @@ func TestLoader_Load(t *testing.T) {
 
 	t.Run("load from template.yaml path", func(t *testing.T) {
 		dir := filepath.Join(base, "direct")
-		testutil.WriteTemplate(t, dir, testutil.ValidProjectTemplate)
+		testutil.WriteTemplateStruct(t, dir, testutil.NewTemplate("go-cli",
+			testutil.WithVariable(template.Variable{Name: "app", Role: template.RoleProjectName, Prompt: "?", Type: template.VariableTypeString})))
 
 		path := filepath.Join("direct", template.FileName)
 		tmpl, err := loader.Load(fsys, path)
@@ -37,7 +39,8 @@ func TestLoader_Load(t *testing.T) {
 	t.Run("invalid template fails validation", func(t *testing.T) {
 		templateName := "invalid"
 		dir := filepath.Join(base, templateName)
-		testutil.WriteTemplate(t, dir, testutil.InvalidTemplate)
+		// Version is required but missing here
+		testutil.WriteTemplateStruct(t, dir, &template.Template{Name: "invalid", Type: template.TypeProject})
 
 		_, err := loader.Load(fsys, templateName)
 		require.Error(t, err)
@@ -51,7 +54,9 @@ func TestLoader_LoadTags(t *testing.T) {
 
 	t.Run("loads tags when present", func(t *testing.T) {
 		dir := filepath.Join(base, "with-tags")
-		testutil.WriteTemplate(t, dir, testutil.TemplateWithTags)
+		testutil.WriteTemplateStruct(t, dir, testutil.NewTemplate("tagged-template",
+			testutil.WithVariable(template.Variable{Name: "app", Role: template.RoleProjectName, Prompt: "?", Type: template.VariableTypeString}),
+			testutil.WithTags("go", "cli", "testing")))
 
 		tmpl, err := loader.Load(fsys, "with-tags")
 		require.NoError(t, err)
@@ -62,7 +67,8 @@ func TestLoader_LoadTags(t *testing.T) {
 
 	t.Run("handles missing tags", func(t *testing.T) {
 		dir := filepath.Join(base, "without-tags")
-		testutil.WriteTemplate(t, dir, testutil.TemplateWithoutTags)
+		testutil.WriteTemplateStruct(t, dir, testutil.NewTemplate("no-tags",
+			testutil.WithType(template.TypeFeature)))
 
 		tmpl, err := loader.Load(fsys, "without-tags")
 		require.NoError(t, err)

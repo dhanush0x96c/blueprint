@@ -155,26 +155,13 @@ func TestRenderer_RenderAll(t *testing.T) {
 		require.NoError(t, err)
 
 		fsys := os.DirFS(dir)
-		tmpl := &template.Template{
-			Name: "root",
-			Files: []template.File{
-				{
-					Src:  "a.tmpl",
-					Dest: "{{ .name }}/a.txt",
-				},
-				{
-					Src:  "b.tmpl",
-					Dest: "{{ .name }}/b.txt",
-				},
-			},
-		}
+		tmpl := testutil.NewTemplate("root",
+			testutil.WithFile(template.File{Src: "a.tmpl", Dest: "{{ .name }}/a.txt"}),
+			testutil.WithFile(template.File{Src: "b.tmpl", Dest: "{{ .name }}/b.txt"}))
 
-		node := &template.Node{
-			ID:       "0",
-			Template: tmpl,
-			FS:       fsys,
-			Path:     ".",
-		}
+		node := testutil.NewNode("0", tmpl,
+			testutil.WithFS(fsys),
+			testutil.WithPath("."))
 
 		out, err := r.RenderAll(
 			node,

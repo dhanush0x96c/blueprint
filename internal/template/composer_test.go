@@ -15,14 +15,10 @@ func TestCompose(t *testing.T) {
 		resolver := &testutil.FakeResolver{}
 		composer := template.NewComposer(resolver, loader)
 
-		tmpl := &template.Template{
-			Name: "base",
-			Tags: []string{"backend", "api"},
-			Variables: []template.Variable{
-				{Name: "project_name"},
-			},
-			Dependencies: []string{"go@1.22"},
-		}
+		tmpl := testutil.NewTemplate("base",
+			testutil.WithTags("backend", "api"),
+			testutil.WithVariable(template.Variable{Name: "project_name"}),
+			testutil.WithDependency("go@1.22"))
 
 		loaded := &template.LoadedTemplate{
 			Template: tmpl,
@@ -41,27 +37,15 @@ func TestCompose(t *testing.T) {
 	})
 
 	t.Run("with includes builds tree", func(t *testing.T) {
-		base := &template.Template{
-			Name: "base",
-			Includes: []template.Include{
-				{Name: "logging", EnabledByDefault: true},
-			},
-			Variables: []template.Variable{
-				{Name: "project_name"},
-			},
-			Dependencies: []string{"go"},
-		}
+		base := testutil.NewTemplate("base",
+			testutil.WithInclude(template.Include{Name: "logging", EnabledByDefault: true}),
+			testutil.WithVariable(template.Variable{Name: "project_name"}),
+			testutil.WithDependency("go"))
 
-		logging := &template.Template{
-			Name: "logging",
-			Variables: []template.Variable{
-				{Name: "log_level"},
-			},
-			Dependencies: []string{"zap@1.26.0"},
-			Files: []template.File{
-				{Dest: "logger.go"},
-			},
-		}
+		logging := testutil.NewTemplate("logging",
+			testutil.WithVariable(template.Variable{Name: "log_level"}),
+			testutil.WithDependency("zap@1.26.0"),
+			testutil.WithFile(template.File{Dest: "logger.go"}))
 
 		templates := map[string]*template.Template{
 			"logging": logging,
@@ -98,19 +82,11 @@ func TestCompose(t *testing.T) {
 	})
 
 	t.Run("circular dependency detected", func(t *testing.T) {
-		a := &template.Template{
-			Name: "a",
-			Includes: []template.Include{
-				{Name: "b", EnabledByDefault: true},
-			},
-		}
+		a := testutil.NewTemplate("a",
+			testutil.WithInclude(template.Include{Name: "b", EnabledByDefault: true}))
 
-		b := &template.Template{
-			Name: "b",
-			Includes: []template.Include{
-				{Name: "a", EnabledByDefault: true},
-			},
-		}
+		b := testutil.NewTemplate("b",
+			testutil.WithInclude(template.Include{Name: "a", EnabledByDefault: true}))
 
 		templates := map[string]*template.Template{
 			"a": a,
@@ -140,20 +116,12 @@ func TestCompose(t *testing.T) {
 	})
 
 	t.Run("optional includes confirm called", func(t *testing.T) {
-		base := &template.Template{
-			Name: "base",
-			Includes: []template.Include{
-				{Name: "logging", EnabledByDefault: false},
-				{Name: "metrics", EnabledByDefault: false},
-			},
-		}
+		base := testutil.NewTemplate("base",
+			testutil.WithInclude(template.Include{Name: "logging", EnabledByDefault: false}),
+			testutil.WithInclude(template.Include{Name: "metrics", EnabledByDefault: false}))
 
-		logging := &template.Template{
-			Name: "logging",
-		}
-		metrics := &template.Template{
-			Name: "metrics",
-		}
+		logging := testutil.NewTemplate("logging")
+		metrics := testutil.NewTemplate("metrics")
 
 		templates := map[string]*template.Template{
 			"logging": logging,
@@ -195,33 +163,19 @@ func TestCompose(t *testing.T) {
 	})
 
 	t.Run("assigns IDs", func(t *testing.T) {
-		root := &template.Template{
-			Name: "root",
-			Includes: []template.Include{
-				{Name: "child0", EnabledByDefault: true},
-				{Name: "child1", EnabledByDefault: true},
-			},
-		}
+		root := testutil.NewTemplate("root",
+			testutil.WithInclude(template.Include{Name: "child0", EnabledByDefault: true}),
+			testutil.WithInclude(template.Include{Name: "child1", EnabledByDefault: true}))
 
-		child0 := &template.Template{
-			Name: "child0",
-		}
+		child0 := testutil.NewTemplate("child0")
 
-		child1 := &template.Template{
-			Name: "child1",
-			Includes: []template.Include{
-				{Name: "grandchild0", EnabledByDefault: true},
-				{Name: "grandchild1", EnabledByDefault: true},
-			},
-		}
+		child1 := testutil.NewTemplate("child1",
+			testutil.WithInclude(template.Include{Name: "grandchild0", EnabledByDefault: true}),
+			testutil.WithInclude(template.Include{Name: "grandchild1", EnabledByDefault: true}))
 
-		grandchild0 := &template.Template{
-			Name: "grandchild0",
-		}
+		grandchild0 := testutil.NewTemplate("grandchild0")
 
-		grandchild1 := &template.Template{
-			Name: "grandchild1",
-		}
+		grandchild1 := testutil.NewTemplate("grandchild1")
 
 		templates := map[string]*template.Template{
 			"child0":      child0,

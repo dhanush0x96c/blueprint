@@ -22,7 +22,8 @@ func TestSourceResolver_Exists(t *testing.T) {
 	// Directory name differs from template metadata name.
 	// Exists() is name-based, not path-based.
 	dir := filepath.Join(base, "exists")
-	testutil.WriteTemplate(t, dir, testutil.ValidProjectTemplate)
+	testutil.WriteTemplateStruct(t, dir, testutil.NewTemplate("go-cli",
+		testutil.WithVariable(template.Variable{Name: "app", Role: template.RoleProjectName, Prompt: "?", Type: template.VariableTypeString})))
 
 	t.Run("returns true when template metadata name exists", func(t *testing.T) {
 		require.True(t, r.Exists("go-cli"))
@@ -46,11 +47,17 @@ func TestSourceResolver_Discover(t *testing.T) {
 		Filesystem: os.DirFS(base),
 	})
 
-	testutil.WriteTemplate(t, filepath.Join(base, "projects", "go-cli"), testutil.ValidProjectTemplate)
-	testutil.WriteTemplate(t, filepath.Join(base, "projects", "go-api"), testutil.ValidTemplateWithTags)
-	testutil.WriteTemplate(t, filepath.Join(base, "features", "testing"), testutil.ValidFeatureTemplate)
-	testutil.WriteTemplate(t, filepath.Join(base, "features", "auth"), testutil.ValidFeatureTemplateWithTags)
-	testutil.WriteTemplate(t, filepath.Join(base, "broken"), testutil.InvalidTemplate)
+	testutil.WriteTemplateStruct(t, filepath.Join(base, "projects", "go-cli"), testutil.NewTemplate("go-cli",
+		testutil.WithVariable(template.Variable{Name: "app", Role: template.RoleProjectName, Prompt: "?", Type: template.VariableTypeString})))
+	testutil.WriteTemplateStruct(t, filepath.Join(base, "projects", "go-api"), testutil.NewTemplate("go-api",
+		testutil.WithVariable(template.Variable{Name: "app", Role: template.RoleProjectName, Prompt: "?", Type: template.VariableTypeString}),
+		testutil.WithTags("go", "api")))
+	testutil.WriteTemplateStruct(t, filepath.Join(base, "features", "testing"), testutil.NewTemplate("testing",
+		testutil.WithType(template.TypeFeature)))
+	testutil.WriteTemplateStruct(t, filepath.Join(base, "features", "auth"), testutil.NewTemplate("auth",
+		testutil.WithType(template.TypeFeature),
+		testutil.WithTags("auth", "security")))
+	testutil.WriteTemplateStruct(t, filepath.Join(base, "broken"), &template.Template{Name: "invalid", Type: template.TypeProject})
 
 	t.Run("all templates", func(t *testing.T) {
 		templates, err := r.Discover(template.DiscoverOptions{IgnoreErrors: true})

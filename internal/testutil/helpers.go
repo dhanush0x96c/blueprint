@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/dhanush0x96c/blueprint/internal/template"
+	"gopkg.in/yaml.v3"
 )
 
 func WriteTemplate(t testing.TB, dir string, content string) {
@@ -21,6 +22,17 @@ func WriteTemplate(t testing.TB, dir string, content string) {
 	if err != nil {
 		t.Fatalf("failed to write template file %s: %v", path, err)
 	}
+}
+
+func WriteTemplateStruct(t testing.TB, dir string, tmpl *template.Template) {
+	t.Helper()
+
+	data, err := yaml.Marshal(tmpl)
+	if err != nil {
+		t.Fatalf("failed to marshal template: %v", err)
+	}
+
+	WriteTemplate(t, dir, string(data))
 }
 
 func NewRenderer(t testing.TB) (*template.Renderer, string) {
