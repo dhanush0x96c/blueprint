@@ -44,6 +44,10 @@ goreleaser release --clean       # CI only (tag v*.*.* triggers release.yml)
 
 No Makefile / Taskfile / Justfile — use raw Go commands.
 
+## Version Control
+
+This is a `jj` repo — always use `jj` commands instead of `git` for version control.
+
 ## Test Conventions
 
 - Package tests use external `_test` packages (`template_test`, `resolver_test`) for black-box coverage
