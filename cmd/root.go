@@ -15,8 +15,8 @@ func NewRootCmd() *cobra.Command {
 		EnvPrefix: "BLUEPRINT",
 		CLIArgs:   map[string]string{},
 	}
-	var appCtx = new(app.Context)
-	var options = app.Options{}
+	appCtx := new(app.Context)
+	options := app.Options{}
 
 	cmd := &cobra.Command{
 		Use:           "blueprint",
@@ -41,7 +41,7 @@ func NewRootCmd() *cobra.Command {
 		&cfgLoader.ConfigFile,
 		"config",
 		"",
-		fmt.Sprintf("config file (default is %s)", config.DefaultPathUsage()),
+		config.DefaultPathUsage(),
 	)
 
 	cmd.PersistentFlags().BoolVarP(
