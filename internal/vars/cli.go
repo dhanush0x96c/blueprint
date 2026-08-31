@@ -15,7 +15,7 @@ func NewCLICollector(tree *template.Node, args Variables) *CLICollector {
 }
 
 func (c *CLICollector) Collect(contexts template.RenderContexts) error {
-	walk(c.tree, func(node *template.Node) error {
+	return walk(c.tree, func(node *template.Node) error {
 		ctx := ensureContext(contexts, node.ID)
 
 		for key, value := range c.args.Global {
@@ -36,6 +36,4 @@ func (c *CLICollector) Collect(contexts template.RenderContexts) error {
 
 		return nil
 	})
-
-	return nil
 }

@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"io"
 	"os"
 
@@ -71,15 +70,15 @@ func renderTable(w io.Writer, groups []TemplateListGroup, showType bool) {
 			writeln(w, "")
 		}
 
-		sourceColor.Fprintln(w, g.Source)
+		_, _ = sourceColor.Fprintln(w, g.Source)
 
 		for _, e := range g.Entries {
-			fmt.Fprint(w, "  ")
-			nameColor.Fprintf(w, "%-*s ", nameWidth, e.Name)
+			write(w, "  ")
+			_, _ = nameColor.Fprintf(w, "%-*s ", nameWidth, e.Name)
 			if showType {
-				colorForType(e.Type).Fprintf(w, "%-*s ", typeWidth, e.Type)
+				_, _ = colorForType(e.Type).Fprintf(w, "%-*s ", typeWidth, e.Type)
 			}
-			descColor.Fprintln(w, e.Description)
+			_, _ = descColor.Fprintln(w, e.Description)
 		}
 	}
 }

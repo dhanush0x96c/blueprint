@@ -11,11 +11,11 @@ type Response struct {
 
 func Hello(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(Response{Message: "Hello, World!"})
+	_ = json.NewEncoder(w).Encode(Response{Message: "Hello, World!"})
 }
 
 func Health(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(Response{Message: "OK"})
+	_ = json.NewEncoder(w).Encode(Response{Message: "OK"})
 }

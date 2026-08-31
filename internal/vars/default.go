@@ -11,7 +11,7 @@ func NewDefaultCollector(tree *template.Node) *DefaultCollector {
 }
 
 func (c *DefaultCollector) Collect(contexts template.RenderContexts) error {
-	walk(c.tree, func(node *template.Node) error {
+	return walk(c.tree, func(node *template.Node) error {
 		ctx := ensureContext(contexts, node.ID)
 		for _, variable := range node.RequiredVariables() {
 			if variable.Default != nil {
@@ -20,6 +20,4 @@ func (c *DefaultCollector) Collect(contexts template.RenderContexts) error {
 		}
 		return nil
 	})
-
-	return nil
 }

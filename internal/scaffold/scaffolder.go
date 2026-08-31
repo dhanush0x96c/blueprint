@@ -106,7 +106,7 @@ func (s *Scaffolder) validateOutputDir(dir string, opts Options) error {
 	if err != nil {
 		return fmt.Errorf("failed to open output directory: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	_, err = f.Readdirnames(1)
 	if err == nil {
