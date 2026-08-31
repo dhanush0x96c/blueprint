@@ -6,7 +6,7 @@ import (
 	"github.com/dhanush0x96c/blueprint/internal/template"
 )
 
-// TemplateOption defines a function that modifies a templatobjectse.Template.
+// TemplateOption defines a function that modifies a template.Template.
 type TemplateOption func(*template.Template)
 
 // NewTemplate creates a new template.Template with the given name and options.
