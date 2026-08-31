@@ -1,3 +1,4 @@
+// Package ui provides terminal output formatting and user interface helpers.
 package ui
 
 import (

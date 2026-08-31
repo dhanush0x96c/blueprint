@@ -1,3 +1,4 @@
+// Package cmd implements the command-line commands for blueprint.
 package cmd
 
 import (

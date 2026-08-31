@@ -1,3 +1,4 @@
+// Package scaffold orchestrates template tree resolution, variable collection, rendering, and file writing.
 package scaffold
 
 import (

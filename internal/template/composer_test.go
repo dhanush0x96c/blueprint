@@ -1,3 +1,4 @@
+// Package template_test contains unit tests for the template package.
 package template_test
 
 import (

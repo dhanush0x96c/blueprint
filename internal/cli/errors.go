@@ -1,3 +1,4 @@
+// Package cli provides CLI validation logic and error types.
 package cli
 
 import "fmt"

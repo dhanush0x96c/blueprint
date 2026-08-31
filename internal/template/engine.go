@@ -1,3 +1,4 @@
+// Package template provides the core template engine for loading, composing, validating, and rendering templates.
 package template
 
 import (

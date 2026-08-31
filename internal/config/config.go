@@ -1,3 +1,4 @@
+// Package config handles configuration loading, environment variables, and filesystem paths.
 package config
 
 // Config is the root configuration model for the application.

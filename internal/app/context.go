@@ -1,3 +1,4 @@
+// Package app provides application runtime context and dependency injection wiring.
 package app
 
 import (

@@ -1,3 +1,4 @@
+// Package main is the entrypoint for the blueprint CLI tool.
 package main
 
 import (

@@ -201,8 +201,8 @@ func TestValidator_ValidateProjectNameRole(t *testing.T) {
 			errContains: []string{"must have exactly one variable with role", "project_name"},
 		},
 		{
-			name: "project template with no variables fails",
-			tmpl: testutil.NewTemplate("my-project"),
+			name:        "project template with no variables fails",
+			tmpl:        testutil.NewTemplate("my-project"),
 			wantErr:     true,
 			errContains: []string{"must have exactly one variable with role", "project_name"},
 		},

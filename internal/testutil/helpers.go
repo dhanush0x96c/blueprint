@@ -1,3 +1,4 @@
+// Package testutil provides common test fakes, builders, and helpers across package tests.
 package testutil
 
 import (

@@ -1,3 +1,4 @@
+// Package vars implements variable resolution, collection, and merging pipelines.
 package vars
 
 import "github.com/dhanush0x96c/blueprint/internal/template"

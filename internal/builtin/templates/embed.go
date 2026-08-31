@@ -1,3 +1,4 @@
+// Package templates provides embedded builtin templates for blueprint.
 package templates
 
 import "embed"

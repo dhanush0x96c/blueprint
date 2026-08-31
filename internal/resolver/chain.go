@@ -1,3 +1,4 @@
+// Package resolver provides mechanisms to discover and resolve templates across multiple sources.
 package resolver
 
 import (

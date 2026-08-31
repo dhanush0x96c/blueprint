@@ -1,3 +1,4 @@
+// Package prompt provides interactive terminal prompt interfaces using huh.
 package prompt
 
 import (

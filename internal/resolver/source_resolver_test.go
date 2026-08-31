@@ -1,3 +1,4 @@
+// Package resolver_test contains unit tests for the resolver package.
 package resolver_test
 
 import (
