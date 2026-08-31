@@ -48,6 +48,15 @@ No Makefile / Taskfile / Justfile — use raw Go commands.
 
 This is a `jj` repo — always use `jj` commands instead of `git` for version control.
 
+## Dependency Management & Nix
+
+- Whenever Go dependencies change (`go.mod` or `go.sum` modified via `go get` / `go mod tidy`), the `vendorHash` in `flake.nix` **must** be updated.
+- To update `vendorHash`:
+  1. Set `vendorHash = pkgs.lib.fakeHash;` (or empty `""`) in `flake.nix`.
+  2. Run `nix build` and copy the expected hash from the failure message (`got: sha256-...`).
+  3. Update `vendorHash` in `flake.nix` with the new hash.
+  4. Run `nix build` to verify the build succeeds.
+
 ## Test Conventions
 
 - Package tests use external `_test` packages (`template_test`, `resolver_test`) for black-box coverage
