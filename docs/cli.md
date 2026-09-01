@@ -2,8 +2,6 @@
 
 Complete command-line reference for Blueprint, the universal project scaffolding tool.
 
-**Alias:** `bp`
-
 ## Table of Contents
 
 - [Global Options](#global-options)

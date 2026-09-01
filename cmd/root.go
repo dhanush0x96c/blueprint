@@ -20,7 +20,6 @@ func NewRootCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:           "blueprint",
-		Aliases:       []string{"bp"},
 		Short:         "Universal project scaffolding",
 		Long:          "Blueprint scaffolds projects from composable templates.",
 		SilenceErrors: true,

@@ -21,7 +21,7 @@ Module: `github.com/dhanush0x96c/blueprint` | Go 1.26.3
 
 | Package                       | Role                                                                                             |
 | ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| `cmd/`                        | Cobra commands: `init`, `list`, `version`. Alias: `bp`                                           |
+| `cmd/`                        | Cobra commands: `init`, `list`, `version`                                                        |
 | `internal/app/context.go`     | DI wiring: Config, Sources, ChainResolver                                                        |
 | `internal/scaffold/`          | Orchestrates: resolve tree → collect vars → render → write                                       |
 | `internal/template/`          | Engine: loader (YAML), composer (tree + cycle detection), renderer (Go text/template), validator |
