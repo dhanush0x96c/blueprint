@@ -7,6 +7,11 @@
 *.dll
 *.so
 *.dylib
+blueprint
+
+# Nix build outputs
+result
+result-*
 
 # Test binary, built with `go test -c`
 *.test

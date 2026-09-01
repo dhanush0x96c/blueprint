@@ -62,6 +62,9 @@
         {
           default = pkgs.mkShell {
             packages = with pkgs; [
+              # Task runner
+              just
+
               # Go toolchain & language tools
               go
               gopls

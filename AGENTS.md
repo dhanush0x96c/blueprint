@@ -34,15 +34,18 @@ Module: `github.com/dhanush0x96c/blueprint` | Go 1.26.3
 
 ## Commands
 
+Task runner: `just` (see `justfile` or run `just --list`)
+
 ```bash
-go build -o blueprint ./main.go
-go test ./...                    # testify (require + assert)
-go test -run TestName ./pkg/     # focused test
-go mod tidy
-goreleaser release --clean       # CI only (tag v*.*.* triggers release.yml)
+just build                       # build blueprint binary with version ldflags
+just test                        # run all tests
+just check                       # format, vet, lint, build, and test
+just lint                        # run golangci-lint
+just tidy                        # go mod tidy
+just snapshot                    # test goreleaser release locally
 ```
 
-No Makefile / Taskfile / Justfile — use raw Go commands.
+- **Verification**: Always and only run `just check` to verify changes.
 
 ## Version Control
 
