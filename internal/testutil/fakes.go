@@ -5,6 +5,7 @@ import (
 	"io/fs"
 
 	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/template/loader"
 )
 
 type FakeResolver struct {
@@ -26,7 +27,7 @@ type FakeLoader struct {
 	Err       error
 }
 
-func (f *FakeLoader) Load(fsys fs.FS, pth string) (*template.LoadedTemplate, error) {
+func (f *FakeLoader) Load(fsys fs.FS, pth string) (*loader.LoadedTemplate, error) {
 	if f.Err != nil {
 		return nil, f.Err
 	}
@@ -36,7 +37,7 @@ func (f *FakeLoader) Load(fsys fs.FS, pth string) (*template.LoadedTemplate, err
 		return nil, errors.New("template not found")
 	}
 
-	return &template.LoadedTemplate{
+	return &loader.LoadedTemplate{
 		Template: tmpl,
 		FS:       fsys,
 		Path:     pth,

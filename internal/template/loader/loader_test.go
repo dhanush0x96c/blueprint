@@ -1,4 +1,5 @@
-package template_test
+// Package loader_test contains unit tests for the loader package.
+package loader_test
 
 import (
 	"os"
@@ -6,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/template/loader"
 	"github.com/dhanush0x96c/blueprint/internal/testutil"
 	"github.com/stretchr/testify/require"
 )
@@ -13,14 +15,14 @@ import (
 func TestLoader_Load(t *testing.T) {
 	base := t.TempDir()
 	fsys := os.DirFS(base)
-	loader := template.NewLoader()
+	l := loader.NewLoader()
 
 	t.Run("load from relative directory", func(t *testing.T) {
 		dir := filepath.Join(base, "projects", "go-cli")
 		testutil.WriteTemplateStruct(t, dir, testutil.NewTemplate("go-cli",
 			testutil.WithVariable(template.Variable{Name: "app", Role: template.RoleProjectName, Prompt: "?", Type: template.VariableTypeString})))
 
-		tmpl, err := loader.Load(fsys, "projects/go-cli")
+		tmpl, err := l.Load(fsys, "projects/go-cli")
 		require.NoError(t, err)
 		require.Equal(t, "go-cli", tmpl.Template.Name)
 	})
@@ -30,8 +32,8 @@ func TestLoader_Load(t *testing.T) {
 		testutil.WriteTemplateStruct(t, dir, testutil.NewTemplate("go-cli",
 			testutil.WithVariable(template.Variable{Name: "app", Role: template.RoleProjectName, Prompt: "?", Type: template.VariableTypeString})))
 
-		path := filepath.Join("direct", template.FileName)
-		tmpl, err := loader.Load(fsys, path)
+		path := filepath.Join("direct", loader.FileName)
+		tmpl, err := l.Load(fsys, path)
 		require.NoError(t, err)
 		require.Equal(t, "go-cli", tmpl.Template.Name)
 	})
@@ -42,7 +44,7 @@ func TestLoader_Load(t *testing.T) {
 		// Version is required but missing here
 		testutil.WriteTemplateStruct(t, dir, &template.Template{Name: "invalid", Type: template.TypeProject})
 
-		_, err := loader.Load(fsys, templateName)
+		_, err := l.Load(fsys, templateName)
 		require.Error(t, err)
 	})
 }
@@ -50,7 +52,7 @@ func TestLoader_Load(t *testing.T) {
 func TestLoader_LoadTags(t *testing.T) {
 	base := t.TempDir()
 	fsys := os.DirFS(base)
-	loader := template.NewLoader()
+	l := loader.NewLoader()
 
 	t.Run("loads tags when present", func(t *testing.T) {
 		dir := filepath.Join(base, "with-tags")
@@ -58,7 +60,7 @@ func TestLoader_LoadTags(t *testing.T) {
 			testutil.WithVariable(template.Variable{Name: "app", Role: template.RoleProjectName, Prompt: "?", Type: template.VariableTypeString}),
 			testutil.WithTags("go", "cli", "testing")))
 
-		tmpl, err := loader.Load(fsys, "with-tags")
+		tmpl, err := l.Load(fsys, "with-tags")
 		require.NoError(t, err)
 		require.Equal(t, "tagged-template", tmpl.Template.Name)
 		require.Len(t, tmpl.Template.Tags, 3)
@@ -70,7 +72,7 @@ func TestLoader_LoadTags(t *testing.T) {
 		testutil.WriteTemplateStruct(t, dir, testutil.NewTemplate("no-tags",
 			testutil.WithType(template.TypeFeature)))
 
-		tmpl, err := loader.Load(fsys, "without-tags")
+		tmpl, err := l.Load(fsys, "without-tags")
 		require.NoError(t, err)
 		require.Equal(t, "no-tags", tmpl.Template.Name)
 		require.Nil(t, tmpl.Template.Tags)

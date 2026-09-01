@@ -1,4 +1,5 @@
-package template
+// Package renderer handles rendering template files and directories with variable contexts.
+package renderer
 
 import (
 	"bytes"
@@ -6,12 +7,14 @@ import (
 	"io/fs"
 	"path"
 	"strings"
-	"text/template"
+	texttmpl "text/template"
+
+	"github.com/dhanush0x96c/blueprint/internal/template"
 )
 
 // Renderer handles rendering template files with variables
 type Renderer struct {
-	funcMap template.FuncMap
+	funcMap texttmpl.FuncMap
 }
 
 // NewRenderer creates a new template renderer
@@ -22,7 +25,7 @@ func NewRenderer() *Renderer {
 }
 
 // Render renders a template file with the given context
-func (r *Renderer) Render(fsys fs.FS, templatePath string, ctx *Context) ([]byte, error) {
+func (r *Renderer) Render(fsys fs.FS, templatePath string, ctx *template.Context) ([]byte, error) {
 	content, err := fs.ReadFile(fsys, templatePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read template file %s: %w", templatePath, err)
@@ -32,8 +35,8 @@ func (r *Renderer) Render(fsys fs.FS, templatePath string, ctx *Context) ([]byte
 }
 
 // RenderString renders a template string with the given context
-func (r *Renderer) RenderString(content string, ctx *Context, name string) ([]byte, error) {
-	tmpl, err := template.New(name).Funcs(r.funcMap).Parse(content)
+func (r *Renderer) RenderString(content string, ctx *template.Context, name string) ([]byte, error) {
+	tmpl, err := texttmpl.New(name).Funcs(r.funcMap).Parse(content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template %s: %w", name, err)
 	}
@@ -48,7 +51,7 @@ func (r *Renderer) RenderString(content string, ctx *Context, name string) ([]by
 
 // RenderPath renders a destination path template with the given context
 // This allows dynamic file paths like "{{ .package_name }}/main.go"
-func (r *Renderer) RenderPath(pathTemplate string, ctx *Context) (string, error) {
+func (r *Renderer) RenderPath(pathTemplate string, ctx *template.Context) (string, error) {
 	rendered, err := r.RenderString(pathTemplate, ctx, "path")
 	if err != nil {
 		return "", err
@@ -67,9 +70,9 @@ func (r *Renderer) Copy(fsys fs.FS, filePath string) ([]byte, error) {
 
 // RenderAll renders all files from a template tree with the given contexts.
 // It walks the tree and renders files for each node with its corresponding context.
-func (r *Renderer) RenderAll(node *Node, contexts RenderContexts) (*RenderResult, error) {
-	result := &RenderResult{
-		Files: make(map[string][]RenderedFile),
+func (r *Renderer) RenderAll(node *template.Node, contexts template.RenderContexts) (*template.RenderResult, error) {
+	result := &template.RenderResult{
+		Files: make(map[string][]template.RenderedFile),
 	}
 	if err := r.renderNode(node, contexts, result); err != nil {
 		return nil, err
@@ -79,13 +82,13 @@ func (r *Renderer) RenderAll(node *Node, contexts RenderContexts) (*RenderResult
 }
 
 // renderNode recursively renders a node and its children.
-func (r *Renderer) renderNode(node *Node, contexts RenderContexts, result *RenderResult) error {
+func (r *Renderer) renderNode(node *template.Node, contexts template.RenderContexts, result *template.RenderResult) error {
 	ctx, ok := contexts[node.ID]
 	if !ok {
 		return fmt.Errorf("no context found for template %s (ID: %s)", node.Template.Name, node.ID)
 	}
 
-	var nodeFiles []RenderedFile
+	var nodeFiles []template.RenderedFile
 	for _, file := range node.Template.Files {
 		srcPath := path.Join(node.Path, file.Src)
 
@@ -113,7 +116,7 @@ func (r *Renderer) renderNode(node *Node, contexts RenderContexts, result *Rende
 }
 
 // processPath processes a file or directory path recursively
-func (r *Renderer) processPath(fsys fs.FS, srcPath, destPath string, ctx *Context, results *[]RenderedFile) error {
+func (r *Renderer) processPath(fsys fs.FS, srcPath, destPath string, ctx *template.Context, results *[]template.RenderedFile) error {
 	info, err := fs.Stat(fsys, srcPath)
 	if err != nil {
 		return fmt.Errorf("failed to stat %s: %w", srcPath, err)
@@ -127,7 +130,7 @@ func (r *Renderer) processPath(fsys fs.FS, srcPath, destPath string, ctx *Contex
 }
 
 // processDirectory recursively processes all files in a directory
-func (r *Renderer) processDirectory(fsys fs.FS, srcDir, destDir string, ctx *Context, results *[]RenderedFile) error {
+func (r *Renderer) processDirectory(fsys fs.FS, srcDir, destDir string, ctx *template.Context, results *[]template.RenderedFile) error {
 	entries, err := fs.ReadDir(fsys, srcDir)
 	if err != nil {
 		return fmt.Errorf("failed to read directory %s: %w", srcDir, err)
@@ -156,7 +159,7 @@ func stripTemplateExt(path string) string {
 }
 
 // processFile processes a single file - renders .tmpl files, copies others
-func (r *Renderer) processFile(fsys fs.FS, srcPath, destPath string, ctx *Context, results *[]RenderedFile) error {
+func (r *Renderer) processFile(fsys fs.FS, srcPath, destPath string, ctx *template.Context, results *[]template.RenderedFile) error {
 	var content []byte
 	var err error
 
@@ -174,7 +177,7 @@ func (r *Renderer) processFile(fsys fs.FS, srcPath, destPath string, ctx *Contex
 		}
 	}
 
-	*results = append(*results, RenderedFile{
+	*results = append(*results, template.RenderedFile{
 		Path:    destPath,
 		Content: content,
 	})
@@ -188,8 +191,8 @@ func (r *Renderer) AddFunc(name string, fn any) {
 }
 
 // defaultFuncMap returns the default set of template functions
-func (r *Renderer) defaultFuncMap() template.FuncMap {
-	return template.FuncMap{
+func (r *Renderer) defaultFuncMap() texttmpl.FuncMap {
+	return texttmpl.FuncMap{
 		// String manipulation
 		"toLower":   strings.ToLower,
 		"toUpper":   strings.ToUpper,

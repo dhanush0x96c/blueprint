@@ -1,4 +1,5 @@
-package template
+// Package validator provides struct tag and semantic validation for templates, includes, and contexts.
+package validator
 
 import (
 	"errors"
@@ -7,6 +8,7 @@ import (
 	"path"
 	"reflect"
 
+	"github.com/dhanush0x96c/blueprint/internal/template"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -23,7 +25,7 @@ func NewValidator() *Validator {
 }
 
 // ValidateTree recursively validates a template tree.
-func (v *Validator) ValidateTree(node *Node) error {
+func (v *Validator) ValidateTree(node *template.Node) error {
 	var errs []error
 
 	if err := v.Validate(node.Template); err != nil {
@@ -50,7 +52,7 @@ func (v *Validator) ValidateTree(node *Node) error {
 }
 
 // validateNodeFiles validates that all source files exist for a node.
-func (v *Validator) validateNodeFiles(node *Node) []error {
+func (v *Validator) validateNodeFiles(node *template.Node) []error {
 	var errs []error
 
 	for i, file := range node.Template.Files {
@@ -70,7 +72,7 @@ func (v *Validator) validateNodeFiles(node *Node) []error {
 
 // ValidateTreeContexts recursively validates that all template variables are present
 // in the provided contexts for the entire tree.
-func (v *Validator) ValidateTreeContexts(node *Node, contexts RenderContexts) error {
+func (v *Validator) ValidateTreeContexts(node *template.Node, contexts template.RenderContexts) error {
 	ctx, ok := contexts[node.ID]
 	if !ok {
 		return fmt.Errorf("no context found for template %s (ID: %s)", node.Template.Name, node.ID)
@@ -90,7 +92,7 @@ func (v *Validator) ValidateTreeContexts(node *Node, contexts RenderContexts) er
 }
 
 // ValidateContext validates that all template variables are present in the context.
-func (v *Validator) ValidateContext(tmpl *Template, ctx *Context) error {
+func (v *Validator) ValidateContext(tmpl *template.Template, ctx *template.Context) error {
 	for _, variable := range tmpl.Variables {
 		value, exists := ctx.Get(variable.Name)
 		if !exists {
@@ -106,7 +108,7 @@ func (v *Validator) ValidateContext(tmpl *Template, ctx *Context) error {
 
 // Validate validates a template and returns all validation errors.
 // Returns nil if the template is valid.
-func (v *Validator) Validate(tmpl *Template) error {
+func (v *Validator) Validate(tmpl *template.Template) error {
 	var errs []error
 
 	// Struct tag validation
@@ -129,12 +131,12 @@ func (v *Validator) Validate(tmpl *Template) error {
 }
 
 // ValidateMetadata validates a template metadata and returns all validation errors.
-func (v *Validator) ValidateMetadata(meta *Metadata) error {
+func (v *Validator) ValidateMetadata(meta *template.Metadata) error {
 	return v.validate.Struct(meta)
 }
 
 // validateVariables validates variable-specific rules.
-func (v *Validator) validateVariables(vars []Variable) []error {
+func (v *Validator) validateVariables(vars []template.Variable) []error {
 	var errs []error
 
 	seen := make(map[string]bool)
@@ -159,8 +161,8 @@ func (v *Validator) validateVariables(vars []Variable) []error {
 	return errs
 }
 
-func (v *Validator) validateVariableOptions(index int, variable Variable) error {
-	if variable.Type != VariableTypeSelect && variable.Type != VariableTypeMultiSelect {
+func (v *Validator) validateVariableOptions(index int, variable template.Variable) error {
+	if variable.Type != template.VariableTypeSelect && variable.Type != template.VariableTypeMultiSelect {
 		if len(variable.Options) > 0 {
 			return fmt.Errorf("variable[%d] %q: options are only allowed for select and multiselect types", index, variable.Name)
 		}
@@ -186,27 +188,27 @@ func (v *Validator) validateVariableOptions(index int, variable Variable) error 
 	return nil
 }
 
-func (v *Validator) validateVariableValue(variable Variable, value any) error {
+func (v *Validator) validateVariableValue(variable template.Variable, value any) error {
 	switch variable.Type {
-	case VariableTypeString:
+	case template.VariableTypeString:
 		if _, ok := value.(string); !ok {
 			return fmt.Errorf("expected type %s, got %T", variable.Type, value)
 		}
 		return nil
 
-	case VariableTypeInt:
+	case template.VariableTypeInt:
 		if !isIntegerValue(value) {
 			return fmt.Errorf("expected type %s, got %T", variable.Type, value)
 		}
 		return nil
 
-	case VariableTypeBool:
+	case template.VariableTypeBool:
 		if _, ok := value.(bool); !ok {
 			return fmt.Errorf("expected type %s, got %T", variable.Type, value)
 		}
 		return nil
 
-	case VariableTypeSelect:
+	case template.VariableTypeSelect:
 		s, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("expected type %s, got %T", variable.Type, value)
@@ -216,7 +218,7 @@ func (v *Validator) validateVariableValue(variable Variable, value any) error {
 		}
 		return nil
 
-	case VariableTypeMultiSelect:
+	case template.VariableTypeMultiSelect:
 		values, ok := normalizeStringSlice(value)
 		if !ok {
 			return fmt.Errorf("expected type %s, got %T", variable.Type, value)
@@ -276,14 +278,14 @@ func normalizeStringSlice(value any) ([]string, bool) {
 }
 
 // validateIncludes validates that features and components do not include projects.
-func (v *Validator) validateIncludes(node *Node) error {
-	if node.Template.Type == TypeProject {
+func (v *Validator) validateIncludes(node *template.Node) error {
+	if node.Template.Type == template.TypeProject {
 		return v.validateDuplicateSameLevelIncludes(node)
 	}
 
 	var errs []error
 	for _, child := range node.Children {
-		if child.Template.Type == TypeProject {
+		if child.Template.Type == template.TypeProject {
 			errs = append(errs, fmt.Errorf("%s %q cannot include project %q", node.Template.Type, node.Template.Name, child.Template.Name))
 		}
 	}
@@ -299,11 +301,11 @@ func (v *Validator) validateIncludes(node *Node) error {
 	return errors.Join(errs...)
 }
 
-func (v *Validator) validateDuplicateSameLevelIncludes(node *Node) error {
-	seen := make(map[Type]map[string]bool)
+func (v *Validator) validateDuplicateSameLevelIncludes(node *template.Node) error {
+	seen := make(map[template.Type]map[string]bool)
 
 	for _, child := range node.Children {
-		if child.Template.Type != TypeFeature && child.Template.Type != TypeComponent {
+		if child.Template.Type != template.TypeFeature && child.Template.Type != template.TypeComponent {
 			continue
 		}
 
@@ -323,17 +325,17 @@ func (v *Validator) validateDuplicateSameLevelIncludes(node *Node) error {
 
 // validateProjectNameRole validates that project templates have exactly one
 // variable with role: project_name.
-func (v *Validator) validateProjectNameRole(tmpl *Template) error {
+func (v *Validator) validateProjectNameRole(tmpl *template.Template) error {
 	// Only project templates require a project_name role
-	if tmpl.Type != TypeProject {
+	if tmpl.Type != template.TypeProject {
 		return nil
 	}
 
 	count := 0
 	for _, variable := range tmpl.Variables {
-		if variable.Role == RoleProjectName {
-			if variable.Type != VariableTypeString {
-				return fmt.Errorf("project template %q variable %q with role %q must be of type %q", tmpl.Name, variable.Name, RoleProjectName, VariableTypeString)
+		if variable.Role == template.RoleProjectName {
+			if variable.Type != template.VariableTypeString {
+				return fmt.Errorf("project template %q variable %q with role %q must be of type %q", tmpl.Name, variable.Name, template.RoleProjectName, template.VariableTypeString)
 			}
 			count++
 		}
@@ -341,10 +343,10 @@ func (v *Validator) validateProjectNameRole(tmpl *Template) error {
 
 	switch count {
 	case 0:
-		return fmt.Errorf("project template %q must have exactly one variable with role %q", tmpl.Name, RoleProjectName)
+		return fmt.Errorf("project template %q must have exactly one variable with role %q", tmpl.Name, template.RoleProjectName)
 	case 1:
 		return nil
 	default:
-		return fmt.Errorf("project template %q has %d variables with role %q, but must have exactly one", tmpl.Name, count, RoleProjectName)
+		return fmt.Errorf("project template %q has %d variables with role %q, but must have exactly one", tmpl.Name, count, template.RoleProjectName)
 	}
 }

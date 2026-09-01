@@ -1,10 +1,13 @@
-package template
+// Package loader handles loading and parsing template manifest files.
+package loader
 
 import (
 	"fmt"
 	"io/fs"
 	"path"
 
+	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/template/validator"
 	"gopkg.in/yaml.v3"
 )
 
@@ -14,7 +17,7 @@ const (
 
 // LoadedTemplate represents a template along with its source information
 type LoadedTemplate struct {
-	Template *Template
+	Template *template.Template
 	FS       fs.FS
 	Path     string
 }
@@ -26,13 +29,13 @@ type Loader interface {
 
 // FileLoader handles loading templates from the filesystem
 type FileLoader struct {
-	validate *Validator
+	validate *validator.Validator
 }
 
 // NewLoader creates a new template loader.
 func NewLoader() *FileLoader {
 	return &FileLoader{
-		validate: NewValidator(),
+		validate: validator.NewValidator(),
 	}
 }
 
@@ -50,7 +53,7 @@ func (l *FileLoader) Load(fsys fs.FS, pth string) (*LoadedTemplate, error) {
 		return nil, fmt.Errorf("failed to read template file: %w", err)
 	}
 
-	var tmpl Template
+	var tmpl template.Template
 	if err := yaml.Unmarshal(data, &tmpl); err != nil {
 		return nil, fmt.Errorf("failed to parse template YAML: %w", err)
 	}
@@ -67,7 +70,7 @@ func (l *FileLoader) Load(fsys fs.FS, pth string) (*LoadedTemplate, error) {
 }
 
 // LoadMetadata loads template metadata from the given filesystem.
-func (l *FileLoader) LoadMetadata(fsys fs.FS, pth string) (*Metadata, error) {
+func (l *FileLoader) LoadMetadata(fsys fs.FS, pth string) (*template.Metadata, error) {
 	templatePath := resolveTemplatePath(pth)
 
 	data, err := fs.ReadFile(fsys, templatePath)
@@ -75,7 +78,7 @@ func (l *FileLoader) LoadMetadata(fsys fs.FS, pth string) (*Metadata, error) {
 		return nil, fmt.Errorf("failed to read template file: %w", err)
 	}
 
-	var meta Metadata
+	var meta template.Metadata
 	if err := yaml.Unmarshal(data, &meta); err != nil {
 		return nil, fmt.Errorf("failed to parse template YAML: %w", err)
 	}

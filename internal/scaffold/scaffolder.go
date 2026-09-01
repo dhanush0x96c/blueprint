@@ -8,12 +8,13 @@ import (
 
 	"github.com/dhanush0x96c/blueprint/internal/prompt"
 	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/template/engine"
 	"github.com/dhanush0x96c/blueprint/internal/vars"
 )
 
 // Scaffolder orchestrates the complete scaffolding process
 type Scaffolder struct {
-	engine       *template.Engine
+	engine       *engine.Engine
 	promptEngine *prompt.Engine
 	writer       *Writer
 }
@@ -21,7 +22,7 @@ type Scaffolder struct {
 // NewScaffolder creates a new scaffolder with the given template resolver.
 func NewScaffolder(resolver template.Resolver) *Scaffolder {
 	return &Scaffolder{
-		engine:       template.NewEngine(resolver),
+		engine:       engine.NewEngine(resolver),
 		promptEngine: prompt.NewEngine(),
 		writer:       NewWriter(),
 	}

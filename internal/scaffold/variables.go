@@ -5,19 +5,20 @@ import (
 
 	"github.com/dhanush0x96c/blueprint/internal/prompt"
 	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/template/engine"
 	"github.com/dhanush0x96c/blueprint/internal/vars"
 )
 
 type variablePipeline struct {
 	tree         *template.Node
-	engine       *template.Engine
+	engine       *engine.Engine
 	promptEngine *prompt.Engine
 	opts         Options
 }
 
 func newVariablePipeline(
 	tree *template.Node,
-	engine *template.Engine,
+	engine *engine.Engine,
 	promptEngine *prompt.Engine,
 	opts Options,
 ) *variablePipeline {

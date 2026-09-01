@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/template/loader"
 )
 
 // SourceResolver resolves templates from a source.
@@ -17,7 +18,7 @@ type SourceResolver struct {
 
 // NewSourceResolver creates a resolver backed by the provided source.
 func NewSourceResolver(source Source) *SourceResolver {
-	return &SourceResolver{source: source, loader: template.NewLoader()}
+	return &SourceResolver{source: source, loader: loader.NewLoader()}
 }
 
 // Resolve resolves templates from the configured source.
@@ -51,7 +52,7 @@ func (r *SourceResolver) Discover(opts template.DiscoverOptions) (map[string]*te
 			return err
 		}
 
-		if d.IsDir() || d.Name() != template.FileName {
+		if d.IsDir() || d.Name() != loader.FileName {
 			return nil
 		}
 

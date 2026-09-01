@@ -82,12 +82,17 @@ blueprint/
 │   │   ├── source.go                # Source model (FS + Metadata)
 │   │   ├── source_resolver.go       # FS-backed resolver & discovery
 │   │   └── chain.go                 # Chain-of-responsibility resolver
-│   ├── template/                    # Core processing engine
+│   ├── template/                    # Core template domain models & interfaces
 │   │   ├── model.go                 # Data structures (Template, Node, Context)
-│   │   ├── engine.go                # Orchestrator
-│   │   ├── loader.go                # YAML parsing & validation
-│   │   ├── composer.go              # Tree construction & cycle detection
-│   │   └── renderer.go              # text/template processing
+│   │   ├── dependency.go            # Node dependency methods
+│   │   ├── post_init.go             # Node post-init methods
+│   │   ├── resolver.go              # TemplateRef & Resolver interfaces
+│   │   ├── errors.go                # TemplateNotFoundError
+│   │   ├── validator/               # Struct tag & semantic validation
+│   │   ├── loader/                  # YAML parsing & manifest loading
+│   │   ├── composer/                # Tree construction & cycle detection
+│   │   ├── renderer/                # text/template processing
+│   │   └── engine/                  # Orchestrator facade
 │   ├── vars/                        # Variable collection pipeline
 │   │   ├── collector.go             # Collector interface
 │   │   ├── cli.go                   # CLI flag collector
@@ -126,11 +131,14 @@ Handles the discovery and location of templates across different filesystems.
 
 ### 3.4 `internal/template`
 
-The heart of Blueprint. It manages the lifecycle of a template from YAML to rendered files.
+The domain foundation and processing engine of Blueprint. It is organized into modular subpackages:
 
-- **Node:** A tree structure representing the root template and all transitive includes.
-- **Composer:** Recursively resolves includes to build the `Node` tree. Supports `ConfirmIncludes` callback for interactive selection.
-- **Renderer:** Renders files using Go's `text/template` with a rich function map.
+- **`template` (root):** Core domain models (`Template`, `Node`, `Context`, `Variable`), node methods (`AllDependencies`, `AllPostInit`), and resolver interfaces.
+- **`template/validator`:** Struct tag and semantic validation for templates, includes, and contexts.
+- **`template/loader`:** Manifest YAML parsing (`template.yaml`) and metadata loading.
+- **`template/composer`:** Recursively resolves includes to build the `Node` tree. Supports `ConfirmIncludes` callback for interactive selection and cycle detection.
+- **`template/renderer`:** Renders files using Go's `text/template` with a rich function map and dynamic path interpolation.
+- **`template/engine`:** High-level orchestrator facade unifying loader, composer, renderer, and validator.
 
 ### 3.5 `internal/vars`
 

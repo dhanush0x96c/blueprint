@@ -24,7 +24,7 @@ Module: `github.com/dhanush0x96c/blueprint` | Go 1.26.3
 | `cmd/`                        | Cobra commands: `init`, `list`, `version`                                                        |
 | `internal/app/context.go`     | DI wiring: Config, Sources, ChainResolver                                                        |
 | `internal/scaffold/`          | Orchestrates: resolve tree → collect vars → render → write                                       |
-| `internal/template/`          | Engine: loader (YAML), composer (tree + cycle detection), renderer (Go text/template), validator |
+| `internal/template/`          | Core models, node methods; subpackages: `validator`, `loader`, `composer`, `renderer`, `engine`  |
 | `internal/vars/`              | Variable collector pipeline: CLI flags → defaults → inheritance → prompts                        |
 | `internal/prompt/`            | TUI via charmbracelet/huh                                                                        |
 | `internal/resolver/`          | Template resolution: User source → Builtin source (chain)                                        |

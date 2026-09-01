@@ -1,18 +1,22 @@
-package template
+// Package composer handles building and resolving template node trees from includes.
+package composer
 
 import (
 	"fmt"
 	"slices"
+
+	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/template/loader"
 )
 
 // Composer handles building the Node tree from a root Template.
 type Composer struct {
-	resolver Resolver
-	loader   Loader
+	resolver template.Resolver
+	loader   loader.Loader
 }
 
 // NewComposer creates a new template composer with the given resolver and loader.
-func NewComposer(resolver Resolver, loader Loader) *Composer {
+func NewComposer(resolver template.Resolver, loader loader.Loader) *Composer {
 	return &Composer{
 		resolver: resolver,
 		loader:   loader,
@@ -21,19 +25,19 @@ func NewComposer(resolver Resolver, loader Loader) *Composer {
 
 // Compose resolves all includes for a template recursively and builds a Node tree.
 // It calls confirm for all includes of a template to decide which ones should be loaded.
-func (c *Composer) Compose(loaded *LoadedTemplate, confirm ConfirmIncludes) (*Node, error) {
+func (c *Composer) Compose(loaded *loader.LoadedTemplate, confirm template.ConfirmIncludes) (*template.Node, error) {
 	return c.doCompose(loaded, []string{loaded.Template.Name}, confirm, "0")
 }
 
 // doCompose is the internal recursive composition function that tracks the stack
 // to detect circular dependencies and builds the Node tree.
-func (c *Composer) doCompose(loaded *LoadedTemplate, stack []string, confirm ConfirmIncludes, id string) (*Node, error) {
-	node := &Node{
+func (c *Composer) doCompose(loaded *loader.LoadedTemplate, stack []string, confirm template.ConfirmIncludes, id string) (*template.Node, error) {
+	node := &template.Node{
 		ID:       id,
 		Template: loaded.Template,
 		FS:       loaded.FS,
 		Path:     loaded.Path,
-		Children: make([]*Node, 0),
+		Children: make([]*template.Node, 0),
 	}
 
 	if len(loaded.Template.Includes) == 0 {
@@ -50,7 +54,7 @@ func (c *Composer) doCompose(loaded *LoadedTemplate, stack []string, confirm Con
 			return nil, fmt.Errorf("circular dependency detected: %v -> %s", stack, inc.Name)
 		}
 
-		ref := TemplateRef{
+		ref := template.TemplateRef{
 			Name: inc.Name,
 		}
 

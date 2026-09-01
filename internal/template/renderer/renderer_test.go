@@ -1,4 +1,5 @@
-package template_test
+// Package renderer_test contains unit tests for the renderer package.
+package renderer_test
 
 import (
 	"os"

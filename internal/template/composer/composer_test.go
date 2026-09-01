@@ -1,10 +1,12 @@
-// Package template_test contains unit tests for the template package.
-package template_test
+// Package composer_test contains unit tests for the composer package.
+package composer_test
 
 import (
 	"testing"
 
 	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/template/composer"
+	"github.com/dhanush0x96c/blueprint/internal/template/loader"
 	"github.com/dhanush0x96c/blueprint/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,22 +14,22 @@ import (
 
 func TestCompose(t *testing.T) {
 	t.Run("single template no includes", func(t *testing.T) {
-		loader := &testutil.FakeLoader{}
+		l := &testutil.FakeLoader{}
 		resolver := &testutil.FakeResolver{}
-		composer := template.NewComposer(resolver, loader)
+		c := composer.NewComposer(resolver, l)
 
 		tmpl := testutil.NewTemplate("base",
 			testutil.WithTags("backend", "api"),
 			testutil.WithVariable(template.Variable{Name: "project_name"}),
 			testutil.WithDependency("go@1.22"))
 
-		loaded := &template.LoadedTemplate{
+		loaded := &loader.LoadedTemplate{
 			Template: tmpl,
 			FS:       nil,
 			Path:     "base",
 		}
 
-		out, err := composer.Compose(loaded, func(includes []template.Include) ([]template.Include, error) {
+		out, err := c.Compose(loaded, func(includes []template.Include) ([]template.Include, error) {
 			return nil, nil
 		})
 		require.NoError(t, err)
@@ -52,22 +54,22 @@ func TestCompose(t *testing.T) {
 			"logging": logging,
 		}
 
-		loader := &testutil.FakeLoader{
+		l := &testutil.FakeLoader{
 			Templates: templates,
 		}
 		resolver := &testutil.FakeResolver{
 			Templates: templates,
 		}
 
-		composer := template.NewComposer(resolver, loader)
+		c := composer.NewComposer(resolver, l)
 
-		loaded := &template.LoadedTemplate{
+		loaded := &loader.LoadedTemplate{
 			Template: base,
 			FS:       nil,
 			Path:     "base",
 		}
 
-		out, err := composer.Compose(loaded, func(includes []template.Include) ([]template.Include, error) {
+		out, err := c.Compose(loaded, func(includes []template.Include) ([]template.Include, error) {
 			return includes, nil
 		})
 		require.NoError(t, err)
@@ -94,22 +96,22 @@ func TestCompose(t *testing.T) {
 			"b": b,
 		}
 
-		loader := &testutil.FakeLoader{
+		l := &testutil.FakeLoader{
 			Templates: templates,
 		}
 		resolver := &testutil.FakeResolver{
 			Templates: templates,
 		}
 
-		composer := template.NewComposer(resolver, loader)
+		c := composer.NewComposer(resolver, l)
 
-		loaded := &template.LoadedTemplate{
+		loaded := &loader.LoadedTemplate{
 			Template: a,
 			FS:       nil,
 			Path:     "a",
 		}
 
-		_, err := composer.Compose(loaded, func(includes []template.Include) ([]template.Include, error) {
+		_, err := c.Compose(loaded, func(includes []template.Include) ([]template.Include, error) {
 			return includes, nil
 		})
 		require.Error(t, err)
@@ -129,16 +131,16 @@ func TestCompose(t *testing.T) {
 			"metrics": metrics,
 		}
 
-		loader := &testutil.FakeLoader{
+		l := &testutil.FakeLoader{
 			Templates: templates,
 		}
 		resolver := &testutil.FakeResolver{
 			Templates: templates,
 		}
 
-		composer := template.NewComposer(resolver, loader)
+		c := composer.NewComposer(resolver, l)
 
-		loaded := &template.LoadedTemplate{
+		loaded := &loader.LoadedTemplate{
 			Template: base,
 			FS:       nil,
 			Path:     "base",
@@ -155,7 +157,7 @@ func TestCompose(t *testing.T) {
 			return enabled, nil
 		}
 
-		out, err := composer.Compose(loaded, confirm)
+		out, err := c.Compose(loaded, confirm)
 		require.NoError(t, err)
 
 		assert.Equal(t, "base", out.Template.Name)
@@ -185,22 +187,22 @@ func TestCompose(t *testing.T) {
 			"grandchild1": grandchild1,
 		}
 
-		loader := &testutil.FakeLoader{
+		l := &testutil.FakeLoader{
 			Templates: templates,
 		}
 		resolver := &testutil.FakeResolver{
 			Templates: templates,
 		}
 
-		composer := template.NewComposer(resolver, loader)
+		c := composer.NewComposer(resolver, l)
 
-		loaded := &template.LoadedTemplate{
+		loaded := &loader.LoadedTemplate{
 			Template: root,
 			FS:       nil,
 			Path:     "root",
 		}
 
-		out, err := composer.Compose(loaded, func(includes []template.Include) ([]template.Include, error) {
+		out, err := c.Compose(loaded, func(includes []template.Include) ([]template.Include, error) {
 			return includes, nil
 		})
 		require.NoError(t, err)

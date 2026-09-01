@@ -1,3 +1,4 @@
+// Package template defines the core domain models, node structures, and interfaces for templates.
 package template
 
 import (

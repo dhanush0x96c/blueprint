@@ -1,17 +1,19 @@
-package template_test
+// Package validator_test contains unit tests for the validator package.
+package validator_test
 
 import (
 	"testing"
 	"testing/fstest"
 
 	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/template/validator"
 	"github.com/dhanush0x96c/blueprint/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestValidator_Validate(t *testing.T) {
-	v := template.NewValidator()
+	v := validator.NewValidator()
 
 	testCases := []struct {
 		name        string
@@ -65,7 +67,7 @@ func TestValidator_Validate(t *testing.T) {
 }
 
 func TestValidator_ValidateVariables(t *testing.T) {
-	v := template.NewValidator()
+	v := validator.NewValidator()
 
 	testCases := []struct {
 		name        string
@@ -177,7 +179,7 @@ func TestValidator_ValidateVariables(t *testing.T) {
 }
 
 func TestValidator_ValidateProjectNameRole(t *testing.T) {
-	v := template.NewValidator()
+	v := validator.NewValidator()
 
 	testCases := []struct {
 		name        string
@@ -255,7 +257,7 @@ func TestValidator_ValidateProjectNameRole(t *testing.T) {
 }
 
 func TestValidator_ValidateTree(t *testing.T) {
-	v := template.NewValidator()
+	v := validator.NewValidator()
 	projectWithNameVar := func(name string) *template.Template {
 		return testutil.NewTemplate(name,
 			testutil.WithVariable(template.Variable{Name: "app", Prompt: "?", Type: template.VariableTypeString, Role: template.RoleProjectName}))
@@ -350,7 +352,7 @@ func TestValidator_ValidateTree(t *testing.T) {
 }
 
 func TestValidator_ValidateFiles(t *testing.T) {
-	v := template.NewValidator()
+	v := validator.NewValidator()
 	fsys := fstest.MapFS{
 		"existing.txt": &fstest.MapFile{Data: []byte("content")},
 	}
@@ -384,7 +386,7 @@ func TestValidator_ValidateFiles(t *testing.T) {
 }
 
 func TestValidator_ValidateContext(t *testing.T) {
-	v := template.NewValidator()
+	v := validator.NewValidator()
 
 	baseTemplate := testutil.NewTemplate("test",
 		testutil.WithVariable(template.Variable{Name: "required", Prompt: "?", Type: template.VariableTypeString}),
@@ -559,7 +561,7 @@ func TestValidator_ValidateContext(t *testing.T) {
 }
 
 func TestValidator_Validate_DefaultTypes(t *testing.T) {
-	v := template.NewValidator()
+	v := validator.NewValidator()
 
 	testCases := []struct {
 		name        string
@@ -638,7 +640,7 @@ func TestValidator_Validate_DefaultTypes(t *testing.T) {
 }
 
 func TestValidator_ValidateTreeContexts(t *testing.T) {
-	v := template.NewValidator()
+	v := validator.NewValidator()
 
 	root := testutil.NewNode("0",
 		testutil.NewTemplate("root",
