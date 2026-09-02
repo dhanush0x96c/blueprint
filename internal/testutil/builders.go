@@ -71,13 +71,6 @@ func WithFile(f template.File) TemplateOption {
 	}
 }
 
-// WithDependency appends a dependency to the template.
-func WithDependency(d string) TemplateOption {
-	return func(tmpl *template.Template) {
-		tmpl.Dependencies = append(tmpl.Dependencies, d)
-	}
-}
-
 // NodeOption defines a function that modifies a template.Node.
 type NodeOption func(*template.Node)
 

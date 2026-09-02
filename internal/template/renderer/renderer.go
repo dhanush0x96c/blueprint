@@ -83,6 +83,10 @@ func (r *Renderer) RenderAll(node *template.Node, contexts template.RenderContex
 
 // renderNode recursively renders a node and its children.
 func (r *Renderer) renderNode(node *template.Node, contexts template.RenderContexts, result *template.RenderResult) error {
+	if node == nil {
+		return nil
+	}
+
 	ctx, ok := contexts[node.ID]
 	if !ok {
 		return fmt.Errorf("no context found for template %s (ID: %s)", node.Template.Name, node.ID)

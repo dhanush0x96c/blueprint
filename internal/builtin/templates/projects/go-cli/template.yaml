@@ -23,9 +23,6 @@ includes:
   - name: go-testing
     enabled_by_default: false
 
-dependencies:
-  - "github.com/spf13/cobra@v1.10.2"
-
 files:
   - src: main.go.tmpl
     dest: main.go

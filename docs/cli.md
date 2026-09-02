@@ -161,14 +161,6 @@ When files already exist:
 - Use `--force` to overwrite all automatically
 - Use `--merge` to attempt intelligent merging
 
-**Dependencies:**
-
-`blueprint add` will:
-
-1. Install new dependencies automatically
-2. Update existing dependency files (go.mod, package.json, etc.)
-3. Run post-init commands defined in the template
-
 ---
 
 ### blueprint list

@@ -24,13 +24,6 @@ func RenderResult(result *scaffold.Result) {
 		}
 	}
 
-	if len(result.Dependencies) > 0 {
-		writeln(w, "\nDependencies declared:")
-		for _, dep := range result.Dependencies {
-			write(w, "  • %s\n", dep)
-		}
-	}
-
 	if len(result.PostInitCmds) > 0 {
 		writeln(w, "\nPost-init commands:")
 		for _, cmd := range result.PostInitCmds {

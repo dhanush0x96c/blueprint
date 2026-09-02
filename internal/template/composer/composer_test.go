@@ -20,8 +20,7 @@ func TestCompose(t *testing.T) {
 
 		tmpl := testutil.NewTemplate("base",
 			testutil.WithTags("backend", "api"),
-			testutil.WithVariable(template.Variable{Name: "project_name"}),
-			testutil.WithDependency("go@1.22"))
+			testutil.WithVariable(template.Variable{Name: "project_name"}))
 
 		loaded := &loader.LoadedTemplate{
 			Template: tmpl,
@@ -36,18 +35,15 @@ func TestCompose(t *testing.T) {
 
 		assert.Equal(t, "base", out.Template.Name)
 		assert.Len(t, out.Children, 0)
-		assert.Equal(t, []string{"go@1.22"}, out.AllDependencies())
 	})
 
 	t.Run("with includes builds tree", func(t *testing.T) {
 		base := testutil.NewTemplate("base",
 			testutil.WithInclude(template.Include{Name: "logging", EnabledByDefault: true}),
-			testutil.WithVariable(template.Variable{Name: "project_name"}),
-			testutil.WithDependency("go"))
+			testutil.WithVariable(template.Variable{Name: "project_name"}))
 
 		logging := testutil.NewTemplate("logging",
 			testutil.WithVariable(template.Variable{Name: "log_level"}),
-			testutil.WithDependency("zap@1.26.0"),
 			testutil.WithFile(template.File{Dest: "logger.go"}))
 
 		templates := map[string]*template.Template{
@@ -77,11 +73,6 @@ func TestCompose(t *testing.T) {
 		assert.Equal(t, "base", out.Template.Name)
 		require.Len(t, out.Children, 1)
 		assert.Equal(t, "logging", out.Children[0].Template.Name)
-
-		assert.ElementsMatch(t,
-			[]string{"go", "zap@1.26.0"},
-			out.AllDependencies(),
-		)
 	})
 
 	t.Run("circular dependency detected", func(t *testing.T) {

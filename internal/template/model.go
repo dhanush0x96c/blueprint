@@ -38,16 +38,15 @@ const (
 
 // Template represents a complete template definition
 type Template struct {
-	Name         string     `yaml:"name" validate:"required"`
-	Type         Type       `yaml:"type" validate:"required,oneof=project feature component"`
-	Version      string     `yaml:"version" validate:"required"`
-	Description  string     `yaml:"description"`
-	Tags         []string   `yaml:"tags,omitempty"`
-	Variables    []Variable `yaml:"variables,omitempty" validate:"dive"`
-	Includes     []Include  `yaml:"includes,omitempty" validate:"dive"`
-	Dependencies []string   `yaml:"dependencies,omitempty"`
-	Files        []File     `yaml:"files,omitempty" validate:"dive"`
-	PostInit     []PostInit `yaml:"post_init,omitempty" validate:"dive"`
+	Name        string     `yaml:"name" validate:"required"`
+	Type        Type       `yaml:"type" validate:"required,oneof=project feature component"`
+	Version     string     `yaml:"version" validate:"required"`
+	Description string     `yaml:"description"`
+	Tags        []string   `yaml:"tags,omitempty"`
+	Variables   []Variable `yaml:"variables,omitempty" validate:"dive"`
+	Includes    []Include  `yaml:"includes,omitempty" validate:"dive"`
+	Files       []File     `yaml:"files,omitempty" validate:"dive"`
+	PostInit    []PostInit `yaml:"post_init,omitempty" validate:"dive"`
 }
 
 // Metadata represents a subset of Template containing only identification and description fields.

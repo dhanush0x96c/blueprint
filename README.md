@@ -2,7 +2,7 @@
 
 > Universal project scaffolding — because copy-pasting is not a strategy
 
-Blueprint is a CLI tool written in Go that streamlines project initialization through an intelligent template system with interactive prompts, feature composition, and dependency management.
+Blueprint is a CLI tool written in Go that streamlines project initialization through an intelligent template system with interactive prompts, feature composition, and post-initialization hooks.
 
 ![Blueprint Demo](examples/demo/demo.gif)
 

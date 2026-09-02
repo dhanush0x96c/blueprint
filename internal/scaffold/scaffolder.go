@@ -44,7 +44,6 @@ type Options struct {
 type Result struct {
 	FilesWritten []string            // List of files written
 	FilesSkipped []string            // List of files skipped (already exist)
-	Dependencies []string            // Dependencies that need to be installed
 	PostInitCmds []template.PostInit // Post-init commands to run
 }
 
@@ -82,7 +81,6 @@ func (s *Scaffolder) Scaffold(opts Options) (*Result, error) {
 	return &Result{
 		FilesWritten: written,
 		FilesSkipped: skipped,
-		Dependencies: tree.AllDependencies(),
 		PostInitCmds: tree.AllPostInit(),
 	}, nil
 }

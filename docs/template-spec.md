@@ -24,16 +24,15 @@ Projects, features, and components share the exact same structure and are proces
 - [4. Includes (Template Composition)](#4-includes-template-composition)
   - [4.1 Fields](#41-fields)
   - [4.2 Resolution Rules](#42-resolution-rules)
-- [5. Dependencies](#5-dependencies)
-- [6. Files](#6-files)
-  - [6.1 Fields](#61-fields)
-  - [6.2 File Processing](#62-file-processing)
-  - [6.3 Directory Processing](#63-directory-processing)
-  - [6.4 Rendering Context](#64-rendering-context)
-- [7. Post-Init Commands](#7-post-init-commands)
-- [8. Validation Rules](#8-validation-rules)
-- [9. Execution Pipeline](#9-execution-pipeline)
-- [10. Design Principles](#10-design-principles)
+- [5. Files](#5-files)
+  - [5.1 Fields](#51-fields)
+  - [5.2 File Processing](#52-file-processing)
+  - [5.3 Directory Processing](#53-directory-processing)
+  - [5.4 Rendering Context](#54-rendering-context)
+- [6. Post-Init Commands](#6-post-init-commands)
+- [7. Validation Rules](#7-validation-rules)
+- [8. Execution Pipeline](#8-execution-pipeline)
+- [9. Design Principles](#9-design-principles)
 
 ---
 
@@ -176,7 +175,6 @@ includes:
 - Includes are resolved recursively.
 - Cycles MUST be detected and rejected.
 - Variables from all included templates are merged.
-- Dependency lists are merged and deduplicated.
 - File lists are concatenated.
 
 ### 4.3 Mount and Inheritance
@@ -200,28 +198,7 @@ includes:
 
 ---
 
-## 5. Dependencies
-
-Templates may declare external dependencies.
-
-```yaml
-dependencies:
-  - "github.com/spf13/cobra@v1.10.2"
-  - "github.com/spf13/viper@v1.21.0"
-```
-
-Rules:
-
-- Treated as opaque strings.
-- Merged across composed templates.
-- Duplicates removed.
-- Installer strategy depends on project language.
-
-Dependency resolution must be deterministic.
-
----
-
-## 6. Files
+## 5. Files
 
 Templates define files to be rendered or copied.
 
@@ -233,14 +210,14 @@ files:
     dest: "static/"
 ```
 
-### 6.1 Fields
+### 5.1 Fields
 
 | Field  | Required | Description                                                 |
 | ------ | -------- | ----------------------------------------------------------- |
 | `src`  | Yes      | Source file or directory relative to template root          |
 | `dest` | Yes      | Output path relative to project root (can be a Go template) |
 
-### 6.2 File Processing
+### 5.2 File Processing
 
 Files are processed based on their extension:
 
@@ -255,7 +232,7 @@ files:
     dest: "internal/handlers/{{ .handler_name }}.go"
 ```
 
-### 6.3 Directory Processing
+### 5.3 Directory Processing
 
 When `src` is a directory, Blueprint recursively processes all files within:
 
@@ -263,7 +240,7 @@ When `src` is a directory, Blueprint recursively processes all files within:
 - All other files are copied without modification.
 - The directory structure is preserved in the destination.
 
-### 6.4 Rendering Context
+### 5.4 Rendering Context
 
 - Uses Go `text/template`.
 - All collected variables available in root context.
@@ -284,7 +261,7 @@ Example usage:
 
 ---
 
-## 7. Post-Init Commands
+## 6. Post-Init Commands
 
 Templates may define commands to execute after scaffolding.
 
@@ -294,14 +271,14 @@ post_init:
     workdir: "./"
 ```
 
-### 7.1 Fields
+### 6.1 Fields
 
 | Field     | Required | Description                                          |
 | --------- | -------- | ---------------------------------------------------- |
 | `command` | Yes      | Command to execute                                   |
 | `workdir` | No       | Working directory for the command (relative to root) |
 
-### 7.2 Execution Rules
+### 6.2 Execution Rules
 
 - Executed after all files are written.
 - Run in project root directory (unless `workdir` is specified).
@@ -312,7 +289,7 @@ Post-init commands from composed templates are appended in resolution order.
 
 ---
 
-## 8. Validation Rules
+## 7. Validation Rules
 
 A valid template MUST satisfy:
 
@@ -331,7 +308,7 @@ Validation occurs before any filesystem writes.
 
 ---
 
-## 9. Execution Pipeline
+## 8. Execution Pipeline
 
 Blueprint processes templates as follows:
 
@@ -340,16 +317,15 @@ Blueprint processes templates as follows:
 3. Validate composition
 4. Collect variables
 5. Prompt user
-6. Merge dependencies
-7. Render files
-8. Write filesystem
-9. Execute post-init
+6. Render files
+7. Write filesystem
+8. Execute post-init
 
 This unified pipeline applies identically to projects, features, and components.
 
 ---
 
-## 10. Design Principles
+## 9. Design Principles
 
 The specification enforces:
 
