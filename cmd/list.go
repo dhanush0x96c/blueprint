@@ -91,6 +91,10 @@ func discoverTemplates(
 			continue
 		}
 
+		if len(entries) == 0 {
+			continue
+		}
+
 		groups = append(groups, ui.TemplateListGroup{
 			Source:  src.Name,
 			Entries: entries,

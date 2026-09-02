@@ -61,14 +61,16 @@ func renderShort(w io.Writer, groups []TemplateListGroup) {
 func renderTable(w io.Writer, groups []TemplateListGroup, showType bool) {
 	nameWidth, typeWidth := calculateColumnWidths(groups)
 
-	for i, g := range groups {
+	first := true
+	for _, g := range groups {
 		if len(g.Entries) == 0 {
 			continue
 		}
 
-		if i > 0 {
+		if !first {
 			writeln(w, "")
 		}
+		first = false
 
 		_, _ = sourceColor.Fprintln(w, g.Source)
 
