@@ -22,11 +22,15 @@ func (l *Loader) applyDefaults(cfg *Config) error {
 
 func (l *Loader) applyConfigFile(cfg *Config) error {
 	if l.ConfigFile == "" {
-		path, err := DefaultPath()
-		if err != nil {
-			return fmt.Errorf("could not detect default config path: %w", err)
+		if envPath := os.Getenv(l.envKey("CONFIG")); envPath != "" {
+			l.ConfigFile = envPath
+		} else {
+			path, err := DefaultPath()
+			if err != nil {
+				return fmt.Errorf("could not detect default config path: %w", err)
+			}
+			l.ConfigFile = path
 		}
-		l.ConfigFile = path
 	}
 
 	data, err := os.ReadFile(l.ConfigFile)
@@ -39,12 +43,22 @@ func (l *Loader) applyConfigFile(cfg *Config) error {
 	return yaml.Unmarshal(data, cfg)
 }
 
-func (l *Loader) applyEnv(_ *Config) error {
-	// TODO: Apply the environment variables
+func (l *Loader) applyEnv(cfg *Config) error {
+	if val, ok := os.LookupEnv(l.envKey("TEMPLATES_DIR")); ok && val != "" {
+		cfg.TemplatesDir = val
+	}
+
 	return nil
 }
 
 func (l *Loader) applyCLI(_ *Config) error {
 	// TODO: Apply CLI options
 	return nil
+}
+
+func (l *Loader) envKey(key string) string {
+	if l.EnvPrefix == "" {
+		return key
+	}
+	return fmt.Sprintf("%s_%s", l.EnvPrefix, key)
 }

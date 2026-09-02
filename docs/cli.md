@@ -32,7 +32,7 @@ These flags are available for all commands:
 **Environment Variables:**
 
 - `BLUEPRINT_CONFIG` - Path to configuration file
-- `BLUEPRINT_TEMPLATE_DIR` - Custom template directory location (Planned)
+- `BLUEPRINT_TEMPLATES_DIR` - Custom template directory location
 
 ---
 
@@ -638,7 +638,7 @@ blueprint list components
 blueprint search <name>
 
 # Check template directory
-echo $BLUEPRINT_TEMPLATE_DIR
+echo $BLUEPRINT_TEMPLATES_DIR
 ls -la ~/.config/blueprint/templates/
 ```
 
