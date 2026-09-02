@@ -83,10 +83,9 @@ blueprint/
 │   │   ├── source_resolver.go       # FS-backed resolver & discovery
 │   │   └── chain.go                 # Chain-of-responsibility resolver
 │   ├── template/                    # Core template domain models & interfaces
-│   │   ├── model.go                 # Data structures (Template, Node, Context)
+│   │   ├── model.go                 # Data structures (Template, Node, Context, Ref)
 │   │   ├── dependency.go            # Node dependency methods
 │   │   ├── post_init.go             # Node post-init methods
-│   │   ├── resolver.go              # Ref & Resolver interfaces
 │   │   ├── errors.go                # NotFoundError
 │   │   ├── validator/               # Struct tag & semantic validation
 │   │   ├── loader/                  # YAML parsing & manifest loading
@@ -127,13 +126,13 @@ Handles the discovery and location of templates across different filesystems.
 
 - **Source:** Abstraction of a template repository (name, type, filesystem).
 - **SourceResolver:** Finds templates in a specific filesystem by walking directories for `template.yaml`.
-- **ChainResolver:** Implements `template.Resolver` by trying multiple sources in order.
+- **ChainResolver:** Chains multiple resolvers together, trying multiple sources in order.
 
 ### 3.4 `internal/template`
 
 The domain foundation and processing engine of Blueprint. It is organized into modular subpackages:
 
-- **`template` (root):** Core domain models (`Template`, `Node`, `Context`, `Variable`), node methods (`AllDependencies`, `AllPostInit`), and resolver interfaces.
+- **`template` (root):** Core domain models (`Template`, `Node`, `Context`, `Variable`), node methods (`AllDependencies`, `AllPostInit`), and reference models (`Ref`, `ResolvedTemplate`).
 - **`template/validator`:** Struct tag and semantic validation for templates, includes, and contexts.
 - **`template/loader`:** Manifest YAML parsing (`template.yaml`) and metadata loading.
 - **`template/composer`:** Recursively resolves includes to build the `Node` tree. Supports `ConfirmIncludes` callback for interactive selection and cycle detection.

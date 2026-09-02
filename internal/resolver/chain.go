@@ -7,14 +7,19 @@ import (
 	"github.com/dhanush0x96c/blueprint/internal/template"
 )
 
+// Resolver resolves a template reference.
+type Resolver interface {
+	Resolve(ref template.Ref) (*template.ResolvedTemplate, error)
+}
+
 // ChainResolver is a resolver that chains multiple resolvers together.
 type ChainResolver struct {
-	resolvers []template.Resolver
+	resolvers []Resolver
 }
 
 // NewChainResolver creates a new chain resolver from the provided sources.
 func NewChainResolver(sources ...Source) *ChainResolver {
-	resolvers := make([]template.Resolver, 0, len(sources))
+	resolvers := make([]Resolver, 0, len(sources))
 	for _, src := range sources {
 		resolvers = append(resolvers, NewSourceResolver(src))
 	}

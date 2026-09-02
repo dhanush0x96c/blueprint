@@ -8,6 +8,7 @@ import (
 
 	"github.com/dhanush0x96c/blueprint/internal/prompt"
 	"github.com/dhanush0x96c/blueprint/internal/template"
+	"github.com/dhanush0x96c/blueprint/internal/template/composer"
 	"github.com/dhanush0x96c/blueprint/internal/template/engine"
 	"github.com/dhanush0x96c/blueprint/internal/vars"
 )
@@ -20,7 +21,7 @@ type Scaffolder struct {
 }
 
 // NewScaffolder creates a new scaffolder with the given template resolver.
-func NewScaffolder(resolver template.Resolver) *Scaffolder {
+func NewScaffolder(resolver composer.Resolver) *Scaffolder {
 	return &Scaffolder{
 		engine:       engine.NewEngine(resolver),
 		promptEngine: prompt.NewEngine(),

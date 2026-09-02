@@ -102,7 +102,7 @@ func discoverTemplates(
 
 func discoverFromSource(src resolver.Source, filterType template.Type, filterTags []string) ([]ui.TemplateListEntry, error) {
 	r := resolver.NewSourceResolver(src)
-	templates, err := r.Discover(template.DiscoverOptions{
+	templates, err := r.Discover(resolver.DiscoverOptions{
 		Type:         filterType,
 		Tags:         filterTags,
 		IgnoreErrors: true,

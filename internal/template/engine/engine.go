@@ -14,7 +14,7 @@ import (
 
 // Engine is the unified template engine that orchestrates loading, composing, and rendering
 type Engine struct {
-	resolver  template.Resolver
+	resolver  composer.Resolver
 	loader    *loader.Loader
 	composer  *composer.Composer
 	renderer  *renderer.Renderer
@@ -22,7 +22,7 @@ type Engine struct {
 }
 
 // NewEngine creates a new template engine with the given resolver
-func NewEngine(resolver template.Resolver) *Engine {
+func NewEngine(resolver composer.Resolver) *Engine {
 	l := loader.NewLoader()
 	c := composer.NewComposer(resolver, l)
 	r := renderer.NewRenderer()

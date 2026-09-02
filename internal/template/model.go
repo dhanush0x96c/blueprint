@@ -196,3 +196,14 @@ func (tc *Context) Merge(other *Context) {
 		tc.Variables[k] = v
 	}
 }
+
+// Ref represents a reference to a template.
+type Ref struct {
+	Name string
+}
+
+// ResolvedTemplate represents a resolved template.
+type ResolvedTemplate struct {
+	FS   fs.FS
+	Path string
+}

@@ -8,7 +8,7 @@ import (
 	"github.com/dhanush0x96c/blueprint/internal/template/loader"
 )
 
-// FakeResolver is a test fake for template.Resolver.
+// FakeResolver is a test fake for template resolution.
 type FakeResolver struct {
 	Templates map[string]*template.Template
 }

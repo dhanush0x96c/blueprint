@@ -10,6 +10,11 @@ import (
 	"github.com/dhanush0x96c/blueprint/internal/template/loader"
 )
 
+// Resolver resolves a template reference.
+type Resolver interface {
+	Resolve(ref template.Ref) (*template.ResolvedTemplate, error)
+}
+
 // Loader handles loading templates from the filesystem.
 type Loader interface {
 	Load(fsys fs.FS, pth string) (*loader.LoadedTemplate, error)
@@ -17,12 +22,12 @@ type Loader interface {
 
 // Composer handles building the Node tree from a root Template.
 type Composer struct {
-	resolver template.Resolver
+	resolver Resolver
 	loader   Loader
 }
 
 // NewComposer creates a new template composer with the given resolver and loader.
-func NewComposer(resolver template.Resolver, loader Loader) *Composer {
+func NewComposer(resolver Resolver, loader Loader) *Composer {
 	return &Composer{
 		resolver: resolver,
 		loader:   loader,

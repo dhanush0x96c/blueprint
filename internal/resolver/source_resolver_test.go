@@ -61,13 +61,13 @@ func TestSourceResolver_Discover(t *testing.T) {
 	testutil.WriteTemplateStruct(t, filepath.Join(base, "broken"), &template.Template{Name: "invalid", Type: template.TypeProject})
 
 	t.Run("all templates", func(t *testing.T) {
-		templates, err := r.Discover(template.DiscoverOptions{IgnoreErrors: true})
+		templates, err := r.Discover(resolver.DiscoverOptions{IgnoreErrors: true})
 		require.NoError(t, err)
 		require.Len(t, templates, 4)
 	})
 
 	t.Run("filter by type", func(t *testing.T) {
-		templates, err := r.Discover(template.DiscoverOptions{
+		templates, err := r.Discover(resolver.DiscoverOptions{
 			Type:         template.TypeProject,
 			IgnoreErrors: true,
 		})
@@ -79,7 +79,7 @@ func TestSourceResolver_Discover(t *testing.T) {
 	})
 
 	t.Run("filter by tag", func(t *testing.T) {
-		templates, err := r.Discover(template.DiscoverOptions{
+		templates, err := r.Discover(resolver.DiscoverOptions{
 			Tags:         []string{"go"},
 			IgnoreErrors: true,
 		})
@@ -89,7 +89,7 @@ func TestSourceResolver_Discover(t *testing.T) {
 	})
 
 	t.Run("filter by multiple tags", func(t *testing.T) {
-		templates, err := r.Discover(template.DiscoverOptions{
+		templates, err := r.Discover(resolver.DiscoverOptions{
 			Tags:         []string{"go", "auth"},
 			IgnoreErrors: true,
 		})
@@ -100,7 +100,7 @@ func TestSourceResolver_Discover(t *testing.T) {
 	})
 
 	t.Run("filter by type and tag", func(t *testing.T) {
-		templates, err := r.Discover(template.DiscoverOptions{
+		templates, err := r.Discover(resolver.DiscoverOptions{
 			Type:         template.TypeFeature,
 			Tags:         []string{"auth"},
 			IgnoreErrors: true,
@@ -111,7 +111,7 @@ func TestSourceResolver_Discover(t *testing.T) {
 	})
 
 	t.Run("error on invalid template when IgnoreErrors is false", func(t *testing.T) {
-		_, err := r.Discover(template.DiscoverOptions{IgnoreErrors: false})
+		_, err := r.Discover(resolver.DiscoverOptions{IgnoreErrors: false})
 		require.Error(t, err)
 	})
 }

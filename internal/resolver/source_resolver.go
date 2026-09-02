@@ -10,10 +10,22 @@ import (
 	"github.com/dhanush0x96c/blueprint/internal/template/loader"
 )
 
+// MetadataLoader loads template metadata from a filesystem.
+type MetadataLoader interface {
+	LoadMetadata(fsys fs.FS, pth string) (*template.Metadata, error)
+}
+
+// DiscoverOptions contains options for template discovery.
+type DiscoverOptions struct {
+	Type         template.Type
+	Tags         []string
+	IgnoreErrors bool
+}
+
 // SourceResolver resolves templates from a source.
 type SourceResolver struct {
 	source Source
-	loader template.MetadataLoader
+	loader MetadataLoader
 }
 
 // NewSourceResolver creates a resolver backed by the provided source.
@@ -23,7 +35,7 @@ func NewSourceResolver(source Source) *SourceResolver {
 
 // Resolve resolves templates from the configured source.
 func (r *SourceResolver) Resolve(ref template.Ref) (*template.ResolvedTemplate, error) {
-	templates, err := r.Discover(template.DiscoverOptions{IgnoreErrors: true})
+	templates, err := r.Discover(DiscoverOptions{IgnoreErrors: true})
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +53,7 @@ func (r *SourceResolver) Resolve(ref template.Ref) (*template.ResolvedTemplate, 
 }
 
 // Discover finds all templates and returns them keyed by template directory path.
-func (r *SourceResolver) Discover(opts template.DiscoverOptions) (map[string]*template.Metadata, error) {
+func (r *SourceResolver) Discover(opts DiscoverOptions) (map[string]*template.Metadata, error) {
 	templates := make(map[string]*template.Metadata)
 
 	err := fs.WalkDir(r.source.Filesystem, ".", func(pth string, d fs.DirEntry, err error) error {
@@ -104,7 +116,7 @@ func matchesAnyTag(meta *template.Metadata, filterTags []string) bool {
 
 // Exists checks if a template exists with the given name.
 func (r *SourceResolver) Exists(name string) bool {
-	templates, err := r.Discover(template.DiscoverOptions{IgnoreErrors: true})
+	templates, err := r.Discover(DiscoverOptions{IgnoreErrors: true})
 	if err != nil {
 		return false
 	}

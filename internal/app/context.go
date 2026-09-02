@@ -7,14 +7,13 @@ import (
 	"github.com/dhanush0x96c/blueprint/internal/builtin/templates"
 	"github.com/dhanush0x96c/blueprint/internal/config"
 	"github.com/dhanush0x96c/blueprint/internal/resolver"
-	"github.com/dhanush0x96c/blueprint/internal/template"
 )
 
 // Context holds runtime dependencies for the application.
 type Context struct {
 	Config   *config.Config
 	Sources  []resolver.Source
-	Resolver template.Resolver
+	Resolver resolver.Resolver
 	Options  Options
 }
 
