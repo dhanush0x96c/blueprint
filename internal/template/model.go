@@ -9,6 +9,7 @@ import (
 // Type represents the semantic type of a template
 type Type string
 
+// Supported template types.
 const (
 	TypeProject   Type = "project"
 	TypeFeature   Type = "feature"
@@ -18,6 +19,7 @@ const (
 // VariableType represents the type of input expected for a variable
 type VariableType string
 
+// Supported variable types.
 const (
 	VariableTypeString      VariableType = "string"
 	VariableTypeInt         VariableType = "int"

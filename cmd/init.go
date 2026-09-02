@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewInitCmd creates the init command.
 func NewInitCmd(appCtx *app.Context) *cobra.Command {
 	var (
 		force        bool
@@ -26,7 +27,7 @@ func NewInitCmd(appCtx *app.Context) *cobra.Command {
 		Short: "Initialize a new project",
 		Long:  `Initialize a new project from a template.`,
 		Args:  cobra.RangeArgs(1, 2),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			templateName := args[0]
 
 			var outputDir string
@@ -46,7 +47,7 @@ func NewInitCmd(appCtx *app.Context) *cobra.Command {
 
 			scaffolder := scaffold.NewScaffolder(appCtx.Resolver)
 			result, err := scaffolder.Scaffold(scaffold.Options{
-				TemplateRef: template.TemplateRef{
+				TemplateRef: template.Ref{
 					Name: templateName,
 				},
 				OutputDir:       outputDir,

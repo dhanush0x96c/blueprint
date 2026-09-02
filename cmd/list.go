@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewListCmd creates the list command.
 func NewListCmd(appCtx *app.Context) *cobra.Command {
 	var (
 		source string
@@ -23,7 +24,7 @@ func NewListCmd(appCtx *app.Context) *cobra.Command {
 		Short: "List available templates",
 		Long:  "List available templates, optionally filtered by type, source, and tags.",
 		Args:  cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			var filterType template.Type
 			showType := len(args) == 0
 			if !showType {

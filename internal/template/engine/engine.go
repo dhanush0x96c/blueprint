@@ -38,7 +38,7 @@ func NewEngine(resolver template.Resolver) *Engine {
 }
 
 // LoadTemplate loads a template from the given reference
-func (e *Engine) LoadTemplate(ref template.TemplateRef) (*loader.LoadedTemplate, error) {
+func (e *Engine) LoadTemplate(ref template.Ref) (*loader.LoadedTemplate, error) {
 	resolved, err := e.resolver.Resolve(ref)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (e *Engine) RenderNode(node *template.Node, contexts template.RenderContext
 
 // GetFullTree loads a template, resolves all includes using the provided confirm function,
 // and validates the resulting tree.
-func (e *Engine) GetFullTree(ref template.TemplateRef, confirm template.ConfirmIncludes) (*template.Node, error) {
+func (e *Engine) GetFullTree(ref template.Ref, confirm template.ConfirmIncludes) (*template.Node, error) {
 	loaded, err := e.LoadTemplate(ref)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template: %w", err)

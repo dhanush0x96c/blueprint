@@ -22,9 +22,9 @@ func NewChainResolver(sources ...Source) *ChainResolver {
 }
 
 // Resolve resolves a template reference using the chain of resolvers.
-func (c *ChainResolver) Resolve(ref template.TemplateRef) (*template.ResolvedTemplate, error) {
+func (c *ChainResolver) Resolve(ref template.Ref) (*template.ResolvedTemplate, error) {
 	if len(c.resolvers) == 0 {
-		return nil, &template.TemplateNotFoundError{Name: ref.Name}
+		return nil, &template.NotFoundError{Name: ref.Name}
 	}
 
 	var errs []error

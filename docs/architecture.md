@@ -86,8 +86,8 @@ blueprint/
 │   │   ├── model.go                 # Data structures (Template, Node, Context)
 │   │   ├── dependency.go            # Node dependency methods
 │   │   ├── post_init.go             # Node post-init methods
-│   │   ├── resolver.go              # TemplateRef & Resolver interfaces
-│   │   ├── errors.go                # TemplateNotFoundError
+│   │   ├── resolver.go              # Ref & Resolver interfaces
+│   │   ├── errors.go                # NotFoundError
 │   │   ├── validator/               # Struct tag & semantic validation
 │   │   ├── loader/                  # YAML parsing & manifest loading
 │   │   ├── composer/                # Tree construction & cycle detection
@@ -205,7 +205,7 @@ A `Source` represents a location where templates are stored.
 
 ```go
 type Resolver interface {
-    Resolve(ref TemplateRef) (*ResolvedTemplate, error)
+    Resolve(ref Ref) (*ResolvedTemplate, error)
 }
 ```
 
@@ -253,7 +253,7 @@ The `Renderer` processes the tree recursively.
 
 Blueprint uses specialized error types:
 
-- `TemplateNotFoundError`: When a reference cannot be resolved.
+- `NotFoundError`: When a reference cannot be resolved.
 - `CircularDependencyError`: When composition detects a loop in includes.
 - `ValidationError`: For invalid `template.yaml` files or missing required variables.
 

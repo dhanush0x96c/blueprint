@@ -30,13 +30,13 @@ func NewScaffolder(resolver template.Resolver) *Scaffolder {
 
 // Options contains options for scaffolding
 type Options struct {
-	TemplateRef     template.TemplateRef // Template reference to scaffold
-	OutputDir       string               // Output directory for scaffolded files
-	Variables       vars.Variables       // Pre-provided variables
-	EnabledIncludes map[string]bool      // Pre-selected includes (skip prompt)
-	Interactive     bool                 // Whether to prompt for variables
-	DryRun          bool                 // If true, don't write files
-	Overwrite       bool                 // Whether to overwrite existing files
+	TemplateRef     template.Ref    // Template reference to scaffold
+	OutputDir       string          // Output directory for scaffolded files
+	Variables       vars.Variables  // Pre-provided variables
+	EnabledIncludes map[string]bool // Pre-selected includes (skip prompt)
+	Interactive     bool            // Whether to prompt for variables
+	DryRun          bool            // If true, don't write files
+	Overwrite       bool            // Whether to overwrite existing files
 }
 
 // Result contains the results of a scaffolding operation

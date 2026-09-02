@@ -22,7 +22,7 @@ func NewSourceResolver(source Source) *SourceResolver {
 }
 
 // Resolve resolves templates from the configured source.
-func (r *SourceResolver) Resolve(ref template.TemplateRef) (*template.ResolvedTemplate, error) {
+func (r *SourceResolver) Resolve(ref template.Ref) (*template.ResolvedTemplate, error) {
 	templates, err := r.Discover(template.DiscoverOptions{IgnoreErrors: true})
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func (r *SourceResolver) Resolve(ref template.TemplateRef) (*template.ResolvedTe
 		}
 	}
 
-	return nil, &template.TemplateNotFoundError{Name: ref.Name}
+	return nil, &template.NotFoundError{Name: ref.Name}
 }
 
 // Discover finds all templates and returns them keyed by template directory path.

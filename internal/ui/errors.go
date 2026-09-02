@@ -11,7 +11,7 @@ import (
 
 // RenderError dispatches the given error to the appropriate renderer based on its type.
 func RenderError(err error) {
-	var templateNotFoundErr *template.TemplateNotFoundError
+	var templateNotFoundErr *template.NotFoundError
 	var invalidTemplateTypeErr *cli.InvalidTemplateTypeError
 
 	switch {

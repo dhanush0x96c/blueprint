@@ -5,6 +5,7 @@ import "io/fs"
 // SourceType represents the type of a template source.
 type SourceType string
 
+// SourceType constants for supported template sources.
 const (
 	SourceTypeBuiltin SourceType = "builtin"
 	SourceTypeUser    SourceType = "user"

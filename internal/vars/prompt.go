@@ -7,11 +7,13 @@ import (
 	"github.com/dhanush0x96c/blueprint/internal/template"
 )
 
+// PromptCollector interactively prompts users for missing variables.
 type PromptCollector struct {
 	tree   *template.Node
 	engine *prompt.Engine
 }
 
+// NewPromptCollector creates a new PromptCollector.
 func NewPromptCollector(tree *template.Node, engine *prompt.Engine) *PromptCollector {
 	return &PromptCollector{
 		tree:   tree,
@@ -19,6 +21,7 @@ func NewPromptCollector(tree *template.Node, engine *prompt.Engine) *PromptColle
 	}
 }
 
+// Collect prompts the user for missing variables across the template tree.
 func (c *PromptCollector) Collect(contexts template.RenderContexts) error {
 	return walk(c.tree, func(node *template.Node) error {
 		ctx := ensureContext(contexts, node.ID)

@@ -2,6 +2,7 @@ package vars
 
 import "github.com/dhanush0x96c/blueprint/internal/template"
 
+// ApplyInheritance propagates inherited variable values from parent nodes to child nodes.
 func ApplyInheritance(tree *template.Node, contexts template.RenderContexts) {
 	applyInheritance(tree, "", contexts)
 }

@@ -2,11 +2,11 @@ package template
 
 import "fmt"
 
-// TemplateNotFoundError is returned when a template is not found.
-type TemplateNotFoundError struct {
+// NotFoundError is returned when a template is not found.
+type NotFoundError struct {
 	Name string
 }
 
-func (e *TemplateNotFoundError) Error() string {
+func (e *NotFoundError) Error() string {
 	return fmt.Sprintf("template not found: %s", e.Name)
 }

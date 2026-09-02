@@ -20,7 +20,7 @@ const (
 
 // ExitCode returns an exit code for a given error.
 func ExitCode(err error) int {
-	var templateNotFoundErr *template.TemplateNotFoundError
+	var templateNotFoundErr *template.NotFoundError
 	var invalidTemplateTypeErr *cli.InvalidTemplateTypeError
 
 	switch {

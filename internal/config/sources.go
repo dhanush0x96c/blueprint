@@ -39,12 +39,12 @@ func (l *Loader) applyConfigFile(cfg *Config) error {
 	return yaml.Unmarshal(data, cfg)
 }
 
-func (l *Loader) applyEnv(cfg *Config) error {
+func (l *Loader) applyEnv(_ *Config) error {
 	// TODO: Apply the environment variables
 	return nil
 }
 
-func (l *Loader) applyCLI(cfg *Config) error {
+func (l *Loader) applyCLI(_ *Config) error {
 	// TODO: Apply CLI options
 	return nil
 }

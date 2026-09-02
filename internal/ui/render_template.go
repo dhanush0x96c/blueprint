@@ -7,7 +7,7 @@ import (
 	"github.com/dhanush0x96c/blueprint/internal/template"
 )
 
-func renderTemplateNotFound(err *template.TemplateNotFoundError) {
+func renderTemplateNotFound(err *template.NotFoundError) {
 	w := os.Stderr
 
 	write(w, "✗ Template not found: %s\n", err.Name)

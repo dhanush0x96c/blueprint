@@ -60,7 +60,7 @@ func (c *Composer) doCompose(loaded *loader.LoadedTemplate, stack []string, conf
 			return nil, fmt.Errorf("circular dependency detected: %v -> %s", stack, inc.Name)
 		}
 
-		ref := template.TemplateRef{
+		ref := template.Ref{
 			Name: inc.Name,
 		}
 

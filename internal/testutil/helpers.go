@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// WriteTemplate writes raw template YAML content to a file in dir.
 func WriteTemplate(t testing.TB, dir string, content string) {
 	t.Helper()
 
@@ -27,6 +28,7 @@ func WriteTemplate(t testing.TB, dir string, content string) {
 	}
 }
 
+// WriteTemplateStruct marshals a template struct to YAML and writes it in dir.
 func WriteTemplateStruct(t testing.TB, dir string, tmpl *template.Template) {
 	t.Helper()
 
@@ -38,12 +40,14 @@ func WriteTemplateStruct(t testing.TB, dir string, tmpl *template.Template) {
 	WriteTemplate(t, dir, string(data))
 }
 
+// NewRenderer creates a new renderer and returns a temporary directory for tests.
 func NewRenderer(t testing.TB) (*renderer.Renderer, string) {
 	t.Helper()
 
 	return renderer.NewRenderer(), t.TempDir()
 }
 
+// Context creates a template Context with the provided variables.
 func Context(vars map[string]any) *template.Context {
 	return &template.Context{
 		Variables: vars,

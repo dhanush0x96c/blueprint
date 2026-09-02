@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewRootCmd creates the root command for blueprint.
 func NewRootCmd() *cobra.Command {
 	cfgLoader := config.Loader{
 		EnvPrefix: "BLUEPRINT",
@@ -24,7 +25,7 @@ func NewRootCmd() *cobra.Command {
 		Long:          "Blueprint scaffolds projects from composable templates.",
 		SilenceErrors: true,
 		SilenceUsage:  true,
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
 			cfg, err := cfgLoader.Load()
 			if err != nil {
 				return fmt.Errorf("load config: %w", err)
@@ -65,6 +66,7 @@ func NewRootCmd() *cobra.Command {
 	return cmd
 }
 
+// Execute runs the root command and returns the exit code.
 func Execute() int {
 	if err := NewRootCmd().Execute(); err != nil {
 		ui.RenderError(err)

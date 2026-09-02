@@ -2,8 +2,8 @@ package template
 
 import "io/fs"
 
-// TemplateRef represents a reference to a template.
-type TemplateRef struct {
+// Ref represents a reference to a template.
+type Ref struct {
 	Name string
 }
 
@@ -15,7 +15,7 @@ type ResolvedTemplate struct {
 
 // Resolver resolves a template reference.
 type Resolver interface {
-	Resolve(ref TemplateRef) (*ResolvedTemplate, error)
+	Resolve(ref Ref) (*ResolvedTemplate, error)
 }
 
 // DiscoverOptions contains options for template discovery.

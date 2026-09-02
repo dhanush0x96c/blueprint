@@ -29,7 +29,7 @@ func TestCompose(t *testing.T) {
 			Path:     "base",
 		}
 
-		out, err := c.Compose(loaded, func(includes []template.Include) ([]template.Include, error) {
+		out, err := c.Compose(loaded, func(_ []template.Include) ([]template.Include, error) {
 			return nil, nil
 		})
 		require.NoError(t, err)

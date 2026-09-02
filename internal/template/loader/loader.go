@@ -11,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// FileName is the default manifest filename for templates.
 const (
 	FileName = "template.yaml"
 )
