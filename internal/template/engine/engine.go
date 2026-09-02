@@ -15,7 +15,7 @@ import (
 // Engine is the unified template engine that orchestrates loading, composing, and rendering
 type Engine struct {
 	resolver  template.Resolver
-	loader    *loader.FileLoader
+	loader    *loader.Loader
 	composer  *composer.Composer
 	renderer  *renderer.Renderer
 	validator *validator.Validator

@@ -3,20 +3,26 @@ package composer
 
 import (
 	"fmt"
+	"io/fs"
 	"slices"
 
 	"github.com/dhanush0x96c/blueprint/internal/template"
 	"github.com/dhanush0x96c/blueprint/internal/template/loader"
 )
 
+// Loader handles loading templates from the filesystem.
+type Loader interface {
+	Load(fsys fs.FS, pth string) (*loader.LoadedTemplate, error)
+}
+
 // Composer handles building the Node tree from a root Template.
 type Composer struct {
 	resolver template.Resolver
-	loader   loader.Loader
+	loader   Loader
 }
 
 // NewComposer creates a new template composer with the given resolver and loader.
-func NewComposer(resolver template.Resolver, loader loader.Loader) *Composer {
+func NewComposer(resolver template.Resolver, loader Loader) *Composer {
 	return &Composer{
 		resolver: resolver,
 		loader:   loader,

@@ -222,7 +222,7 @@ Templates are resolved by trying sources in sequence:
 
 ### 6.1 Loading
 
-`FileLoader` parses `template.yaml` and validates it against a strict schema using `go-playground/validator`. It supports semantic types: `project`, `feature`, and `component`.
+`Loader` parses `template.yaml` and validates it against a strict schema using `go-playground/validator`. It supports semantic types: `project`, `feature`, and `component`.
 
 ### 6.2 Tree-based Composition
 

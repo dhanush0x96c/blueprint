@@ -23,18 +23,13 @@ type LoadedTemplate struct {
 }
 
 // Loader handles loading templates from the filesystem
-type Loader interface {
-	Load(fsys fs.FS, pth string) (*LoadedTemplate, error)
-}
-
-// FileLoader handles loading templates from the filesystem
-type FileLoader struct {
+type Loader struct {
 	validate *validator.Validator
 }
 
 // NewLoader creates a new template loader.
-func NewLoader() *FileLoader {
-	return &FileLoader{
+func NewLoader() *Loader {
+	return &Loader{
 		validate: validator.NewValidator(),
 	}
 }
@@ -45,7 +40,7 @@ func NewLoader() *FileLoader {
 // containing one. In the latter case, "<dir>/template.yaml" is used.
 //
 // The loaded template is validated.
-func (l *FileLoader) Load(fsys fs.FS, pth string) (*LoadedTemplate, error) {
+func (l *Loader) Load(fsys fs.FS, pth string) (*LoadedTemplate, error) {
 	templatePath := resolveTemplatePath(pth)
 
 	data, err := fs.ReadFile(fsys, templatePath)
@@ -70,7 +65,7 @@ func (l *FileLoader) Load(fsys fs.FS, pth string) (*LoadedTemplate, error) {
 }
 
 // LoadMetadata loads template metadata from the given filesystem.
-func (l *FileLoader) LoadMetadata(fsys fs.FS, pth string) (*template.Metadata, error) {
+func (l *Loader) LoadMetadata(fsys fs.FS, pth string) (*template.Metadata, error) {
 	templatePath := resolveTemplatePath(pth)
 
 	data, err := fs.ReadFile(fsys, templatePath)
