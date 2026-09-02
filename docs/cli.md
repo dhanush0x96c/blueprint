@@ -394,7 +394,6 @@ Blueprint looks for configuration in the following locations (in order):
 1. `--config` flag
 2. `$BLUEPRINT_CONFIG` environment variable
 3. `$HOME/.config/blueprint/config.yaml`
-4. Current directory `.blueprint.yaml` (project-specific overrides)
 
 **Template Sources:**
 
