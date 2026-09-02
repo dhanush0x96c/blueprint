@@ -17,6 +17,10 @@ func (l *Loader) Load() (*Config, error) {
 		return nil, err
 	}
 
+	if err := l.selectConfigFile(); err != nil {
+		return nil, err
+	}
+
 	if err := l.applyConfigFile(cfg); err != nil {
 		return nil, err
 	}

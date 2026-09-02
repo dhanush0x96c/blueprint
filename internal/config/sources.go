@@ -20,19 +20,27 @@ func (l *Loader) applyDefaults(cfg *Config) error {
 	return nil
 }
 
-func (l *Loader) applyConfigFile(cfg *Config) error {
-	if l.ConfigFile == "" {
-		if envPath := os.Getenv(l.envKey("CONFIG")); envPath != "" {
-			l.ConfigFile = envPath
-		} else {
-			path, err := DefaultPath()
-			if err != nil {
-				return fmt.Errorf("could not detect default config path: %w", err)
-			}
-			l.ConfigFile = path
-		}
+func (l *Loader) selectConfigFile() error {
+	if val, ok := l.CLIArgs["config"]; ok && val != "" {
+		l.ConfigFile = val
+		return nil
 	}
 
+	if envPath := os.Getenv(l.envKey("CONFIG")); envPath != "" {
+		l.ConfigFile = envPath
+		return nil
+	}
+
+	path, err := DefaultPath()
+	if err != nil {
+		return fmt.Errorf("could not detect default config path: %w", err)
+	}
+	l.ConfigFile = path
+
+	return nil
+}
+
+func (l *Loader) applyConfigFile(cfg *Config) error {
 	data, err := os.ReadFile(l.ConfigFile)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -52,7 +60,6 @@ func (l *Loader) applyEnv(cfg *Config) error {
 }
 
 func (l *Loader) applyCLI(_ *Config) error {
-	// TODO: Apply CLI options
 	return nil
 }
 
