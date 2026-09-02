@@ -20,7 +20,7 @@ default:
 # Build the blueprint binary with version ldflags
 [group('build')]
 build:
-    go build -ldflags "{{ldflags}}" -o {{binary_name}} ./main.go
+    go build -ldflags "{{ ldflags }}" -o {{ binary_name }} ./main.go
 
 # Verify compilation across all packages without producing binaries
 [group('build')]
@@ -30,17 +30,17 @@ verify-build:
 # Install the blueprint binary to GOBIN/GOPATH
 [group('build')]
 install:
-    go install -ldflags "{{ldflags}}" ./main.go
+    go install -ldflags "{{ ldflags }}" .
 
 # Run the CLI directly with arguments (e.g. `just run init go-cli`)
 [group('build')]
 run *args:
-    go run -ldflags "{{ldflags}}" ./main.go {{args}}
+    go run -ldflags "{{ ldflags }}" ./main.go {{ args }}
 
 # Remove build artifacts and temporary test files
 [group('build')]
 clean:
-    rm -f {{binary_name}} coverage.out coverage.html result
+    rm -f {{ binary_name }} coverage.out coverage.html result
 
 # -----------------------------------------------------------------------------
 # Testing & Quality
@@ -49,7 +49,7 @@ clean:
 # Run all unit tests
 [group('test')]
 test *flags:
-    go test ./... {{flags}}
+    go test ./... {{ flags }}
 
 # Run tests with code coverage summary
 [group('test')]
@@ -109,7 +109,7 @@ nix-check:
 # Generate changelog preview using git-cliff
 [group('release')]
 changelog *args:
-    git cliff {{args}}
+    git cliff {{ args }}
 
 # Run GoReleaser in snapshot mode (dry-run without publishing)
 [group('release')]
