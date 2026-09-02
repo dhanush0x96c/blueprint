@@ -1,0 +1,12 @@
+version: "2"
+
+linters:
+  enable:
+    - staticcheck
+  settings:
+    staticcheck:
+      checks:
+        - "all"
+  exclusions:
+    paths:
+      - internal/builtin/templates
