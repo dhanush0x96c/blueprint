@@ -32,7 +32,7 @@
             pname = "blueprint";
             version = "dev";
             src = pkgs.lib.cleanSource ./.;
-            vendorHash = "sha256-fBLTQDueJgPfc0K/tjYR68V1L9JYFGmeFrRis6JXwm8=";
+            vendorHash = "sha256-DVXnrBLuJo1CF4JTDqVZmxJrZhygwslUVpeKC/UHmTI=";
 
             inherit env;
 
