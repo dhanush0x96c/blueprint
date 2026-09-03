@@ -21,8 +21,7 @@ func (l *Loader) applyDefaults(cfg *Config) error {
 }
 
 func (l *Loader) selectConfigFile() error {
-	if val, ok := l.CLIArgs["config"]; ok && val != "" {
-		l.ConfigFile = val
+	if l.ConfigFile != "" {
 		return nil
 	}
 
