@@ -278,13 +278,6 @@ post_init:
 | `command` | Yes      | Command to execute                                   |
 | `workdir` | No       | Working directory for the command (relative to root) |
 
-### 6.2 Execution Rules
-
-- Executed after all files are written.
-- Run in project root directory (unless `workdir` is specified).
-- Executed sequentially.
-- Failure MUST stop execution and return error.
-
 Post-init commands from composed templates are appended in resolution order.
 
 ---
@@ -319,7 +312,6 @@ Blueprint processes templates as follows:
 5. Prompt user
 6. Render files
 7. Write filesystem
-8. Execute post-init
 
 This unified pipeline applies identically to projects, features, and components.
 
